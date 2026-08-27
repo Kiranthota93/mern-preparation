@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interview Readiness Dashboard</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="app">
+  <header class="topbar">
+    <button class="hamburger" id="hamburgerBtn" type="button">&#9776;</button>
+    <h1>Interview Readiness</h1>
+    <span class="subtitle">3-Year Full-Stack / MERN</span>
+    <div class="searchbox">
+      <input type="text" id="globalSearch" placeholder="Search concepts, competencies...">
+      <div class="search-results" id="searchResults" style="display:none;"></div>
+    </div>
+    <button class="settings-btn" id="settingsBtn" type="button" title="Settings">&#9881;</button>
+  </header>
+
+  <div class="body-layout">
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+    <nav class="sidebar" id="sidebar"></nav>
+    <main class="main" id="main"></main>
+  </div>
+</div>
+
+<div id="drawerRoot"></div>
+
+<script src="app.js"></script>
+
+</body>
+</html>

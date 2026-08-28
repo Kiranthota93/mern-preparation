@@ -1069,6 +1069,27 @@ function dueTiers() {
     return tierMastery(t) > 0 && meta.nextReview && meta.nextReview <= today;
   }).sort(function (a, b) { return (getMeta(a).nextReview || "").localeCompare(getMeta(b).nextReview || ""); });
 }
+// The single next thing to study: prefer a topic already in progress (so you
+// finish what you started), otherwise the first untouched topic. Returns the
+// first not-yet-ready subtopic within it, or null when everything is ready.
+function nextToStudy() {
+  function firstUnchecked(t) {
+    for (var j = 0; j < t.items.length; j++) {
+      if (!checked[itemId(t, j)]) return { tier: t, itemIndex: j, itemLabel: t.items[j] };
+    }
+    return null;
+  }
+  var i, c;
+  for (i = 0; i < TIERS.length; i++) {          // in-progress topics first
+    c = tierSubCounts(TIERS[i]);
+    if (c.done > 0 && c.done < c.total) return firstUnchecked(TIERS[i]);
+  }
+  for (i = 0; i < TIERS.length; i++) {          // then untouched topics
+    c = tierSubCounts(TIERS[i]);
+    if (c.done < c.total) return firstUnchecked(TIERS[i]);
+  }
+  return null;
+}
 
 /* ---------------- persistence (MongoDB via backend API) ---------------- */
 const API_BASE = "/api/state";
@@ -1136,6 +1157,9 @@ function renderSidebar() {
   const el = document.getElementById("sidebar");
   let html = "";
   html += '<div class="nav-overview' + (ui.page === "overview" ? " active" : "") + '" data-nav="overview">Overview</div>';
+  const dueCount = dueTiers().length;
+  html += '<div class="nav-review' + (ui.page === "study" ? " active" : "") + (dueCount ? " has-due" : "") + '" data-nav="study">' +
+    '<span>&#128260; Review Today</span><span class="nav-review-count">' + dueCount + "</span></div>";
   SIDEBAR_GROUPS.forEach(function (group) {
     html += '<div class="nav-group"><div class="nav-group-label">' + group.label + "</div>";
     group.stacks.forEach(function (s) {
@@ -1192,6 +1216,29 @@ function renderOverviewPage(main) {
     kpiCard("Due For Review", String(due.length), due.length ? "warn" : "") +
     "</div>";
 
+  // What to study next + what to review — the two "just tell me what to do" cards.
+  const next = nextToStudy();
+  html += '<div class="action-grid">';
+  if (next) {
+    html += '<div class="action-card accent" data-continue>' +
+      '<div class="ac-label">Continue Learning</div>' +
+      '<div class="ac-title">' + STACK_LABEL[next.tier.stack] + " &rarr; " + escapeHtml(next.tier.name) + "</div>" +
+      '<div class="ac-sub">Next: ' + escapeHtml(next.itemLabel) + "</div>" +
+      '<button class="btn primary ac-btn" type="button">Continue</button>' +
+      "</div>";
+  } else {
+    html += '<div class="action-card accent"><div class="ac-label">Continue Learning</div>' +
+      '<div class="ac-title">All caught up</div>' +
+      '<div class="ac-sub">Every subtopic is marked ready.</div></div>';
+  }
+  html += '<div class="action-card" data-review>' +
+    '<div class="ac-label">Review Today</div>' +
+    '<div class="ac-title">' + due.length + " topic" + (due.length === 1 ? "" : "s") + " due</div>" +
+    '<div class="ac-sub">' + (due.length ? "Spaced-repetition refresh" : "Nothing due right now") + "</div>" +
+    (due.length ? '<button class="btn primary ac-btn" type="button">Start Review</button>' : "") +
+    "</div>";
+  html += "</div>";
+
   html += '<div class="section-title">Stack Readiness</div><div class="list-card">';
   ALL_STACKS.forEach(function (s) {
     const pct = stackMasteryPct(s);
@@ -1237,6 +1284,14 @@ function renderOverviewPage(main) {
   main.querySelectorAll("[data-open-topic]").forEach(function (n) {
     n.addEventListener("click", function () { openTopicDrawer(n.getAttribute("data-open-topic")); });
   });
+  const continueCard = main.querySelector("[data-continue]");
+  if (continueCard && next) {
+    continueCard.addEventListener("click", function () { openTopicDrawer(tierKey(next.tier)); });
+  }
+  const reviewCard = main.querySelector("[data-review]");
+  if (reviewCard && due.length) {
+    reviewCard.addEventListener("click", function () { ui.page = "study"; renderAll(); });
+  }
 }
 
 /* ================= RENDER: stack page ================= */
@@ -1355,7 +1410,7 @@ function renderDrawerTopic(root) {
   html += '<div class="dd-sub">' + STACK_LABEL[tier.stack] + ' &middot; <span class="tag ' + tier.tag + '">' + TAG_LABEL[tier.tag] + "</span></div>";
   html += '<div class="dd-mastery-line"><span>Mastery</span><span class="ddm-val">' + avg.toFixed(1) + " / 5</span></div>";
   html += '<div class="dd-mastery-bar"><div style="width:' + Math.round((avg / 5) * 100) + '%"></div></div>';
-  html += '<div class="dd-sub" style="margin-bottom:12px;">' + sub.done + " / " + sub.total + " sub-topics complete</div>";
+  html += '<div class="dd-sub" style="margin-bottom:12px;">' + sub.done + " / " + sub.total + " sub-topics ready</div>";
   html += '<input type="text" class="subtopic-search" data-subtopic-search placeholder="Search subtopics..." value="' + escapeAttr(ui.drawer.search || "") + '">';
   html += '<div class="subtopic-grid">';
   if (!rows.length) html += '<div class="empty-note">No matches.</div>';
@@ -1369,7 +1424,7 @@ function renderDrawerTopic(root) {
         '<span class="sr-num">' + String(o.i + 1).padStart(2, "0") + "</span>" +
         '<span class="sr-label" data-toggle-sub="' + o.i + '">' + o.label + "</span>" +
         '<button class="sr-note-btn' + (hasNote ? " has-note" : "") + '" data-note-toggle="' + o.i + '" type="button" title="Notes">&#9998;</button>' +
-        '<span class="sr-check" data-toggle-sub="' + o.i + '">' + (done ? "&#10003;" : "") + "</span>" +
+        '<span class="sr-check" data-toggle-sub="' + o.i + '" title="' + (done ? "Ready — I can explain this" : "Mark ready") + '">' + (done ? "&#10003;" : "") + "</span>" +
       "</div>" +
       '<textarea class="sr-note" data-sub-note="' + id + '" placeholder="Notes for this subtopic..." ' +
         (hasNote ? "" : 'style="display:none;"') + ">" + escapeHtml(note) + "</textarea>" +

@@ -98,6 +98,20 @@
   }
   .nav-overview:hover { background: var(--card); }
   .nav-overview.active { background: var(--accent-bg); color: var(--accent); }
+  .nav-review {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 10px; border-radius: 8px; font-size: 12.5px; font-weight: 600;
+    cursor: pointer; margin-bottom: 14px; border: 0.5px solid var(--border);
+    color: var(--text-secondary);
+  }
+  .nav-review:hover { background: var(--card); }
+  .nav-review.active { background: var(--card); color: var(--text); border-color: var(--border-strong); }
+  .nav-review.has-due { border-color: var(--amber-border); color: var(--amber-text); }
+  .nav-review-count {
+    font-family: var(--mono); font-size: 11px; min-width: 20px; text-align: center;
+    padding: 1px 6px; border-radius: 10px; background: var(--border);
+  }
+  .nav-review.has-due .nav-review-count { background: var(--amber-bg); color: var(--amber-text); }
   .nav-group { margin-bottom: 16px; }
   .nav-group-label {
     font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em;
@@ -149,6 +163,23 @@
   .kpi-card .kpi-value { font-family: var(--mono); font-size: 21px; font-weight: 700; margin-top: 4px; }
   .kpi-card.warn .kpi-value { color: var(--amber-text); }
   .kpi-card.danger .kpi-value { color: var(--red-text); }
+
+  .action-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 22px; }
+  .action-card {
+    background: var(--card); border: 0.5px solid var(--border); border-radius: 12px;
+    padding: 16px 18px; display: flex; flex-direction: column; gap: 4px; cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .action-card:hover { border-color: var(--border-strong); }
+  .action-card.accent { border-color: var(--accent); }
+  .action-card .ac-label {
+    font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--text-muted); font-weight: 600;
+  }
+  .action-card .ac-title { font-size: 15px; font-weight: 600; margin-top: 2px; }
+  .action-card .ac-sub { font-size: 12.5px; color: var(--text-secondary); }
+  .action-card .ac-btn { margin-top: 12px; align-self: flex-start; }
+  @media (max-width: 720px) { .action-grid { grid-template-columns: 1fr; } }
 
   .section-title {
     font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;

@@ -1,0 +1,194 @@
+<title>MERN Study Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=JetBrains+Mono:wght@400;600&display=swap">
+
+<style>
+  :root {
+    --paper: #F7F6F2;
+    --surface: #FFFFFF;
+    --ink: #1A1917;
+    --ink-soft: #55524B;
+    --ink-faint: #8A867C;
+    --accent: #C77E12;
+    --accent-soft: #F3E4C6;
+    --teal: #2A6F6B;
+    --line: #E4E0D6;
+    --code-bg: #F2EFE7;
+    --shadow: 0 1px 2px rgba(26,25,23,.04), 0 8px 24px rgba(26,25,23,.06);
+    --shadow-lift: 0 2px 4px rgba(26,25,23,.05), 0 14px 34px rgba(26,25,23,.10);
+    --radius: 16px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #17161A; --surface: #201F24; --ink: #EDEAE3;
+      --ink-soft: #B4AFA4; --ink-faint: #7E7A70; --accent: #E8A32C;
+      --accent-soft: #3A2E17; --teal: #6FC3BC; --line: #322F38;
+      --code-bg: #1B1A1F;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 30px rgba(0,0,0,.35);
+      --shadow-lift: 0 2px 6px rgba(0,0,0,.4), 0 18px 40px rgba(0,0,0,.5);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #17161A; --surface: #201F24; --ink: #EDEAE3;
+    --ink-soft: #B4AFA4; --ink-faint: #7E7A70; --accent: #E8A32C;
+    --accent-soft: #3A2E17; --teal: #6FC3BC; --line: #322F38;
+    --code-bg: #1B1A1F;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 30px rgba(0,0,0,.35);
+    --shadow-lift: 0 2px 6px rgba(0,0,0,.4), 0 18px 40px rgba(0,0,0,.5);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: "Newsreader", Georgia, serif; font-size: 18px; line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 72px 24px 90px; }
+
+  /* Hero */
+  .eyebrow {
+    font-family: "JetBrains Mono", monospace; font-size: 12px;
+    letter-spacing: .18em; text-transform: uppercase; color: var(--accent);
+    margin: 0 0 14px;
+  }
+  h1 {
+    font-family: "Fraunces", serif; font-weight: 600; font-size: clamp(38px, 7vw, 60px);
+    line-height: 1.02; letter-spacing: -.02em; margin: 0 0 18px; text-wrap: balance;
+  }
+  .lede { color: var(--ink-soft); font-size: 20px; max-width: 56ch; margin: 0 0 8px; }
+
+  .progress-row {
+    display: flex; align-items: center; gap: 14px; margin-top: 34px;
+    font-family: "JetBrains Mono", monospace; font-size: 12.5px; color: var(--ink-faint);
+  }
+  .bar { flex: 1; max-width: 320px; height: 6px; background: var(--line); border-radius: 999px; overflow: hidden; }
+  .bar > span { display: block; height: 100%; width: 25%; background: var(--accent); border-radius: 999px; }
+
+  /* Section labels */
+  .section-label {
+    font-family: "JetBrains Mono", monospace; font-size: 12px;
+    letter-spacing: .14em; text-transform: uppercase; color: var(--ink-faint);
+    margin: 64px 0 20px; padding-bottom: 10px; border-bottom: 1px solid var(--line);
+  }
+
+  /* Cards */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; }
+  .card {
+    display: flex; flex-direction: column; gap: 12px;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 24px; text-decoration: none; color: inherit;
+    box-shadow: var(--shadow); transition: transform .16s ease, box-shadow .16s ease, border-color .16s;
+  }
+  a.card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift); border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); }
+  a.card:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .card-top { display: flex; align-items: center; justify-content: space-between; }
+  .glyph { font-size: 28px; line-height: 1; }
+  .status {
+    font-family: "JetBrains Mono", monospace; font-size: 10px;
+    letter-spacing: .1em; text-transform: uppercase;
+    padding: 4px 9px; border-radius: 999px;
+  }
+  .status.ready { color: var(--teal); background: color-mix(in srgb, var(--teal) 14%, transparent); }
+  .status.soon { color: var(--ink-faint); border: 1px solid var(--line); }
+  .card h3 { font-family: "Fraunces", serif; font-weight: 600; font-size: 22px; margin: 0; letter-spacing: -.01em; }
+  .card p { margin: 0; color: var(--ink-soft); font-size: 15.5px; line-height: 1.5; }
+  .card .meta {
+    margin-top: auto; padding-top: 6px;
+    font-family: "JetBrains Mono", monospace; font-size: 11.5px; color: var(--ink-faint);
+    display: flex; align-items: center; gap: 8px;
+  }
+  a.card .meta .go { color: var(--accent); }
+  .card.disabled { opacity: .6; cursor: default; }
+
+  footer {
+    margin-top: 70px; padding-top: 24px; border-top: 1px solid var(--line);
+    font-family: "JetBrains Mono", monospace; font-size: 12.5px; color: var(--ink-faint);
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">MERN Interview Prep</p>
+    <h1>Study Hub</h1>
+    <p class="lede">A growing set of notebooks — each with clear explanations and coding questions to test yourself. Start with the fundamentals and work forward.</p>
+    <div class="progress-row">
+      <span>2 of 8 ready</span>
+      <span class="bar" aria-hidden="true"><span></span></span>
+      <span>JavaScript track</span>
+    </div>
+  </header>
+
+  <p class="section-label">JavaScript · Core</p>
+  <div class="grid">
+
+    <a class="card" href="https://claude.ai/code/artifact/3580f3cc-6786-45e0-a18e-d91bdd872b67" target="_blank" rel="noopener">
+      <div class="card-top"><span class="glyph">📓</span><span class="status ready">Ready</span></div>
+      <h3>Fundamentals</h3>
+      <p>Variables, types, coercion, scope, hoisting, truthy/falsy, operators, loops.</p>
+      <div class="meta">12 topics · 10 questions <span class="go">→ open</span></div>
+    </a>
+
+    <a class="card" href="https://claude.ai/code/artifact/003ab988-88f7-468d-81f8-278cf1e4cc58" target="_blank" rel="noopener">
+      <div class="card-top"><span class="glyph">📓</span><span class="status ready">Ready</span></div>
+      <h3>Functions</h3>
+      <p>Declarations, arrows, closures, higher-order, currying, recursion, <code>this</code>.</p>
+      <div class="meta">16 topics · 12 questions <span class="go">→ open</span></div>
+    </a>
+
+    <div class="card disabled">
+      <div class="card-top"><span class="glyph">🧩</span><span class="status soon">Soon</span></div>
+      <h3>Arrays</h3>
+      <p>map, filter, reduce, find, sort, spread, destructuring, common patterns.</p>
+      <div class="meta">planned</div>
+    </div>
+
+    <div class="card disabled">
+      <div class="card-top"><span class="glyph">🗂️</span><span class="status soon">Soon</span></div>
+      <h3>Objects</h3>
+      <p>Object methods, destructuring, references vs copies, optional chaining, JSON.</p>
+      <div class="meta">planned</div>
+    </div>
+
+  </div>
+
+  <p class="section-label">JavaScript · Advanced</p>
+  <div class="grid">
+
+    <div class="card disabled">
+      <div class="card-top"><span class="glyph">⏳</span><span class="status soon">Soon</span></div>
+      <h3>Async JS</h3>
+      <p>Callbacks, promises, async/await, the event loop, fetch, error handling.</p>
+      <div class="meta">planned</div>
+    </div>
+
+    <div class="card disabled">
+      <div class="card-top"><span class="glyph">🌳</span><span class="status soon">Soon</span></div>
+      <h3>DOM &amp; Events</h3>
+      <p>Selecting, creating, and updating elements; event listeners; delegation.</p>
+      <div class="meta">planned</div>
+    </div>
+
+    <div class="card disabled">
+      <div class="card-top"><span class="glyph">✨</span><span class="status soon">Soon</span></div>
+      <h3>ES6+ Features</h3>
+      <p>let/const, modules, classes, generators, Map/Set, optional chaining.</p>
+      <div class="meta">planned</div>
+    </div>
+
+    <div class="card disabled">
+      <div class="card-top"><span class="glyph">⚛️</span><span class="status soon">Soon</span></div>
+      <h3>React Basics</h3>
+      <p>Components, props, state, hooks, rendering, lifting state up.</p>
+      <div class="meta">planned</div>
+    </div>
+
+  </div>
+
+  <footer>
+    <span>Study Hub · MERN prep</span>
+    <span>read → test → repeat</span>
+  </footer>
+</div>

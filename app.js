@@ -1418,18 +1418,23 @@ function renderDrawerTopic(root) {
   html += '<input type="text" class="subtopic-search" data-subtopic-search placeholder="Search subtopics..." value="' + escapeAttr(ui.drawer.search || "") + '">';
   html += '<div class="subtopic-grid">';
   if (!rows.length) html += '<div class="empty-note">No matches.</div>';
+  const topicExplain = (window.EXPLANATIONS && window.EXPLANATIONS[tier.name]) || {};
   rows.forEach(function (o) {
     const id = itemId(tier, o.i);
     const done = !!checked[id];
     const note = subNotes[id] || "";
     const hasNote = note.trim().length > 0;
+    const explain = topicExplain[o.label] || "";
+    const hasExplain = explain.length > 0;
     html += '<div class="subtopic-block">' +
       '<div class="subtopic-row' + (done ? " sr-done" : "") + '">' +
         '<span class="sr-num">' + String(o.i + 1).padStart(2, "0") + "</span>" +
         '<span class="sr-label" data-toggle-sub="' + o.i + '">' + o.label + "</span>" +
+        (hasExplain ? '<button class="sr-learn-btn" data-learn-toggle="' + o.i + '" type="button" title="Explanation">&#128214;</button>' : "") +
         '<button class="sr-note-btn' + (hasNote ? " has-note" : "") + '" data-note-toggle="' + o.i + '" type="button" title="Notes">&#9998;</button>' +
         '<span class="sr-check" data-toggle-sub="' + o.i + '" title="' + (done ? "Ready — I can explain this" : "Mark ready") + '">' + (done ? "&#10003;" : "") + "</span>" +
       "</div>" +
+      (hasExplain ? '<div class="sr-explain" data-explain="' + o.i + '" style="display:none;">' + explain + "</div>" : "") +
       '<textarea class="sr-note" data-sub-note="' + id + '" placeholder="Notes for this subtopic..." ' +
         (hasNote ? "" : 'style="display:none;"') + ">" + escapeHtml(note) + "</textarea>" +
       "</div>";
@@ -1467,6 +1472,16 @@ function renderDrawerTopic(root) {
       const showing = ta.style.display !== "none";
       ta.style.display = showing ? "none" : "block";
       if (!showing) ta.focus();
+    });
+  });
+  root.querySelectorAll("[data-learn-toggle]").forEach(function (n) {
+    n.addEventListener("click", function () {
+      const block = n.closest(".subtopic-block");
+      const ex = block.querySelector("[data-explain]");
+      if (!ex) return;
+      const showing = ex.style.display !== "none";
+      ex.style.display = showing ? "none" : "block";
+      n.classList.toggle("open", !showing);
     });
   });
   let noteTimer = null;

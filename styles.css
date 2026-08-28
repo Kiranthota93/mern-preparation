@@ -323,6 +323,33 @@
     font-size: 12px; line-height: 1.45; min-height: 52px; resize: vertical;
   }
   .sr-note:focus { outline: none; border-color: var(--accent); }
+  .sr-learn-btn {
+    background: none; border: 0.5px solid var(--border); border-radius: 5px; cursor: pointer;
+    color: var(--text-muted); font-size: 11px; width: 22px; height: 20px; flex-shrink: 0; line-height: 1;
+  }
+  .sr-learn-btn:hover { border-color: var(--border-strong); color: var(--text); }
+  .sr-learn-btn.open { color: var(--accent); border-color: var(--accent); background: var(--accent-bg); }
+  .sr-explain {
+    margin: 2px 0 8px; padding: 12px 14px; border-radius: 8px;
+    background: var(--bg); border: 0.5px solid var(--border-strong);
+    border-left: 3px solid var(--accent);
+    font-size: 12.5px; line-height: 1.55; color: var(--text-secondary);
+  }
+  .sr-explain p { margin: 0 0 8px; }
+  .sr-explain p:last-child { margin-bottom: 0; }
+  .sr-explain code {
+    font-family: var(--mono); font-size: 11px; background: var(--card);
+    padding: 1px 5px; border-radius: 4px; color: var(--text);
+  }
+  .sr-explain pre {
+    background: var(--card); border: 0.5px solid var(--border); border-radius: 7px;
+    padding: 10px 12px; overflow-x: auto; margin: 8px 0;
+  }
+  .sr-explain pre code { background: none; padding: 0; font-size: 11.5px; line-height: 1.6; white-space: pre; }
+  .sr-explain .ex-gotcha {
+    background: var(--accent-bg); border-radius: 6px; padding: 8px 10px;
+    color: var(--text); margin-top: 8px;
+  }
 
   .practice-nav-row { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
   .practice-answer { margin-top: 16px; }

@@ -1328,8 +1328,11 @@ function renderStackPage(main, stackKey) {
     const sub = tierSubCounts(t);
     const meta = getMeta(t);
     const isDue = mastery > 0 && meta.nextReview && meta.nextReview <= todayISO();
+    const hasNotebook = !!((window.EXPLANATIONS && window.EXPLANATIONS[t.name]) || (window.QUESTIONS && window.QUESTIONS[t.name]));
     html += '<div class="comp-card" data-open-topic="' + tierKey(t) + '">' +
-      '<div class="cc-top"><span class="cc-name">' + t.name + '</span><span class="tag ' + t.tag + '">' + TAG_LABEL[t.tag] + "</span></div>" +
+      '<div class="cc-top"><span class="cc-name">' + t.name + '</span>' +
+        (hasNotebook ? '<button class="cc-notebook" data-notebook="' + tierKey(t) + '" type="button" title="Open notebook (explanations + coding questions)">&#128218;</button>' : "") +
+        '<span class="tag ' + t.tag + '">' + TAG_LABEL[t.tag] + "</span></div>" +
       '<div class="cc-bar"><div style="width:' + mpct + '%"></div></div>' +
       '<div class="cc-meta"><span>' + mastery.toFixed(1) + "/5 mastery</span><span>" + sub.done + "/" + sub.total + " sub-topics</span></div>" +
       (isDue ? '<div class="cc-meta" style="margin-top:4px;"><span class="cc-due">Due for review</span></div>' : "") +
@@ -1356,11 +1359,21 @@ function renderStackPage(main, stackKey) {
   main.querySelectorAll("[data-open-topic]").forEach(function (n) {
     n.addEventListener("click", function () { openTopicDrawer(n.getAttribute("data-open-topic")); });
   });
+  main.querySelectorAll("[data-notebook]").forEach(function (n) {
+    n.addEventListener("click", function (e) {
+      e.stopPropagation();
+      openNotebook(n.getAttribute("data-notebook"));
+    });
+  });
 }
 
 /* ================= DRAWER: navigation state ================= */
 function openTopicDrawer(key) {
   ui.drawer = { mode: "topic", tierKey: key, search: "", practice: null };
+  renderDrawer();
+}
+function openNotebook(key) {
+  ui.drawer = { mode: "notebook", tierKey: key, tab: "notes" };
   renderDrawer();
 }
 function closeDrawer() { ui.drawer = null; renderDrawer(); }
@@ -1390,7 +1403,110 @@ function renderDrawer() {
   const root = document.getElementById("drawerRoot");
   if (!ui.drawer) { root.innerHTML = ""; return; }
   if (ui.drawer.mode === "practice") return renderDrawerPractice(root);
+  if (ui.drawer.mode === "notebook") return renderDrawerNotebook(root);
   return renderDrawerTopic(root);
+}
+
+/* ---- notebook: full two-tab view (Explanations + Coding Questions) ---- */
+function renderDrawerNotebook(root) {
+  const tier = getTierByKey(ui.drawer.tierKey);
+  if (!tier) { root.innerHTML = ""; ui.drawer = null; return; }
+  const explain = (window.EXPLANATIONS && window.EXPLANATIONS[tier.name]) || {};
+  const questions = (window.QUESTIONS && window.QUESTIONS[tier.name]) || [];
+  const tab = ui.drawer.tab || "notes";
+
+  let html = '<div class="overlay-backdrop" data-dd-overlay></div>';
+  html += '<div class="detail-drawer notebook-drawer">';
+  html += '<button class="dd-close" data-dd-close type="button">&times;</button>';
+
+  // sticky header: brand + section tabs
+  html += '<div class="nb-header">';
+  html += '<div class="nb-brand"><h2>' + escapeHtml(tier.name) + '</h2><span class="nb-badge">Notebook</span></div>';
+  html += '<div class="nb-sub">' + STACK_LABEL[tier.stack] + ' &middot; <span class="tag ' + tier.tag + '">' + TAG_LABEL[tier.tag] + "</span></div>";
+  html += '<div class="nb-tabs">';
+  html += '<button class="nb-tab' + (tab === "notes" ? " active" : "") + '" data-nb-tab="notes" type="button">Explanations</button>';
+  html += '<button class="nb-tab' + (tab === "code" ? " active" : "") + '" data-nb-tab="code" type="button">Coding Questions</button>';
+  html += "</div></div>";
+
+  if (tab === "notes") {
+    const items = tier.items.filter(function (label) { return explain[label]; });
+    if (!items.length) {
+      html += '<div class="nb-solo"><div class="empty-note">No explanations for this topic yet.</div></div>';
+    } else {
+      html += '<div class="nb-layout">';
+      // table of contents
+      html += '<nav class="nb-toc" aria-label="Topics">';
+      items.forEach(function (label, i) {
+        html += '<a href="#nbt-' + i + '" data-nb-toc="' + i + '">' +
+          String(i + 1).padStart(2, "0") + " &middot; " + escapeHtml(label) + "</a>";
+      });
+      html += "</nav>";
+      // article
+      html += '<main class="nb-main">';
+      items.forEach(function (label, i) {
+        html += '<section class="nb-topic" id="nbt-' + i + '">' +
+          '<h3><span class="nb-num">' + String(i + 1).padStart(2, "0") + "</span>" + escapeHtml(label) + "</h3>" +
+          '<div class="nb-explain">' + explain[label] + "</div></section>";
+      });
+      html += "</main></div>";
+    }
+  } else {
+    html += '<div class="nb-solo">';
+    html += '<p class="nb-intro">Try each in your head or the console first, then reveal the answer.</p>';
+    if (!questions.length) html += '<div class="empty-note">No coding questions for this topic yet.</div>';
+    questions.forEach(function (item, i) {
+      html += '<div class="nb-qcard">' +
+        '<div class="nb-qhead"><span class="nb-qn">Q' + (i + 1) + "</span>" +
+          '<span class="nb-qtag">' + (item.tag || "") + "</span>" +
+          '<span class="nb-qlvl ' + (item.level || "") + '">' + (item.level || "") + "</span></div>" +
+        '<div class="nb-qtext">' + item.q + "</div>" +
+        '<details class="nb-answer"><summary>Show answer</summary><div class="nb-abody">' + item.a + "</div></details>" +
+        "</div>";
+    });
+    html += "</div>";
+  }
+
+  html += "</div>";
+  root.innerHTML = html;
+
+  const drawerEl = root.querySelector(".notebook-drawer");
+  root.querySelector("[data-dd-overlay]").addEventListener("click", closeDrawer);
+  root.querySelector("[data-dd-close]").addEventListener("click", closeDrawer);
+  root.querySelectorAll("[data-nb-tab]").forEach(function (n) {
+    n.addEventListener("click", function () {
+      ui.drawer.tab = n.getAttribute("data-nb-tab");
+      renderDrawerNotebook(root);
+    });
+  });
+
+  // TOC: offset sticky position + scroll-margins to the header height, wire
+  // click-to-scroll and active-link tracking within the scrollable drawer.
+  const header = drawerEl.querySelector(".nb-header");
+  const toc = drawerEl.querySelector(".nb-toc");
+  if (toc && header) {
+    const headH = header.offsetHeight + 12;
+    toc.style.top = headH + "px";
+    const links = Array.prototype.slice.call(toc.querySelectorAll("[data-nb-toc]"));
+    const sections = Array.prototype.slice.call(drawerEl.querySelectorAll(".nb-topic"));
+    sections.forEach(function (s) { s.style.scrollMarginTop = headH + "px"; });
+    links.forEach(function (a) {
+      a.addEventListener("click", function (e) {
+        e.preventDefault();
+        const idx = a.getAttribute("data-nb-toc");
+        const target = drawerEl.querySelector("#nbt-" + idx);
+        if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+    const obs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (en.isIntersecting) {
+          const id = en.target.id;
+          links.forEach(function (l) { l.classList.toggle("active", l.getAttribute("href") === "#" + id); });
+        }
+      });
+    }, { root: drawerEl, rootMargin: "-" + headH + "px 0px -68% 0px" });
+    sections.forEach(function (s) { obs.observe(s); });
+  }
 }
 
 /* ---- topic panel: navigate + toggle subtopics directly, notes & evidence ---- */
@@ -1736,6 +1852,12 @@ function renderStudyPage(main) {
   });
   main.querySelectorAll("[data-open-topic]").forEach(function (n) {
     n.addEventListener("click", function () { openTopicDrawer(n.getAttribute("data-open-topic")); });
+  });
+  main.querySelectorAll("[data-notebook]").forEach(function (n) {
+    n.addEventListener("click", function (e) {
+      e.stopPropagation();
+      openNotebook(n.getAttribute("data-notebook"));
+    });
   });
 }
 

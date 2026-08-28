@@ -1379,6 +1379,13 @@ function openNotebook(key) {
   ui.drawer = { mode: "notebook", tierKey: key, tab: "notes" };
   renderDrawer();
 }
+// Global scratchpad — same practice.js experience as a topic's Real Practice
+// tab, but reachable from anywhere in the topbar and not tied to a topic.
+const GLOBAL_PRACTICE_KEY = "_global";
+function openGlobalPractice() {
+  ui.drawer = { mode: "gpractice" };
+  renderDrawer();
+}
 function closeDrawer() { ui.drawer = null; renderDrawer(); }
 function backInDrawer() {
   if (!ui.drawer) return;
@@ -1407,6 +1414,7 @@ function renderDrawer() {
   if (!ui.drawer) { root.innerHTML = ""; return; }
   if (ui.drawer.mode === "practice") return renderDrawerPractice(root);
   if (ui.drawer.mode === "notebook") return renderDrawerNotebook(root);
+  if (ui.drawer.mode === "gpractice") return renderDrawerGlobalPractice(root);
   return renderDrawerTopic(root);
 }
 
@@ -1469,21 +1477,7 @@ function renderDrawerNotebook(root) {
     });
     html += "</div>";
   } else {
-    // Real Practice — a practice.js scratchpad: paste question, write code, run, see output.
-    const saved = practice[ui.drawer.tierKey] || { question: "", code: "" };
-    html += '<div class="nb-practice">';
-    html += '<div class="pr-field">' +
-      '<label class="pr-label">Question / Notes</label>' +
-      '<textarea class="pr-question" data-pr-question spellcheck="false" placeholder="Paste the coding question or problem statement here...">' + escapeHtml(saved.question || "") + "</textarea></div>";
-    html += '<div class="pr-field">' +
-      '<div class="pr-bar"><span class="pr-label">practice.js</span>' +
-        '<button class="pr-run" data-pr-run type="button">&#9654; Run</button></div>' +
-      '<textarea class="pr-code" data-pr-code spellcheck="false" placeholder="// write your JavaScript here\nconsole.log(\'hello\');">' + escapeHtml(saved.code || "") + "</textarea></div>";
-    html += '<div class="pr-field">' +
-      '<div class="pr-bar"><span class="pr-label">Output <span class="pr-hint">— $ node practice.js</span></span>' +
-        '<button class="pr-clear" data-pr-clear type="button">Clear</button></div>' +
-      '<pre class="pr-output" data-pr-output><span class="pr-muted">Run your code to see output here.</span></pre></div>';
-    html += "</div>";
+    html += practiceFieldsHtml(practice[ui.drawer.tierKey]);
   }
 
   html += "</div>";
@@ -1528,37 +1522,76 @@ function renderDrawerNotebook(root) {
     sections.forEach(function (s) { obs.observe(s); });
   }
 
-  // Real Practice tab: autosave question/code, run code, show output.
-  const qEl = drawerEl.querySelector("[data-pr-question]");
-  const codeEl = drawerEl.querySelector("[data-pr-code]");
-  const outEl = drawerEl.querySelector("[data-pr-output]");
-  if (qEl && codeEl) {
-    const key = ui.drawer.tierKey;
-    const savePractice = function () {
-      practice[key] = { question: qEl.value, code: codeEl.value };
-      saveState();
-    };
-    qEl.addEventListener("input", savePractice);
-    codeEl.addEventListener("input", savePractice);
-    // Tab inserts two spaces instead of leaving the editor.
-    codeEl.addEventListener("keydown", function (e) {
-      if (e.key === "Tab") {
-        e.preventDefault();
-        const s = codeEl.selectionStart, en = codeEl.selectionEnd;
-        codeEl.value = codeEl.value.slice(0, s) + "  " + codeEl.value.slice(en);
-        codeEl.selectionStart = codeEl.selectionEnd = s + 2;
-        savePractice();
-      }
-      // Ctrl/Cmd+Enter runs the code.
-      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); runPracticeCode(codeEl.value, outEl); }
-    });
-    const runBtn = drawerEl.querySelector("[data-pr-run]");
-    if (runBtn) runBtn.addEventListener("click", function () { runPracticeCode(codeEl.value, outEl); });
-    const clearBtn = drawerEl.querySelector("[data-pr-clear]");
-    if (clearBtn) clearBtn.addEventListener("click", function () {
-      outEl.innerHTML = '<span class="pr-muted">Run your code to see output here.</span>';
-    });
-  }
+  wirePracticeFields(drawerEl, ui.drawer.tierKey);
+}
+
+/* ---- Real Practice: shared markup + wiring between the per-topic tab and
+   the global scratchpad (topbar button, not tied to any topic). ---- */
+function practiceFieldsHtml(saved) {
+  saved = saved || { question: "", code: "" };
+  let html = '<div class="nb-practice">';
+  html += '<div class="pr-field">' +
+    '<label class="pr-label">Question / Notes</label>' +
+    '<textarea class="pr-question" data-pr-question spellcheck="false" placeholder="Paste the coding question or problem statement here...">' + escapeHtml(saved.question || "") + "</textarea></div>";
+  html += '<div class="pr-field">' +
+    '<div class="pr-bar"><span class="pr-label">practice.js</span>' +
+      '<button class="pr-run" data-pr-run type="button">&#9654; Run</button></div>' +
+    '<textarea class="pr-code" data-pr-code spellcheck="false" placeholder="// write your JavaScript here\nconsole.log(\'hello\');">' + escapeHtml(saved.code || "") + "</textarea></div>";
+  html += '<div class="pr-field">' +
+    '<div class="pr-bar"><span class="pr-label">Output <span class="pr-hint">— $ node practice.js</span></span>' +
+      '<button class="pr-clear" data-pr-clear type="button">Clear</button></div>' +
+    '<pre class="pr-output" data-pr-output><span class="pr-muted">Run your code to see output here.</span></pre></div>';
+  html += "</div>";
+  return html;
+}
+function wirePracticeFields(scopeEl, key) {
+  const qEl = scopeEl.querySelector("[data-pr-question]");
+  const codeEl = scopeEl.querySelector("[data-pr-code]");
+  const outEl = scopeEl.querySelector("[data-pr-output]");
+  if (!qEl || !codeEl) return;
+  const savePractice = function () {
+    practice[key] = { question: qEl.value, code: codeEl.value };
+    saveState();
+  };
+  qEl.addEventListener("input", savePractice);
+  codeEl.addEventListener("input", savePractice);
+  // Tab inserts two spaces instead of leaving the editor.
+  codeEl.addEventListener("keydown", function (e) {
+    if (e.key === "Tab") {
+      e.preventDefault();
+      const s = codeEl.selectionStart, en = codeEl.selectionEnd;
+      codeEl.value = codeEl.value.slice(0, s) + "  " + codeEl.value.slice(en);
+      codeEl.selectionStart = codeEl.selectionEnd = s + 2;
+      savePractice();
+    }
+    // Ctrl/Cmd+Enter runs the code.
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); runPracticeCode(codeEl.value, outEl); }
+  });
+  const runBtn = scopeEl.querySelector("[data-pr-run]");
+  if (runBtn) runBtn.addEventListener("click", function () { runPracticeCode(codeEl.value, outEl); });
+  const clearBtn = scopeEl.querySelector("[data-pr-clear]");
+  if (clearBtn) clearBtn.addEventListener("click", function () {
+    outEl.innerHTML = '<span class="pr-muted">Run your code to see output here.</span>';
+  });
+}
+
+/* ---- global Real Practice drawer: same scratchpad, reachable from the topbar ---- */
+function renderDrawerGlobalPractice(root) {
+  let html = '<div class="overlay-backdrop" data-dd-overlay></div>';
+  html += '<div class="detail-drawer notebook-drawer">';
+  html += '<button class="dd-close" data-dd-close type="button">&times;</button>';
+  html += '<div class="nb-header">';
+  html += '<div class="nb-brand"><h2>Real Practice</h2><span class="nb-badge">Scratchpad</span></div>';
+  html += '<div class="nb-sub">Not tied to a topic &middot; behaves like <code>node practice.js</code></div>';
+  html += "</div>";
+  html += practiceFieldsHtml(practice[GLOBAL_PRACTICE_KEY]);
+  html += "</div>";
+  root.innerHTML = html;
+
+  const drawerEl = root.querySelector(".notebook-drawer");
+  root.querySelector("[data-dd-overlay]").addEventListener("click", closeDrawer);
+  root.querySelector("[data-dd-close]").addEventListener("click", closeDrawer);
+  wirePracticeFields(drawerEl, GLOBAL_PRACTICE_KEY);
 }
 
 /* Execute practice code in the browser and stream console output — the closest
@@ -2184,6 +2217,7 @@ function initTopbar() {
   });
   document.getElementById("sidebarBackdrop").addEventListener("click", closeMobileSidebar);
   document.getElementById("settingsBtn").addEventListener("click", function () { ui.page = "settings"; renderAll(); });
+  document.getElementById("globalPracticeBtn").addEventListener("click", openGlobalPractice);
   const searchInput = document.getElementById("globalSearch");
   searchInput.addEventListener("input", function () { performGlobalSearch(searchInput.value); });
   document.addEventListener("click", function (e) {

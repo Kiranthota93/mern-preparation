@@ -85,6 +85,15 @@
   }
   .settings-btn:hover, .hamburger:hover { border-color: var(--border-strong); color: var(--text); }
 
+  .practice-btn {
+    background: var(--accent-bg); border: 0.5px solid var(--accent); border-radius: 8px;
+    height: 32px; padding: 0 12px; display: flex; align-items: center; gap: 6px;
+    cursor: pointer; color: var(--accent); flex-shrink: 0; font-size: 12.5px; font-weight: 600;
+    white-space: nowrap;
+  }
+  .practice-btn:hover { filter: brightness(1.1); }
+  @media (max-width: 720px) { .practice-btn span.pb-label { display: none; } }
+
   /* ---------- Layout ---------- */
   .body-layout { display: flex; flex: 1; min-height: 0; position: relative; }
   .sidebar {

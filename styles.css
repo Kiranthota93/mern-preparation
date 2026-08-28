@@ -471,7 +471,48 @@
     .nb-toc { display: none; }
     .nb-solo { padding: 20px 20px 50px; }
     .nb-header { padding: 16px 20px 0; }
+    .nb-practice { padding: 20px 20px 50px; }
   }
+
+  /* ---------- Real Practice tab: a practice.js scratchpad ---------- */
+  .nb-practice { padding: 24px 34px 60px; display: flex; flex-direction: column; gap: 18px; }
+  .pr-field { display: flex; flex-direction: column; gap: 8px; }
+  .pr-label { font-family: var(--nb-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--nb-ink-faint); }
+  .pr-hint { text-transform: none; letter-spacing: 0; color: var(--nb-ink-faint); opacity: .7; }
+  .pr-bar { display: flex; align-items: center; justify-content: space-between; }
+  .pr-question {
+    width: 100%; min-height: 70px; resize: vertical; box-sizing: border-box;
+    background: var(--nb-surface); color: var(--nb-ink); border: 1px solid var(--nb-line);
+    border-radius: 10px; padding: 12px 14px; font-family: var(--nb-serif); font-size: 15px; line-height: 1.5;
+  }
+  .pr-code {
+    width: 100%; min-height: 240px; resize: vertical; box-sizing: border-box;
+    background: var(--nb-code-bg); color: var(--nb-ink); border: 1px solid var(--nb-line);
+    border-radius: 10px; padding: 14px 16px; font-family: var(--nb-mono); font-size: 13.5px;
+    line-height: 1.6; tab-size: 2; white-space: pre; overflow-wrap: normal; overflow-x: auto;
+  }
+  .pr-question:focus, .pr-code:focus { outline: none; border-color: var(--nb-accent); }
+  .pr-run {
+    appearance: none; cursor: pointer; font-family: var(--nb-mono); font-size: 12.5px; font-weight: 600;
+    color: #17161A; background: var(--nb-accent); border: none; border-radius: 8px; padding: 7px 16px;
+  }
+  .pr-run:hover { filter: brightness(1.08); }
+  .pr-clear {
+    appearance: none; cursor: pointer; font-family: var(--nb-mono); font-size: 11px;
+    color: var(--nb-ink-faint); background: none; border: 1px solid var(--nb-line);
+    border-radius: 7px; padding: 4px 12px;
+  }
+  .pr-clear:hover { color: var(--nb-ink); border-color: var(--nb-ink-faint); }
+  .pr-output {
+    margin: 0; min-height: 90px; max-height: 340px; overflow-y: auto; box-sizing: border-box;
+    background: #0E0D10; color: var(--nb-ink); border: 1px solid var(--nb-line);
+    border-radius: 10px; padding: 14px 16px; font-family: var(--nb-mono); font-size: 13px;
+    line-height: 1.6; white-space: pre-wrap; word-break: break-word;
+  }
+  .pr-output .pr-cmd { color: var(--nb-teal); }
+  .pr-output .pr-err { color: #F2777A; }
+  .pr-output .pr-warn { color: var(--nb-accent); }
+  .pr-output .pr-muted { color: var(--nb-ink-faint); }
 
   .practice-nav-row { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
   .practice-answer { margin-top: 16px; }

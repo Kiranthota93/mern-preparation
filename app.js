@@ -960,6 +960,7 @@ let tierMeta = {};    // tierKey -> {lastReviewed,nextReview}  (auto-managed rev
 let recallMap = {};   // itemId -> {confidence,lastSeen}  (practice-drill recall history)
 let projects = [];    // [{id,name,stacks:[],notes}]
 let subNotes = {};    // itemId -> string  (per-subtopic notepad)
+let practice = {};    // tierKey -> {question, code}  (Real Practice scratchpad)
 
 const ui = {
   page: "overview",
@@ -1108,6 +1109,7 @@ function persist() {
       recall: recallMap,
       projects: projects,
       subNotes: subNotes,
+      practice: practice,
     });
     try { localStorage.setItem(LS_KEY, payload); } catch (e) { /* storage full/blocked */ }
     fetch(API_BASE, {
@@ -1128,6 +1130,7 @@ function applyState(parsed) {
   recallMap = parsed.recall || {};
   projects = parsed.projects || [];
   subNotes = parsed.subNotes || {};
+  practice = parsed.practice || {};
 }
 
 function loadFromLocalStorage() {
@@ -1426,6 +1429,7 @@ function renderDrawerNotebook(root) {
   html += '<div class="nb-tabs">';
   html += '<button class="nb-tab' + (tab === "notes" ? " active" : "") + '" data-nb-tab="notes" type="button">Explanations</button>';
   html += '<button class="nb-tab' + (tab === "code" ? " active" : "") + '" data-nb-tab="code" type="button">Coding Questions</button>';
+  html += '<button class="nb-tab' + (tab === "practice" ? " active" : "") + '" data-nb-tab="practice" type="button">Real Practice</button>';
   html += "</div></div>";
 
   if (tab === "notes") {
@@ -1450,7 +1454,7 @@ function renderDrawerNotebook(root) {
       });
       html += "</main></div>";
     }
-  } else {
+  } else if (tab === "code") {
     html += '<div class="nb-solo">';
     html += '<p class="nb-intro">Try each in your head or the console first, then reveal the answer.</p>';
     if (!questions.length) html += '<div class="empty-note">No coding questions for this topic yet.</div>';
@@ -1463,6 +1467,22 @@ function renderDrawerNotebook(root) {
         '<details class="nb-answer"><summary>Show answer</summary><div class="nb-abody">' + item.a + "</div></details>" +
         "</div>";
     });
+    html += "</div>";
+  } else {
+    // Real Practice — a practice.js scratchpad: paste question, write code, run, see output.
+    const saved = practice[ui.drawer.tierKey] || { question: "", code: "" };
+    html += '<div class="nb-practice">';
+    html += '<div class="pr-field">' +
+      '<label class="pr-label">Question / Notes</label>' +
+      '<textarea class="pr-question" data-pr-question spellcheck="false" placeholder="Paste the coding question or problem statement here...">' + escapeHtml(saved.question || "") + "</textarea></div>";
+    html += '<div class="pr-field">' +
+      '<div class="pr-bar"><span class="pr-label">practice.js</span>' +
+        '<button class="pr-run" data-pr-run type="button">&#9654; Run</button></div>' +
+      '<textarea class="pr-code" data-pr-code spellcheck="false" placeholder="// write your JavaScript here\nconsole.log(\'hello\');">' + escapeHtml(saved.code || "") + "</textarea></div>";
+    html += '<div class="pr-field">' +
+      '<div class="pr-bar"><span class="pr-label">Output <span class="pr-hint">— $ node practice.js</span></span>' +
+        '<button class="pr-clear" data-pr-clear type="button">Clear</button></div>' +
+      '<pre class="pr-output" data-pr-output><span class="pr-muted">Run your code to see output here.</span></pre></div>';
     html += "</div>";
   }
 
@@ -1506,6 +1526,119 @@ function renderDrawerNotebook(root) {
       });
     }, { root: drawerEl, rootMargin: "-" + headH + "px 0px -68% 0px" });
     sections.forEach(function (s) { obs.observe(s); });
+  }
+
+  // Real Practice tab: autosave question/code, run code, show output.
+  const qEl = drawerEl.querySelector("[data-pr-question]");
+  const codeEl = drawerEl.querySelector("[data-pr-code]");
+  const outEl = drawerEl.querySelector("[data-pr-output]");
+  if (qEl && codeEl) {
+    const key = ui.drawer.tierKey;
+    const savePractice = function () {
+      practice[key] = { question: qEl.value, code: codeEl.value };
+      saveState();
+    };
+    qEl.addEventListener("input", savePractice);
+    codeEl.addEventListener("input", savePractice);
+    // Tab inserts two spaces instead of leaving the editor.
+    codeEl.addEventListener("keydown", function (e) {
+      if (e.key === "Tab") {
+        e.preventDefault();
+        const s = codeEl.selectionStart, en = codeEl.selectionEnd;
+        codeEl.value = codeEl.value.slice(0, s) + "  " + codeEl.value.slice(en);
+        codeEl.selectionStart = codeEl.selectionEnd = s + 2;
+        savePractice();
+      }
+      // Ctrl/Cmd+Enter runs the code.
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); runPracticeCode(codeEl.value, outEl); }
+    });
+    const runBtn = drawerEl.querySelector("[data-pr-run]");
+    if (runBtn) runBtn.addEventListener("click", function () { runPracticeCode(codeEl.value, outEl); });
+    const clearBtn = drawerEl.querySelector("[data-pr-clear]");
+    if (clearBtn) clearBtn.addEventListener("click", function () {
+      outEl.innerHTML = '<span class="pr-muted">Run your code to see output here.</span>';
+    });
+  }
+}
+
+/* Execute practice code in the browser and stream console output — the closest
+   a static page can get to `node practice.js`. Captures log/info/warn/error and
+   thrown errors (including ones from async callbacks that fire later). */
+// How many lines `new Function("console", body)` prepends before the user's
+// line 1, measured once at runtime (differs across JS engines).
+let _prLineOffset = null;
+function practiceLineOffset() {
+  if (_prLineOffset != null) return _prLineOffset;
+  try { new Function("console", '"use strict";\nthrow new Error("probe");')(null); }
+  catch (e) {
+    const m = /<anonymous>:(\d+):/.exec(e && e.stack ? e.stack : "");
+    _prLineOffset = m ? Math.max(0, parseInt(m[1], 10) - 1) : 2; // probe throw is user line 1
+  }
+  if (_prLineOffset == null) _prLineOffset = 2;
+  return _prLineOffset;
+}
+function runPracticeCode(code, outEl) {
+  if (!outEl) return;
+  const off = practiceLineOffset();
+  // Strip harness frames and remap the injected wrapper's line numbers back to
+  // the editor's, so a stack reads like it came from a real practice.js.
+  function cleanStack(stack) {
+    if (!stack) return "";
+    const lines = String(stack).split("\n");
+    const out = [];
+    for (let i = 0; i < lines.length; i++) {
+      const ln = lines[i];
+      if (/^\s*at runPracticeCode\b/.test(ln)) break;   // harness boundary (not the "eval at" user frame)
+      out.push(
+        ln.replace(/eval at runPracticeCode[^)]*\), <anonymous>:(\d+):(\d+)/, function (_, l, c) {
+          return "practice.js:" + Math.max(1, parseInt(l, 10) - off) + ":" + c;
+        }).replace(/\bat eval \(/, "at (")
+      );
+    }
+    return out.join("\n").replace(/\s+$/, "");
+  }
+  function fmt(a) {
+    if (typeof a === "string") return a;
+    if (typeof a === "undefined") return "undefined";
+    if (a === null) return "null";
+    if (a instanceof Error) return cleanStack(a.stack) || (a.name + ": " + a.message);
+    if (typeof a === "function") return a.toString();
+    if (typeof a === "bigint") return a.toString() + "n";
+    try {
+      return JSON.stringify(a, function (k, v) {
+        if (typeof v === "bigint") return v.toString() + "n";
+        if (typeof v === "function") return "[Function: " + (v.name || "anonymous") + "]";
+        if (typeof v === "undefined") return "undefined";
+        return v;
+      }, 2);
+    } catch (e) { return String(a); }
+  }
+  function append(text, cls) {
+    const span = document.createElement("span");
+    if (cls) span.className = cls;
+    span.textContent = text + "\n";
+    outEl.appendChild(span);
+    outEl.scrollTop = outEl.scrollHeight;
+  }
+  outEl.innerHTML = "";
+  append("$ node practice.js", "pr-cmd");
+  let printed = 0;
+  const push = function (cls) {
+    return function () {
+      printed++;
+      append(Array.prototype.map.call(arguments, fmt).join(" "), cls);
+    };
+  };
+  const sandboxConsole = {
+    log: push(""), info: push(""), debug: push(""),
+    warn: push("pr-warn"), error: push("pr-err"),
+  };
+  try {
+    const fn = new Function("console", '"use strict";\n' + code);
+    fn(sandboxConsole);
+    if (!printed) append("(no output)", "pr-muted");
+  } catch (e) {
+    append((e && e.stack) ? cleanStack(e.stack) : String(e), "pr-err");
   }
 }
 

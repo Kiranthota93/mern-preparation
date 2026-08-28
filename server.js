@@ -18,7 +18,7 @@ if (!MONGO_URI || !DB_NAME) {
   process.exit(1);
 }
 
-const EMPTY_STATE = { checked: {}, tierMeta: {}, recall: {}, projects: [], subNotes: {} };
+const EMPTY_STATE = { checked: {}, tierMeta: {}, recall: {}, projects: [], subNotes: {}, practice: {} };
 
 const app = express();
 app.use(express.json({ limit: "2mb" }));
@@ -55,6 +55,7 @@ async function start() {
         recall: b.recall || {},
         projects: Array.isArray(b.projects) ? b.projects : [],
         subNotes: b.subNotes || {},
+        practice: b.practice || {},
         updatedAt: new Date(),
       };
       await states.updateOne({ _id: STATE_ID }, { $set: state }, { upsert: true });

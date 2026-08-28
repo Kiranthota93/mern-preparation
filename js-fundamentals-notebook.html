@@ -1,0 +1,590 @@
+<title>JS Fundamentals Notebook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=JetBrains+Mono:wght@400;600&display=swap">
+
+<style>
+  :root {
+    --paper: #F7F6F2;
+    --surface: #FFFFFF;
+    --ink: #1A1917;
+    --ink-soft: #55524B;
+    --ink-faint: #8A867C;
+    --accent: #C77E12;
+    --accent-soft: #F3E4C6;
+    --teal: #2A6F6B;
+    --line: #E4E0D6;
+    --code-bg: #F2EFE7;
+    --shadow: 0 1px 2px rgba(26,25,23,.04), 0 8px 24px rgba(26,25,23,.06);
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #17161A;
+      --surface: #201F24;
+      --ink: #EDEAE3;
+      --ink-soft: #B4AFA4;
+      --ink-faint: #7E7A70;
+      --accent: #E8A32C;
+      --accent-soft: #3A2E17;
+      --teal: #6FC3BC;
+      --line: #322F38;
+      --code-bg: #1B1A1F;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #17161A;
+    --surface: #201F24;
+    --ink: #EDEAE3;
+    --ink-soft: #B4AFA4;
+    --ink-faint: #7E7A70;
+    --accent: #E8A32C;
+    --accent-soft: #3A2E17;
+    --teal: #6FC3BC;
+    --line: #322F38;
+    --code-bg: #1B1A1F;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 30px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Newsreader", Georgia, serif;
+    font-size: 18px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Header */
+  header {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--paper) 88%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .head-inner {
+    max-width: 1080px; margin: 0 auto;
+    padding: 18px 24px 0;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .brand { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .brand h1 {
+    font-family: "Fraunces", serif; font-weight: 600;
+    font-size: 26px; margin: 0; letter-spacing: -.01em;
+  }
+  .brand .tag {
+    font-family: "JetBrains Mono", monospace; font-size: 11px;
+    letter-spacing: .14em; text-transform: uppercase;
+    color: var(--accent); background: var(--accent-soft);
+    padding: 4px 9px; border-radius: 999px;
+  }
+  .tabs { display: flex; gap: 4px; }
+  .tab {
+    appearance: none; border: none; background: none; cursor: pointer;
+    font-family: "Fraunces", serif; font-size: 16px; font-weight: 500;
+    color: var(--ink-soft); padding: 10px 4px 14px; margin-right: 22px;
+    border-bottom: 2px solid transparent; transition: color .15s;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+  .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+
+  /* Layout */
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 32px 24px 80px; }
+  .layout { display: grid; grid-template-columns: 210px 1fr; gap: 40px; align-items: start; }
+  @media (max-width: 780px) { .layout { grid-template-columns: 1fr; } .toc { display: none; } }
+
+  .toc {
+    position: sticky; top: 130px;
+    font-family: "JetBrains Mono", monospace; font-size: 12.5px;
+    line-height: 1.4;
+  }
+  .toc a {
+    display: block; color: var(--ink-faint); text-decoration: none;
+    padding: 5px 0; border-left: 2px solid transparent; padding-left: 12px;
+    transition: color .12s, border-color .12s;
+  }
+  .toc a:hover { color: var(--ink); }
+  .toc a.active { color: var(--accent); border-left-color: var(--accent); }
+
+  /* Content */
+  .intro { color: var(--ink-soft); font-size: 17px; margin: 0 0 8px; max-width: 62ch; }
+  section.topic { scroll-margin-top: 130px; padding: 30px 0; border-top: 1px solid var(--line); }
+  section.topic:first-of-type { border-top: none; padding-top: 6px; }
+  .topic h2 {
+    font-family: "Fraunces", serif; font-weight: 600; font-size: 25px;
+    margin: 0 0 4px; letter-spacing: -.01em; text-wrap: balance;
+    display: flex; align-items: baseline; gap: 12px;
+  }
+  .topic h2 .num {
+    font-family: "JetBrains Mono", monospace; font-size: 13px;
+    color: var(--accent); font-weight: 600;
+  }
+  .topic p { max-width: 64ch; margin: 12px 0; }
+  .topic ul { max-width: 64ch; padding-left: 22px; }
+  .topic li { margin: 6px 0; }
+  code {
+    font-family: "JetBrains Mono", monospace; font-size: .82em;
+    background: var(--code-bg); padding: 2px 6px; border-radius: 6px;
+  }
+  pre {
+    background: var(--code-bg); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 16px 18px; overflow-x: auto;
+    box-shadow: var(--shadow); margin: 16px 0;
+  }
+  pre code { background: none; padding: 0; font-size: 13.5px; line-height: 1.6; color: var(--ink); }
+  .gotcha {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: var(--accent-soft); border-radius: 10px;
+    padding: 12px 15px; margin: 14px 0; max-width: 64ch;
+    font-size: 15.5px; color: var(--ink);
+  }
+  .gotcha b { color: var(--accent); font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; }
+
+  /* comment / string coloring (lightweight) */
+  .cm { color: var(--ink-faint); font-style: italic; }
+  .kw { color: var(--teal); font-weight: 600; }
+  .st { color: var(--accent); }
+
+  /* Questions */
+  .q-intro { color: var(--ink-soft); max-width: 62ch; margin-bottom: 26px; }
+  .qcard {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 20px 22px; margin: 16px 0;
+    box-shadow: var(--shadow);
+  }
+  .qhead { display: flex; align-items: baseline; gap: 12px; margin-bottom: 6px; }
+  .qhead .qn {
+    font-family: "JetBrains Mono", monospace; font-size: 12px;
+    color: var(--accent); background: var(--accent-soft);
+    padding: 3px 8px; border-radius: 6px; font-weight: 600;
+  }
+  .qhead .lvl {
+    margin-left: auto; font-family: "JetBrains Mono", monospace;
+    font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--ink-faint); border: 1px solid var(--line);
+    padding: 2px 8px; border-radius: 999px;
+  }
+  .qtext { font-size: 17px; margin: 4px 0 12px; }
+  .qtopic { font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--teal); }
+  details.answer summary {
+    cursor: pointer; font-family: "Fraunces", serif; font-weight: 500;
+    color: var(--teal); font-size: 15px; list-style: none; user-select: none;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  details.answer summary::-webkit-details-marker { display: none; }
+  details.answer summary::before { content: "▸"; transition: transform .15s; }
+  details.answer[open] summary::before { transform: rotate(90deg); }
+  details.answer summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+  .ans-body { margin-top: 12px; }
+
+  .panel[hidden] { display: none; }
+  footer { text-align: center; color: var(--ink-faint); font-size: 13px; font-family: "JetBrains Mono", monospace; padding: 20px; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<header>
+  <div class="head-inner">
+    <div class="brand">
+      <h1>JavaScript Fundamentals</h1>
+      <span class="tag">Notebook</span>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Notebook sections">
+      <button class="tab" role="tab" id="tab-notes" aria-controls="panel-notes" aria-selected="true">Explanations</button>
+      <button class="tab" role="tab" id="tab-code" aria-controls="panel-code" aria-selected="false">Coding Questions</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ============ EXPLANATIONS ============ -->
+  <div class="panel" id="panel-notes" role="tabpanel" aria-labelledby="tab-notes">
+    <div class="layout">
+      <nav class="toc" aria-label="Topics">
+        <a href="#t1">01 · Variables</a>
+        <a href="#t2">02 · Data types</a>
+        <a href="#t3">03 · Type coercion</a>
+        <a href="#t4">04 · == vs ===</a>
+        <a href="#t5">05 · null vs undefined</a>
+        <a href="#t6">06 · Truthy / falsy</a>
+        <a href="#t7">07 · Operators</a>
+        <a href="#t8">08 · Scope</a>
+        <a href="#t9">09 · Hoisting</a>
+        <a href="#t10">10 · Template literals</a>
+        <a href="#t11">11 · Control flow</a>
+        <a href="#t12">12 · Loops</a>
+      </nav>
+
+      <main>
+        <p class="intro">The building blocks of the language. Read a topic, note the <b style="color:var(--accent)">Gotcha</b>, then switch to the Coding Questions tab to test yourself.</p>
+
+        <section class="topic" id="t1">
+          <h2><span class="num">01</span> Variables: var, let, const</h2>
+          <p>Three ways to declare a variable. They differ in <b>scope</b> and whether they can be reassigned.</p>
+          <pre><code><span class="kw">var</span> a = 1;    <span class="cm">// function-scoped, old style — avoid</span>
+<span class="kw">let</span> b = 2;    <span class="cm">// block-scoped, can be reassigned</span>
+<span class="kw">const</span> c = 3;  <span class="cm">// block-scoped, cannot be reassigned</span></code></pre>
+          <ul>
+            <li><code>const</code> is your default. Use <code>let</code> only when you must reassign.</li>
+            <li><code>const</code> blocks reassignment, but object/array <em>contents</em> can still change.</li>
+          </ul>
+          <div class="gotcha"><b>Gotcha</b><span><code>const arr = [1]; arr.push(2)</code> works — you didn't reassign <code>arr</code>, only mutated it.</span></div>
+        </section>
+
+        <section class="topic" id="t2">
+          <h2><span class="num">02</span> Data types</h2>
+          <p>JS has <b>7 primitives</b> plus <b>objects</b>.</p>
+          <ul>
+            <li>Primitives: <code>string</code>, <code>number</code>, <code>boolean</code>, <code>null</code>, <code>undefined</code>, <code>bigint</code>, <code>symbol</code>.</li>
+            <li>Everything else — arrays, functions, dates — is an <code>object</code>.</li>
+          </ul>
+          <pre><code><span class="kw">typeof</span> <span class="st">"hi"</span>      <span class="cm">// "string"</span>
+<span class="kw">typeof</span> 42        <span class="cm">// "number"</span>
+<span class="kw">typeof</span> [1,2]     <span class="cm">// "object"  (arrays are objects)</span>
+<span class="kw">typeof</span> <span class="kw">null</span>      <span class="cm">// "object"  ← historic bug</span></code></pre>
+          <div class="gotcha"><b>Gotcha</b><span><code>typeof null</code> returns <code>"object"</code> — a famous language bug, kept for compatibility.</span></div>
+        </section>
+
+        <section class="topic" id="t3">
+          <h2><span class="num">03</span> Type coercion</h2>
+          <p>JS automatically converts types when you mix them. This is the source of many surprises.</p>
+          <pre><code><span class="st">"5"</span> + 1    <span class="cm">// "51"   (number → string, concatenation)</span>
+<span class="st">"5"</span> - 1    <span class="cm">// 4      (string → number, subtraction)</span>
+<span class="kw">true</span> + 1   <span class="cm">// 2      (true → 1)</span>
+[] + []    <span class="cm">// ""     (both become empty strings)</span></code></pre>
+          <div class="gotcha"><b>Gotcha</b><span><code>+</code> means concatenate if <em>either</em> side is a string; every other math operator forces numbers.</span></div>
+        </section>
+
+        <section class="topic" id="t4">
+          <h2><span class="num">04</span> == vs ===</h2>
+          <p><code>==</code> compares after coercing types. <code>===</code> compares value <em>and</em> type — no coercion.</p>
+          <pre><code>0 == <span class="st">""</span>        <span class="cm">// true   (both coerce to falsy)</span>
+0 === <span class="st">""</span>       <span class="cm">// false  (number vs string)</span>
+1 == <span class="st">"1"</span>       <span class="cm">// true</span>
+1 === <span class="st">"1"</span>      <span class="cm">// false</span></code></pre>
+          <div class="gotcha"><b>Gotcha</b><span>Always use <code>===</code>. The only common exception: <code>x == null</code> checks for both <code>null</code> and <code>undefined</code> at once.</span></div>
+        </section>
+
+        <section class="topic" id="t5">
+          <h2><span class="num">05</span> null vs undefined</h2>
+          <ul>
+            <li><code>undefined</code> — a variable declared but not assigned; JS gives it to you.</li>
+            <li><code>null</code> — an intentional "empty" value; you assign it deliberately.</li>
+          </ul>
+          <pre><code><span class="kw">let</span> x;              <span class="cm">// undefined</span>
+<span class="kw">let</span> y = <span class="kw">null</span>;       <span class="cm">// null — "I chose to leave this empty"</span>
+<span class="kw">typeof</span> undefined   <span class="cm">// "undefined"</span>
+<span class="kw">typeof</span> null        <span class="cm">// "object"</span></code></pre>
+          <div class="gotcha"><b>Gotcha</b><span><code>null == undefined</code> is <code>true</code>, but <code>null === undefined</code> is <code>false</code>.</span></div>
+        </section>
+
+        <section class="topic" id="t6">
+          <h2><span class="num">06</span> Truthy / falsy</h2>
+          <p>Every value is either "truthy" or "falsy" when used in a condition. Memorize the <b>falsy list</b> — everything else is truthy.</p>
+          <pre><code><span class="cm">// The 8 falsy values:</span>
+<span class="kw">false</span>, 0, -0, 0n, <span class="st">""</span>, <span class="kw">null</span>, <span class="kw">undefined</span>, NaN
+
+<span class="kw">if</span> ([]) { ... }   <span class="cm">// runs! empty array is truthy</span>
+<span class="kw">if</span> ({}) { ... }   <span class="cm">// runs! empty object is truthy</span></code></pre>
+          <div class="gotcha"><b>Gotcha</b><span>Empty array <code>[]</code> and empty object <code>{}</code> are <b>truthy</b>. Only the 8 values above are falsy.</span></div>
+        </section>
+
+        <section class="topic" id="t7">
+          <h2><span class="num">07</span> Operators</h2>
+          <ul>
+            <li>Arithmetic: <code>+ - * / % **</code></li>
+            <li>Logical: <code>&amp;&amp;</code> (and), <code>||</code> (or), <code>!</code> (not)</li>
+            <li>Nullish coalescing: <code>??</code> — fallback only for <code>null</code>/<code>undefined</code></li>
+            <li>Optional chaining: <code>?.</code> — safely access nested properties</li>
+          </ul>
+          <pre><code>0 || <span class="st">"default"</span>   <span class="cm">// "default"  (0 is falsy)</span>
+0 ?? <span class="st">"default"</span>   <span class="cm">// 0          (0 is not null/undefined)</span>
+user?.address?.city  <span class="cm">// undefined instead of a crash</span></code></pre>
+          <div class="gotcha"><b>Gotcha</b><span>Use <code>??</code> not <code>||</code> when <code>0</code> or <code>""</code> are valid values you want to keep.</span></div>
+        </section>
+
+        <section class="topic" id="t8">
+          <h2><span class="num">08</span> Scope</h2>
+          <p>Scope = where a variable is accessible.</p>
+          <ul>
+            <li><b>Global</b> — declared outside any function/block.</li>
+            <li><b>Function</b> — <code>var</code> is limited to the function it's in.</li>
+            <li><b>Block</b> — <code>let</code>/<code>const</code> are limited to the nearest <code>{ }</code>.</li>
+          </ul>
+          <pre><code>{
+  <span class="kw">let</span> a = 1;
+  <span class="kw">var</span> b = 2;
+}
+console.log(b);  <span class="cm">// 2   (var ignores the block)</span>
+console.log(a);  <span class="cm">// ReferenceError (let is block-scoped)</span></code></pre>
+          <div class="gotcha"><b>Gotcha</b><span><code>var</code> leaks out of blocks; <code>let</code>/<code>const</code> don't. Another reason to avoid <code>var</code>.</span></div>
+        </section>
+
+        <section class="topic" id="t9">
+          <h2><span class="num">09</span> Hoisting</h2>
+          <p>Declarations are "moved" to the top of their scope before code runs.</p>
+          <ul>
+            <li><code>function</code> declarations are fully hoisted — callable before their line.</li>
+            <li><code>var</code> is hoisted but initialized as <code>undefined</code>.</li>
+            <li><code>let</code>/<code>const</code> are hoisted but <b>not</b> initialized — the "temporal dead zone".</li>
+          </ul>
+          <pre><code>console.log(a);  <span class="cm">// undefined (var hoisted, not assigned yet)</span>
+<span class="kw">var</span> a = 5;
+
+console.log(b);  <span class="cm">// ReferenceError (TDZ)</span>
+<span class="kw">let</span> b = 5;</code></pre>
+          <div class="gotcha"><b>Gotcha</b><span>Accessing a <code>let</code>/<code>const</code> before its line throws — it's not <code>undefined</code>, it's an error (TDZ).</span></div>
+        </section>
+
+        <section class="topic" id="t10">
+          <h2><span class="num">10</span> Template literals</h2>
+          <p>Backtick strings that support interpolation and multi-line text.</p>
+          <pre><code><span class="kw">const</span> name = <span class="st">"Ada"</span>;
+<span class="st">`Hello, ${name}!`</span>          <span class="cm">// "Hello, Ada!"</span>
+<span class="st">`Sum: ${2 + 3}`</span>            <span class="cm">// "Sum: 5"  (any expression)</span>
+<span class="st">`line one
+line two`</span>                  <span class="cm">// real line break</span></code></pre>
+          <div class="gotcha"><b>Gotcha</b><span>Use backticks <code>` `</code>, not quotes. <code>${ }</code> can hold any expression, not just variables.</span></div>
+        </section>
+
+        <section class="topic" id="t11">
+          <h2><span class="num">11</span> Control flow</h2>
+          <p>Decide which code runs.</p>
+          <pre><code><span class="kw">if</span> (score >= 90) grade = <span class="st">"A"</span>;
+<span class="kw">else if</span> (score >= 80) grade = <span class="st">"B"</span>;
+<span class="kw">else</span> grade = <span class="st">"C"</span>;
+
+<span class="cm">// ternary — a compact if/else that returns a value</span>
+<span class="kw">const</span> msg = age >= 18 ? <span class="st">"adult"</span> : <span class="st">"minor"</span>;
+
+<span class="kw">switch</span> (day) {
+  <span class="kw">case</span> <span class="st">"Sat"</span>:
+  <span class="kw">case</span> <span class="st">"Sun"</span>: type = <span class="st">"weekend"</span>; <span class="kw">break</span>;
+  <span class="kw">default</span>: type = <span class="st">"weekday"</span>;
+}</code></pre>
+          <div class="gotcha"><b>Gotcha</b><span>Forgetting <code>break</code> in a <code>switch</code> causes "fall-through" — it keeps running the next cases.</span></div>
+        </section>
+
+        <section class="topic" id="t12">
+          <h2><span class="num">12</span> Loops</h2>
+          <p>Repeat code. Pick the loop that fits the data.</p>
+          <pre><code><span class="kw">for</span> (<span class="kw">let</span> i = 0; i &lt; 3; i++) { ... }        <span class="cm">// classic counter</span>
+
+<span class="kw">for</span> (<span class="kw">const</span> item <span class="kw">of</span> [10, 20]) { ... }        <span class="cm">// values of an array</span>
+
+<span class="kw">for</span> (<span class="kw">const</span> key <span class="kw">in</span> { a: 1 }) { ... }        <span class="cm">// keys of an object</span>
+
+[1,2,3].forEach(n => console.log(n));       <span class="cm">// array method</span>
+
+<span class="kw">while</span> (condition) { ... }                   <span class="cm">// until condition is false</span></code></pre>
+          <div class="gotcha"><b>Gotcha</b><span><code>for...of</code> = values (arrays). <code>for...in</code> = keys (objects). Mixing them up is a classic mistake.</span></div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- ============ CODING QUESTIONS ============ -->
+  <div class="panel" id="panel-code" role="tabpanel" aria-labelledby="tab-code" hidden>
+    <p class="q-intro">Try each one in your head or in the browser console (F12) first. Then click <b style="color:var(--teal)">Show answer</b> to check. Predicting output trains you far faster than reading.</p>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q1</span><span class="lvl">easy</span></div>
+      <p class="qtopic">// variables &amp; const</p>
+      <p class="qtext">Will this throw an error? Why or why not?</p>
+      <pre><code><span class="kw">const</span> nums = [1, 2, 3];
+nums.push(4);
+console.log(nums);</code></pre>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p>No error. Output: <code>[1, 2, 3, 4]</code>. <code>const</code> only prevents <em>reassigning</em> <code>nums</code>. Mutating the array it points to is fine. It would throw only on <code>nums = [...]</code>.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q2</span><span class="lvl">easy</span></div>
+      <p class="qtopic">// type coercion</p>
+      <p class="qtext">Predict each output:</p>
+      <pre><code>console.log(<span class="st">"5"</span> + 3);
+console.log(<span class="st">"5"</span> - 3);
+console.log(<span class="kw">true</span> + <span class="kw">true</span>);</code></pre>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p><code>"53"</code> (+ with a string concatenates), <code>2</code> (- forces numbers), <code>2</code> (<code>true</code> becomes <code>1</code>). Only <code>+</code> concatenates; all other math operators coerce to numbers.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q3</span><span class="lvl">easy</span></div>
+      <p class="qtopic">// == vs ===</p>
+      <p class="qtext">What does each print?</p>
+      <pre><code>console.log(0 == <span class="st">""</span>);
+console.log(0 === <span class="st">""</span>);
+console.log(<span class="kw">null</span> == <span class="kw">undefined</span>);
+console.log(<span class="kw">null</span> === <span class="kw">undefined</span>);</code></pre>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p><code>true</code>, <code>false</code>, <code>true</code>, <code>false</code>. <code>==</code> coerces before comparing; <code>===</code> requires same type. <code>null</code> and <code>undefined</code> are loosely equal only to each other.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q4</span><span class="lvl">medium</span></div>
+      <p class="qtopic">// truthy / falsy</p>
+      <p class="qtext">Which of these <code>if</code> blocks run?</p>
+      <pre><code><span class="kw">if</span> ([])        console.log(<span class="st">"A"</span>);
+<span class="kw">if</span> (<span class="st">""</span>)        console.log(<span class="st">"B"</span>);
+<span class="kw">if</span> (<span class="st">"0"</span>)       console.log(<span class="st">"C"</span>);
+<span class="kw">if</span> (0)         console.log(<span class="st">"D"</span>);</code></pre>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p><b>A</b> and <b>C</b> run. <code>[]</code> is truthy (empty array is still an object). <code>"0"</code> is a non-empty string → truthy. <code>""</code> and <code>0</code> are both on the falsy list.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q5</span><span class="lvl">medium</span></div>
+      <p class="qtopic">// nullish coalescing vs OR</p>
+      <p class="qtext">What's the difference in output here?</p>
+      <pre><code><span class="kw">const</span> count = 0;
+console.log(count || 10);
+console.log(count ?? 10);</code></pre>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p><code>10</code> then <code>0</code>. <code>||</code> falls back on any falsy value (including <code>0</code>). <code>??</code> falls back only on <code>null</code>/<code>undefined</code>, so it keeps the valid <code>0</code>.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q6</span><span class="lvl">medium</span></div>
+      <p class="qtopic">// hoisting</p>
+      <p class="qtext">Predict the output (or error) of each:</p>
+      <pre><code>console.log(a);
+<span class="kw">var</span> a = 1;
+
+console.log(b);
+<span class="kw">let</span> b = 2;</code></pre>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p>First logs <code>undefined</code> — <code>var a</code> is hoisted but not yet assigned. Second throws <code>ReferenceError</code> — <code>let b</code> is in the temporal dead zone until its line executes.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q7</span><span class="lvl">medium</span></div>
+      <p class="qtopic">// scope</p>
+      <p class="qtext">What does this log?</p>
+      <pre><code>{
+  <span class="kw">var</span> x = 10;
+  <span class="kw">let</span> y = 20;
+}
+console.log(x);
+console.log(y);</code></pre>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p><code>10</code>, then a <code>ReferenceError</code> on <code>y</code>. <code>var</code> ignores block scope and leaks out; <code>let</code> is confined to the <code>{ }</code> block.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q8</span><span class="lvl">medium</span></div>
+      <p class="qtopic">// switch fall-through</p>
+      <p class="qtext">What is <code>result</code> when <code>x = 1</code>?</p>
+      <pre><code><span class="kw">let</span> result = <span class="st">""</span>;
+<span class="kw">switch</span> (x) {
+  <span class="kw">case</span> 1: result += <span class="st">"a"</span>;
+  <span class="kw">case</span> 2: result += <span class="st">"b"</span>; <span class="kw">break</span>;
+  <span class="kw">case</span> 3: result += <span class="st">"c"</span>;
+}</code></pre>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p><code>"ab"</code>. Case 1 has no <code>break</code>, so it falls through into case 2 and runs it too, then <code>break</code> stops it. Case 3 never runs.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q9</span><span class="lvl">medium</span></div>
+      <p class="qtopic">// loops: for...of vs for...in</p>
+      <p class="qtext">What does each loop print for <code>const arr = ["a", "b"]</code>?</p>
+      <pre><code><span class="kw">for</span> (<span class="kw">const</span> v <span class="kw">of</span> arr) console.log(v);
+<span class="kw">for</span> (<span class="kw">const</span> k <span class="kw">in</span> arr) console.log(k);</code></pre>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p><code>for...of</code> prints the values: <code>"a"</code>, <code>"b"</code>. <code>for...in</code> prints the keys/indexes: <code>"0"</code>, <code>"1"</code> (as strings). Use <code>of</code> for array values.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q10</span><span class="lvl">hard</span></div>
+      <p class="qtopic">// coercion + operators combined</p>
+      <p class="qtext">Predict every line — this one catches almost everyone:</p>
+      <pre><code>console.log(1 + <span class="st">"2"</span> + 3);
+console.log(1 + 2 + <span class="st">"3"</span>);
+console.log(<span class="st">"5"</span> * <span class="st">"2"</span>);
+console.log(<span class="kw">null</span> + 1);
+console.log(<span class="kw">undefined</span> + 1);</code></pre>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p><code>"123"</code> (left-to-right: <code>1+"2"</code>→<code>"12"</code>, then <code>+3</code>→<code>"123"</code>).<br>
+          <code>"33"</code> (<code>1+2</code>=<code>3</code> first, then <code>+"3"</code>→<code>"33"</code>).<br>
+          <code>10</code> (<code>*</code> coerces both strings to numbers).<br>
+          <code>1</code> (<code>null</code>→<code>0</code>).<br>
+          <code>NaN</code> (<code>undefined</code>→<code>NaN</code>, and any math with <code>NaN</code> is <code>NaN</code>).</p>
+        </div>
+      </details>
+    </div>
+
+  </div>
+</div>
+
+<footer>JS Fundamentals Notebook · read the Explanations, test with Coding Questions</footer>
+
+<script>
+  const tabs = document.querySelectorAll('.tab');
+  const panels = { 'tab-notes': 'panel-notes', 'tab-code': 'panel-code' };
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => selectTab(tab.id));
+    tab.addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        const ids = Object.keys(panels);
+        const i = ids.indexOf(tab.id);
+        const next = e.key === 'ArrowRight' ? (i + 1) % ids.length : (i - 1 + ids.length) % ids.length;
+        document.getElementById(ids[next]).focus();
+        selectTab(ids[next]);
+      }
+    });
+  });
+  function selectTab(id) {
+    tabs.forEach(t => {
+      const on = t.id === id;
+      t.setAttribute('aria-selected', on);
+      document.getElementById(panels[t.id]).hidden = !on;
+    });
+    window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+  }
+
+  // TOC active-highlight on scroll
+  const tocLinks = document.querySelectorAll('.toc a');
+  const sections = [...document.querySelectorAll('section.topic')];
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(en => {
+      if (en.isIntersecting) {
+        const id = en.target.id;
+        tocLinks.forEach(l => l.classList.toggle('active', l.getAttribute('href') === '#' + id));
+      }
+    });
+  }, { rootMargin: '-120px 0px -70% 0px' });
+  sections.forEach(s => obs.observe(s));
+</script>

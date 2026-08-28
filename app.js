@@ -1395,6 +1395,10 @@ function renderDrawer() {
 
 /* ---- topic panel: navigate + toggle subtopics directly, notes & evidence ---- */
 function renderDrawerTopic(root) {
+  // Preserve scroll position so toggling a subtopic (which re-renders the whole
+  // panel) doesn't jump back to the top.
+  const prevPanel = root.querySelector(".detail-drawer");
+  const prevScroll = prevPanel ? prevPanel.scrollTop : 0;
   const tier = getTierByKey(ui.drawer.tierKey);
   if (!tier) { root.innerHTML = ""; ui.drawer = null; return; }
   const meta = getMeta(tier);
@@ -1441,6 +1445,9 @@ function renderDrawerTopic(root) {
   html += '<div class="dd-dates" style="margin-top:4px;"><span>Last reviewed: ' + formatDateDisplay(meta.lastReviewed) + '</span><span>Next review: ' + formatDateDisplay(meta.nextReview) + "</span></div>";
   html += "</div>";
   root.innerHTML = html;
+
+  const newPanel = root.querySelector(".detail-drawer");
+  if (newPanel) newPanel.scrollTop = prevScroll;
 
   root.querySelector("[data-dd-overlay]").addEventListener("click", closeDrawer);
   root.querySelector("[data-dd-close]").addEventListener("click", closeDrawer);

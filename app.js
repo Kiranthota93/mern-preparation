@@ -1072,10 +1072,12 @@ function dueTiers() {
 
 /* ---------------- persistence (MongoDB via backend API) ---------------- */
 const API_BASE = "/api/state";
+const LS_KEY = "mern_prep_state";
 let _saveTimer = null;
 
-// Debounced full-state save to the backend. Both checked-marks and the rest of
-// the state live in one Mongo document, so both save functions funnel here.
+// Debounced full-state save. State always goes to localStorage (so it persists
+// on a static host like GitHub Pages, and acts as an offline cache when the
+// server is running). It is also PUT to the backend when one is available.
 function persist() {
   clearTimeout(_saveTimer);
   _saveTimer = setTimeout(function () {
@@ -1086,11 +1088,12 @@ function persist() {
       projects: projects,
       subNotes: subNotes,
     });
+    try { localStorage.setItem(LS_KEY, payload); } catch (e) { /* storage full/blocked */ }
     fetch(API_BASE, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: payload,
-    }).catch(function (e) { console.error("save failed", e); });
+    }).catch(function () { /* no backend (e.g. GitHub Pages) — localStorage already holds it */ });
   }, 300);
 }
 
@@ -1098,19 +1101,33 @@ async function saveChecked() { persist(); }
 async function saveState() { persist(); }
 
 async function loadChecked() { /* loaded together in loadState() */ }
+function applyState(parsed) {
+  checked = parsed.checked || {};
+  tierMeta = parsed.tierMeta || {};
+  recallMap = parsed.recall || {};
+  projects = parsed.projects || [];
+  subNotes = parsed.subNotes || {};
+}
+
+function loadFromLocalStorage() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) { applyState(JSON.parse(raw)); return true; }
+  } catch (e) { /* ignore */ }
+  return false;
+}
+
 async function loadState() {
+  // Prefer the backend (MongoDB) when it's reachable; otherwise fall back to
+  // localStorage so the app still works on a static host like GitHub Pages.
   try {
     const res = await fetch(API_BASE);
     if (!res.ok) throw new Error("HTTP " + res.status);
-    const parsed = await res.json();
-    checked = parsed.checked || {};
-    tierMeta = parsed.tierMeta || {};
-    recallMap = parsed.recall || {};
-    projects = parsed.projects || [];
-    subNotes = parsed.subNotes || {};
+    applyState(await res.json());
   } catch (e) {
-    console.error("load failed", e);
-    checked = {}; tierMeta = {}; recallMap = {}; projects = []; subNotes = {};
+    if (!loadFromLocalStorage()) {
+      checked = {}; tierMeta = {}; recallMap = {}; projects = []; subNotes = {};
+    }
   }
 }
 

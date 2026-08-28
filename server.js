@@ -22,7 +22,7 @@ const EMPTY_STATE = { checked: {}, tierMeta: {}, recall: {}, projects: [], subNo
 
 const app = express();
 app.use(express.json({ limit: "2mb" }));
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(__dirname));
 
 const client = new MongoClient(MONGO_URI);
 let states;

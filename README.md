@@ -3,11 +3,16 @@
 Interview Readiness Dashboard — split into HTML/CSS/JS with MongoDB persistence.
 
 ## Structure
-- `public/index.html` — markup only
-- `public/styles.css` — all styles
-- `public/app.js` — all app logic (state, rendering, persistence)
-- `server.js` — Express backend; serves `public/` and exposes `/api/state`
+- `index.html` — markup only (repo root, so GitHub Pages serves it)
+- `styles.css` — all styles
+- `app.js` — all app logic (state, rendering, persistence)
+- `server.js` — Express backend; serves the root files and exposes `/api/state`
 - `.env` — `mongo_uri` and `db_name` (not committed)
+
+## Persistence
+- With `server.js` running, state is saved to MongoDB **and** cached in `localStorage`.
+- On a static host (e.g. GitHub Pages) there is no backend, so state is saved
+  to `localStorage` only — it persists per-browser but does not sync across devices.
 
 ## Run
 ```

@@ -467,7 +467,7 @@ window.EXPLANATIONS = {
       "<p><b>Technical definition:</b> Methods like <code>slice</code>, array spread, and <code>concat</code> create a new outer array but do not deep-clone nested references.</p>" +
       "<p><b>Why it is used:</b> It is enough when you only need a top-level copy for most list operations.</p>" +
       "<p><b>When not to use:</b> If nested objects are mutated, shallow copying is not enough. Use deep cloning or immutable nested updates instead.</p>" +
-      "<pre><code>const people = [{ name: 'Ada' }];\nconst copied = [...people];\ncopy[0].name = 'Grace';\nconsole.log(people[0].name); // Grace</code></pre>" +
+      "<pre><code>const people = [{ name: 'Ada' }];\nconst copied = [...people];\ncopied[0].name = 'Grace';\nconsole.log(people[0].name); // Grace</code></pre>" +
       "<p class='ex-gotcha'>This is a classic interview question: the outer array is new, but the inner object is not.</p>",
 
     "Deep copying":

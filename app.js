@@ -5107,10 +5107,9 @@ function renderStackPage(main, stackKey) {
     const meta = getMeta(t);
     const isDue =
       mastery > 0 && meta.nextReview && meta.nextReview <= todayISO();
-    const hasNotebook = !!(
-      (window.EXPLANATIONS && window.EXPLANATIONS[t.name]) ||
-      (window.QUESTIONS && window.QUESTIONS[t.name])
-    );
+    // Always expose a notebook button for every topic card so learners can
+    // open the related notebook consistently across the whole study path.
+    const hasNotebook = true;
     html +=
       '<div class="comp-card" data-open-topic="' +
       tierKey(t) +

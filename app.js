@@ -1527,6 +1527,56 @@ function renderDrawerNotebook(root) {
 
 /* ---- Real Practice: shared markup + wiring between the per-topic tab and
    the global scratchpad (topbar button, not tied to any topic). ---- */
+/* Lightweight JS syntax highlighter for the practice.js editor overlay — not a
+   full parser, just enough regex tokenizing (comments/strings/numbers/keywords)
+   to make code readable, like a real editor rather than one flat color. */
+const JS_TOKEN_RE = new RegExp(
+  "(\\/\\/[^\\n]*)" +                                   // 1: line comment
+  "|(\\/\\*[\\s\\S]*?\\*\\/)" +                          // 2: block comment
+  "|(`(?:\\\\.|[^`\\\\])*`)" +                           // 3: template string
+  "|(\"(?:\\\\.|[^\"\\\\])*\"|'(?:\\\\.|[^'\\\\])*')" +  // 4: string
+  "|(\\b\\d+\\.?\\d*\\b)" +                              // 5: number
+  "|\\b(const|let|var|function|return|if|else|for|while|do|switch|case|break|continue|default|try|catch|finally|throw|new|class|extends|super|this|typeof|instanceof|in|of|async|await|yield|delete|void|import|export|from|as|static|get|set|null|undefined|true|false)\\b",
+  "g"
+);
+function highlightJS(code) {
+  let out = "";
+  let lastIndex = 0;
+  let m;
+  JS_TOKEN_RE.lastIndex = 0;
+  while ((m = JS_TOKEN_RE.exec(code))) {
+    out += escapeHtml(code.slice(lastIndex, m.index));
+    let cls = "tok-k";
+    if (m[1] || m[2]) cls = "tok-c";
+    else if (m[3] || m[4]) cls = "tok-s";
+    else if (m[5]) cls = "tok-n";
+    out += '<span class="' + cls + '">' + escapeHtml(m[0]) + "</span>";
+    lastIndex = m.index + m[0].length;
+  }
+  out += escapeHtml(code.slice(lastIndex));
+  return out;
+}
+/* VS Code-style Ctrl+/ line-comment toggle: comments the selected lines (or
+   the current line) with "// ", or uncomments if every selected line already
+   starts with "//". */
+function toggleLineComment(ta) {
+  const val = ta.value;
+  const start = ta.selectionStart, end = ta.selectionEnd;
+  const lineStart = val.lastIndexOf("\n", start - 1) + 1;
+  const searchEnd = val.indexOf("\n", end > start ? end - 1 : end);
+  const lineEnd = searchEnd === -1 ? val.length : searchEnd;
+  const block = val.slice(lineStart, lineEnd);
+  const lines = block.split("\n");
+  const allCommented = lines.every(function (l) { return l.trim() === "" || /^\s*\/\//.test(l); });
+  const newLines = lines.map(function (l) {
+    if (allCommented) return l.replace(/^(\s*)\/\/ ?/, "$1");
+    return l.length ? l.replace(/^(\s*)/, "$1// ") : "//";
+  });
+  const newBlock = newLines.join("\n");
+  ta.value = val.slice(0, lineStart) + newBlock + val.slice(lineEnd);
+  ta.selectionStart = lineStart;
+  ta.selectionEnd = lineStart + newBlock.length;
+}
 function practiceFieldsHtml(saved) {
   saved = saved || { question: "", code: "" };
   let html = '<div class="nb-practice">';
@@ -1536,7 +1586,10 @@ function practiceFieldsHtml(saved) {
   html += '<div class="pr-field">' +
     '<div class="pr-bar"><span class="pr-label">practice.js</span>' +
       '<button class="pr-run" data-pr-run type="button">&#9654; Run</button></div>' +
-    '<textarea class="pr-code" data-pr-code spellcheck="false" placeholder="// write your JavaScript here\nconsole.log(\'hello\');">' + escapeHtml(saved.code || "") + "</textarea></div>";
+    '<div class="pr-editor" data-pr-editor>' +
+      '<pre class="pr-highlight" data-pr-highlight aria-hidden="true"><code>' + highlightJS(saved.code || "") + "\n</code></pre>" +
+      '<textarea class="pr-code" data-pr-code spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="// write your JavaScript here\nconsole.log(\'hello\');">' + escapeHtml(saved.code || "") + "</textarea>" +
+    "</div></div>";
   html += '<div class="pr-field">' +
     '<div class="pr-bar"><span class="pr-label">Output <span class="pr-hint">— $ node practice.js</span></span>' +
       '<button class="pr-clear" data-pr-clear type="button">Clear</button></div>' +
@@ -1548,21 +1601,39 @@ function wirePracticeFields(scopeEl, key) {
   const qEl = scopeEl.querySelector("[data-pr-question]");
   const codeEl = scopeEl.querySelector("[data-pr-code]");
   const outEl = scopeEl.querySelector("[data-pr-output]");
+  const hlEl = scopeEl.querySelector("[data-pr-highlight] code");
   if (!qEl || !codeEl) return;
   const savePractice = function () {
     practice[key] = { question: qEl.value, code: codeEl.value };
     saveState();
   };
+  const refreshHighlight = function () {
+    if (hlEl) hlEl.innerHTML = highlightJS(codeEl.value) + "\n";
+  };
   qEl.addEventListener("input", savePractice);
-  codeEl.addEventListener("input", savePractice);
-  // Tab inserts two spaces instead of leaving the editor.
+  codeEl.addEventListener("input", function () { refreshHighlight(); savePractice(); });
+  if (hlEl) {
+    codeEl.addEventListener("scroll", function () {
+      const hl = scopeEl.querySelector("[data-pr-highlight]");
+      if (hl) { hl.scrollTop = codeEl.scrollTop; hl.scrollLeft = codeEl.scrollLeft; }
+    });
+  }
   codeEl.addEventListener("keydown", function (e) {
+    // Tab inserts two spaces instead of leaving the editor.
     if (e.key === "Tab") {
       e.preventDefault();
       const s = codeEl.selectionStart, en = codeEl.selectionEnd;
       codeEl.value = codeEl.value.slice(0, s) + "  " + codeEl.value.slice(en);
       codeEl.selectionStart = codeEl.selectionEnd = s + 2;
-      savePractice();
+      refreshHighlight(); savePractice();
+      return;
+    }
+    // Ctrl/Cmd+/ toggles a "// " line comment, VS Code-style.
+    if ((e.ctrlKey || e.metaKey) && (e.key === "/" || e.key === "?")) {
+      e.preventDefault();
+      toggleLineComment(codeEl);
+      refreshHighlight(); savePractice();
+      return;
     }
     // Ctrl/Cmd+Enter runs the code.
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); runPracticeCode(codeEl.value, outEl); }

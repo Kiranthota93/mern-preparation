@@ -494,13 +494,33 @@
     background: var(--nb-surface); color: var(--nb-ink); border: 1px solid var(--nb-line);
     border-radius: 10px; padding: 12px 14px; font-family: var(--nb-serif); font-size: 15px; line-height: 1.5;
   }
-  .pr-code {
-    width: 100%; min-height: 240px; resize: vertical; box-sizing: border-box;
-    background: var(--nb-code-bg); color: var(--nb-ink); border: 1px solid var(--nb-line);
-    border-radius: 10px; padding: 14px 16px; font-family: var(--nb-mono); font-size: 13.5px;
-    line-height: 1.6; tab-size: 2; white-space: pre; overflow-wrap: normal; overflow-x: auto;
+  /* Syntax-highlighted code editor: a transparent textarea layered over a
+     highlighted <pre>, both sharing identical font metrics so caret/selection
+     in the textarea line up exactly with the colored text underneath. */
+  .pr-editor {
+    position: relative; width: 100%; min-height: 240px; resize: vertical;
+    overflow: hidden; box-sizing: border-box; background: var(--nb-code-bg);
+    border: 1px solid var(--nb-line); border-radius: 10px;
   }
-  .pr-question:focus, .pr-code:focus { outline: none; border-color: var(--nb-accent); }
+  .pr-editor:focus-within { border-color: var(--nb-accent); }
+  .pr-highlight, .pr-code {
+    position: absolute; inset: 0; margin: 0; box-sizing: border-box;
+    padding: 14px 16px; font-family: var(--nb-mono); font-size: 13.5px;
+    line-height: 1.6; tab-size: 2; white-space: pre; overflow: auto;
+    border: none; background: transparent;
+  }
+  .pr-highlight { color: var(--nb-ink); pointer-events: none; }
+  .pr-highlight code { font: inherit; white-space: inherit; }
+  .pr-code {
+    color: transparent; -webkit-text-fill-color: transparent; caret-color: var(--nb-ink);
+    resize: none; outline: none;
+  }
+  .pr-code::selection { background: rgba(232, 163, 44, .35); -webkit-text-fill-color: transparent; }
+  .tok-k { color: var(--nb-teal); font-weight: 600; }
+  .tok-s { color: var(--nb-accent); }
+  .tok-n { color: #B98CE0; }
+  .tok-c { color: var(--nb-ink-faint); font-style: italic; }
+  .pr-question:focus { outline: none; border-color: var(--nb-accent); }
   .pr-run {
     appearance: none; cursor: pointer; font-family: var(--nb-mono); font-size: 12.5px; font-weight: 600;
     color: #17161A; background: var(--nb-accent); border: none; border-radius: 8px; padding: 7px 16px;

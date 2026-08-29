@@ -221,6 +221,21 @@
       <main>
         <p class="intro">Everything about functions — how you define them, how values flow in, and the patterns built on top. Read a topic, note the <b style="color:var(--accent)">Gotcha</b>, then switch to Coding Questions.</p>
 
+        <section class="topic" id="overview">
+          <h2><span class="num">00</span> Why functions matter</h2>
+          <p><b>Simple definition:</b> A function is a reusable block of code that performs a task and can be called again.</p>
+          <p><b>Technical definition:</b> In JavaScript, a function is a callable value with its own execution context, local scope, parameters, and optional return value.</p>
+          <p><b>Why it is used:</b> Functions remove duplication, organize behavior, and let you reuse logic with different inputs.</p>
+          <p><b>When to use:</b> Use functions for calculations, validation, handlers, API code, and behavior that must run multiple times.</p>
+          <p><b>When not to use:</b> Do not create tiny one-off functions that only hide a single line of code; avoid mixing unrelated logic in one large function.</p>
+          <p><b>How it works internally:</b> Each call creates a fresh execution context, assigns arguments to parameters, runs the body, and then removes the frame from the call stack.</p>
+          <pre><code><span class="kw">function</span> greet(name) {
+  <span class="kw">return</span> <span class="st">`Hello, ${name}!`</span>;
+}
+console.log(greet(<span class="st">"Ada"</span>)); <span class="cm">// Hello, Ada!</span></code></pre>
+          <div class="gotcha"><b>Gotcha</b><span>Functions are not special magic — they are reusable units of work. The big differences are how they are created and how <code>this</code> is bound.</span></div>
+        </section>
+
         <section class="topic" id="t1">
           <h2><span class="num">01</span> Function declarations</h2>
           <p>A named function created with the <code>function</code> keyword.</p>

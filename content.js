@@ -316,6 +316,171 @@ window.EXPLANATIONS = {
       "<p class='ex-gotcha'>Partial application is a practical pattern in libraries and APIs, but it should not hide obvious code behind unnecessary abstraction.</p>",
   },
 
+  /* ------------------------------------------------------------------ */
+  "Arrays & modern data handling": {
+    "Arrays & modern data handling overview":
+      "<p><b>Simple definition:</b> Arrays are ordered collections of values, and modern array methods let you transform, filter, and summarize data cleanly.</p>" +
+      "<p><b>Technical definition:</b> JavaScript arrays are objects with indexed properties, a length property, and a rich set of built-in methods for collection processing.</p>" +
+      "<p><b>Why it is used:</b> Arrays are the default structure for lists in JavaScript: API results, UI rows, form values, and data pipelines often start as arrays.</p>" +
+      "<p><b>When to use:</b> Use arrays when order matters, when you need to iterate through related values, or when you want to transform a collection without mutating source data.</p>" +
+      "<p><b>When not to use:</b> For lookup-heavy data, prefer objects or Maps. For relational data, use arrays only for ordered collections, not as a replacement for structured databases.</p>" +
+      "<p><b>How it works internally:</b> Array methods usually iterate over each element, call a callback when needed, and return either a new array or a single value. Many methods are higher-order functions.</p>" +
+      "<pre><code>const scores = [88, 92, 75];\nconst doubled = scores.map(score => score * 2);\nconsole.log(doubled); // [176, 184, 150]</code></pre>" +
+      "<p class='ex-gotcha'>The array API is powerful, but not every method is immutable. Some methods like <code>sort</code> and <code>splice</code> mutate the original array, so choose carefully.</p>",
+
+    "map":
+      "<p><b>Simple definition:</b> <code>map</code> transforms every item in an array and returns a new array of the same length.</p>" +
+      "<p><b>Technical definition:</b> It is a higher-order array method that calls a callback for each element and collects the returned values.</p>" +
+      "<p><b>Why it is used:</b> It is used for converting each item into a new form such as formatting, enrichment, or property projection.</p>" +
+      "<p><b>When not to use:</b> Do not use <code>map</code> for side effects like logging or mutating values; use <code>forEach</code> or a loop for those cases.</p>" +
+      "<pre><code>const prices = [10, 20, 30];\nconst taxed = prices.map(price => price * 1.18);\nconsole.log(taxed); // [11.8, 23.6, 35.4]</code></pre>" +
+      "<p class='ex-gotcha'>A common mistake is using <code>map</code> when you really mean <code>forEach</code>. If you are not returning a value, you probably need a different method.</p>",
+
+    "filter":
+      "<p><b>Simple definition:</b> <code>filter</code> keeps only the items that match a condition.</p>" +
+      "<p><b>Technical definition:</b> It returns a new array containing every element for which the callback evaluates to <code>true</code>.</p>" +
+      "<p><b>Why it is used:</b> Use it when you need a subset of data based on rules such as active users, valid emails, or matching IDs.</p>" +
+      "<p><b>When not to use:</b> Do not use it to mutate the original array or to trigger business actions; it is a data selection tool, not a side-effect runner.</p>" +
+      "<pre><code>const numbers = [1, 2, 3, 4, 5];\nconst evens = numbers.filter(n => n % 2 === 0);\nconsole.log(evens); // [2, 4]</code></pre>" +
+      "<p class='ex-gotcha'>Filtering is not the same as reducing. It keeps items, while reduce combines them into one value.</p>",
+
+    "reduce":
+      "<p><b>Simple definition:</b> <code>reduce</code> combines an array into one value by repeatedly applying a function.</p>" +
+      "<p><b>Technical definition:</b> It accepts an accumulator and a current value and returns a final result such as a number, object, string, or array.</p>" +
+      "<p><b>Why it is used:</b> Reduce is used for totals, grouping, aggregation, and building new objects from arrays.</p>" +
+      "<p><b>When not to use:</b> Avoid using it for very simple cases where <code>map</code> or <code>filter</code> are clearer. It is powerful but can become hard to read if overused.</p>" +
+      "<pre><code>const total = [5, 10, 15].reduce((sum, n) => sum + n, 0);\nconsole.log(total); // 30</code></pre>" +
+      "<p class='ex-gotcha'>The accumulator is the secret weapon in reduce. Forgetting the initial value often causes the first element to be skipped or type mismatches.</p>",
+
+    "forEach":
+      "<p><b>Simple definition:</b> <code>forEach</code> loops over an array and runs a callback for each item.</p>" +
+      "<p><b>Technical definition:</b> It is designed for side-effecting iteration, such as rendering, logging, or updating external state.</p>" +
+      "<p><b>Why it is used:</b> Use it when you want to act on each element without creating a new array.</p>" +
+      "<p><b>When not to use:</b> Do not use <code>forEach</code> when you need a transformed array or a boolean result; use <code>map</code>, <code>filter</code>, or <code>some</code> instead.</p>" +
+      "<pre><code>const names = ['Ada', 'Linus'];\nnames.forEach(name => console.log('Hello', name));</code></pre>" +
+      "<p class='ex-gotcha'>Unlike <code>map</code>, <code>forEach</code> does not return a new array. It is about action, not transformation.</p>",
+
+    "find":
+      "<p><b>Simple definition:</b> <code>find</code> returns the first item that matches a condition.</p>" +
+      "<p><b>Technical definition:</b> It stops at the first matching element and returns it, or <code>undefined</code> if nothing matches.</p>" +
+      "<p><b>Why it is used:</b> It is useful when searching a list for one record by a rule, such as a user ID or a matching product name.</p>" +
+      "<p><b>When not to use:</b> Do not use it when you need all matches; use <code>filter</code> instead.</p>" +
+      "<pre><code>const users = [{ id: 1, name: 'Ada' }, { id: 2, name: 'Grace' }];\nconst user = users.find(u => u.id === 2);\nconsole.log(user.name); // Grace</code></pre>" +
+      "<p class='ex-gotcha'>If you need the index instead of the value, use <code>findIndex</code>.</p>",
+
+    "findIndex":
+      "<p><b>Simple definition:</b> <code>findIndex</code> returns the index of the first matching item.</p>" +
+      "<p><b>Technical definition:</b> It is like <code>find</code>, except it returns the position in the array rather than the item itself.</p>" +
+      "<p><b>Why it is used:</b> It is helpful when you need to update, delete, or reorder an item by its index.</p>" +
+      "<p><b>When not to use:</b> Do not use it when you need the user object itself; return the item value instead.</p>" +
+      "<pre><code>const ids = [10, 20, 30];\nconsole.log(ids.findIndex(id => id === 20)); // 1</code></pre>" +
+      "<p class='ex-gotcha'>If no item matches, <code>findIndex</code> returns <code>-1</code>, which is a common interview trap.</p>",
+
+    "some":
+      "<p><b>Simple definition:</b> <code>some</code> checks whether at least one item matches a condition.</p>" +
+      "<p><b>Technical definition:</b> It returns <code>true</code> as soon as one callback result is truthy and then stops early.</p>" +
+      "<p><b>Why it is used:</b> It is ideal for presence checks such as 'is any user admin?', or 'does any value exceed the limit?'.</p>" +
+      "<p><b>When not to use:</b> Do not use it when you need all matches or a complete aggregated answer; use <code>every</code> or <code>filter</code> for that.</p>" +
+      "<pre><code>const scores = [70, 90, 55];\nconsole.log(scores.some(score => score > 80)); // true</code></pre>" +
+      "<p class='ex-gotcha'><code>some</code> stops at the first truthy result. This early exit is a useful performance optimization in many cases.</p>",
+
+    "every":
+      "<p><b>Simple definition:</b> <code>every</code> checks whether all items satisfy a condition.</p>" +
+      "<p><b>Technical definition:</b> It returns <code>true</code> only if every callback result is truthy. It also stops early on the first false value.</p>" +
+      "<p><b>Why it is used:</b> Use it to validate that all values meet a rule, like 'all fields are filled in' or 'all numbers are positive'.</p>" +
+      "<p><b>When not to use:</b> Do not use it if you only need some match; use <code>some</code> instead.</p>" +
+      "<pre><code>const ages = [20, 25, 30];\nconsole.log(ages.every(age => age >= 18)); // true</code></pre>" +
+      "<p class='ex-gotcha'>An empty array returns <code>true</code> for <code>every</code>, because 'all items satisfy the condition' is vacuously true.</p>",
+
+    "includes":
+      "<p><b>Simple definition:</b> <code>includes</code> checks whether an array contains a given value.</p>" +
+      "<p><b>Technical definition:</b> It compares values and returns <code>true</code> when a matching element is found, with an optional start index.</p>" +
+      "<p><b>Why it is used:</b> It is common when checking membership, such as whether a role is allowed or whether an item is already in a cart.</p>" +
+      "<p><b>When not to use:</b> Do not use it for deep object comparisons; it checks value equality, not structural equality.</p>" +
+      "<pre><code>const roles = ['admin', 'editor'];\nconsole.log(roles.includes('editor')); // true</code></pre>" +
+      "<p class='ex-gotcha'>For objects, <code>includes</code> will not find a similar object unless it is the same reference. Use <code>find</code> or a custom predicate for object matching.</p>",
+
+    "sort":
+      "<p><b>Simple definition:</b> <code>sort</code> arranges array items in order.</p>" +
+      "<p><b>Technical definition:</b> It sorts the array in place, using string conversion by default unless a compare function is supplied.</p>" +
+      "<p><b>Why it is used:</b> It is used for ordering lists such as scores, names, dates, and product results.</p>" +
+      "<p><b>When not to use:</b> Do not rely on default <code>sort</code> for numeric values; it sorts strings first unless you provide a comparator.</p>" +
+      "<pre><code>const nums = [30, 10, 20];\nconsole.log(nums.sort((a, b) => a - b)); // [10, 20, 30]</code></pre>" +
+      "<p class='ex-gotcha'>The default sort order is based on strings, so <code>[10, 2, 1].sort()</code> can surprise you. A compare function fixes that.</p>",
+
+    "slice":
+      "<p><b>Simple definition:</b> <code>slice</code> copies a portion of an array without changing the original.</p>" +
+      "<p><b>Technical definition:</b> It returns a shallow copy of the selected range and uses start/end indexes that are non-mutating.</p>" +
+      "<p><b>Why it is used:</b> It is useful for pagination, previewing data, and copying arrays safely.</p>" +
+      "<p><b>When not to use:</b> Do not use it when you want to remove elements from the original; use <code>splice</code> for that.</p>" +
+      "<pre><code>const nums = [1, 2, 3, 4];\nconsole.log(nums.slice(1, 3)); // [2, 3]</code></pre>" +
+      "<p class='ex-gotcha'>Unlike <code>splice</code>, <code>slice</code> does not mutate the array. This is a key difference in interviews.</p>",
+
+    "splice":
+      "<p><b>Simple definition:</b> <code>splice</code> changes an array by adding or removing items in place.</p>" +
+      "<p><b>Technical definition:</b> It mutates the original array and returns the removed elements as a new array.</p>" +
+      "<p><b>Why it is used:</b> It helps manage lists dynamically, such as removing selected items or inserting new values at a position.</p>" +
+      "<p><b>When not to use:</b> Avoid it when you want an immutable workflow; <code>slice</code>, spread, and filter are safer options in modern code.</p>" +
+      "<pre><code>const items = ['a', 'b', 'c'];\nitems.splice(1, 1, 'x');\nconsole.log(items); // ['a', 'x', 'c']</code></pre>" +
+      "<p class='ex-gotcha'>A common mistake is to treat <code>splice</code> like a copy operation. It changes the source array.</p>",
+
+    "flat":
+      "<p><b>Simple definition:</b> <code>flat</code> flattens nested arrays by one level by default.</p>" +
+      "<p><b>Technical definition:</b> It creates a new array with sub-array elements concatenated into the parent array to the specified depth.</p>" +
+      "<p><b>Why it is used:</b> It is useful for data that has nested arrays from parsing or API responses.</p>" +
+      "<p><b>When not to use:</b> Do not flatten too aggressively if you need to preserve nested structure; use a custom reduction when depth is unpredictable.</p>" +
+      "<pre><code>const nested = [1, [2, 3], [4, [5]]];\nconsole.log(nested.flat(2)); // [1, 2, 3, 4, 5]</code></pre>" +
+      "<p class='ex-gotcha'><code>flat</code> only goes as deep as you ask. With nesting beyond the depth, it preserves deeper arrays.</p>",
+
+    "flatMap":
+      "<p><b>Simple definition:</b> <code>flatMap</code> maps each element and flattens the result by one level.</p>" +
+      "<p><b>Technical definition:</b> It combines the behavior of <code>map</code> and <code>flat</code> in a single pass.</p>" +
+      "<p><b>Why it is used:</b> It is best when each element produces an array and you want to flatten those arrays into one list.</p>" +
+      "<p><b>When not to use:</b> Avoid it when the transformed output is not array-shaped or when the callback is doing too much work.</p>" +
+      "<pre><code>const words = ['Hi', 'there'];\nconsole.log(words.flatMap(word => word.split(''))); // ['H','i','t','h','e','r','e']</code></pre>" +
+      "<p class='ex-gotcha'>It is very convenient, but if you need more control over shape and depth, a manual loop or reduce can be easier to read.</p>",
+
+    "Array destructuring":
+      "<p><b>Simple definition:</b> Array destructuring lets you unpack values from an array into variables.</p>" +
+      "<p><b>Technical definition:</b> It uses patterns like <code>[first, second]</code> or <code>[a, ...rest]</code> to bind array elements to variables.</p>" +
+      "<p><b>Why it is used:</b> It makes code cleaner when working with tuples, return values, and argument lists.</p>" +
+      "<p><b>When not to use:</b> It is less clear when you are extracting deeply nested or poorly structured data. Use readability-first destructuring.</p>" +
+      "<pre><code>const [first, second, ...others] = [1, 2, 3, 4];\nconsole.log(first, second, others); // 1 2 [3,4]</code></pre>" +
+      "<p class='ex-gotcha'>Destructuring is shorthand, not magic. It only reads the pattern you define; the rest of the array can still be ignored intentionally.</p>",
+
+    "Spread with arrays":
+      "<p><b>Simple definition:</b> Array spread copies or combines array values into a new array.</p>" +
+      "<p><b>Technical definition:</b> It expands an iterable into individual elements inside a literal, preserving the original arrays unchanged.</p>" +
+      "<p><b>Why it is used:</b> It is common for cloning, concatenating, and creating updated lists without mutating source arrays.</p>" +
+      "<p><b>When not to use:</b> Do not use it for deep cloning; nested objects remain shared by reference.</p>" +
+      "<pre><code>const a = [1, 2];\nconst b = [...a, 3, 4];\nconsole.log(b); // [1, 2, 3, 4]</code></pre>" +
+      "<p class='ex-gotcha'>Spread is great for immutability, but it is shallow. If an item is an object, that object is still the same reference.</p>",
+
+    "Immutable array operations":
+      "<p><b>Simple definition:</b> Immutable operations create a new array rather than changing the original.</p>" +
+      "<p><b>Technical definition:</b> Functional programming patterns in JavaScript favor functions such as <code>map</code>, <code>filter</code>, and <code>slice</code> that keep existing state unchanged.</p>" +
+      "<p><b>Why it is used:</b> Immutable updates make debugging easier and help React state updates stay predictable.</p>" +
+      "<p><b>When not to use:</b> Do not force immutability where the original array is intentionally being mutated in a quick local algorithm; choose the simplest correct pattern.</p>" +
+      "<pre><code>const original = [1, 2, 3];\nconst updated = original.map(n => n + 1);\nconsole.log(original); // [1, 2, 3]\nconsole.log(updated); // [2, 3, 4]</code></pre>" +
+      "<p class='ex-gotcha'>Modern frameworks expect state updates to be predictable. Immutability is often the key to avoiding hard-to-debug bugs.</p>",
+
+    "Shallow copying":
+      "<p><b>Simple definition:</b> A shallow copy duplicates the top-level array, but nested objects inside it are still shared.</p>" +
+      "<p><b>Technical definition:</b> Methods like <code>slice</code>, array spread, and <code>concat</code> create a new outer array but do not deep-clone nested references.</p>" +
+      "<p><b>Why it is used:</b> It is enough when you only need a top-level copy for most list operations.</p>" +
+      "<p><b>When not to use:</b> If nested objects are mutated, shallow copying is not enough. Use deep cloning or immutable nested updates instead.</p>" +
+      "<pre><code>const people = [{ name: 'Ada' }];\nconst copied = [...people];\ncopy[0].name = 'Grace';\nconsole.log(people[0].name); // Grace</code></pre>" +
+      "<p class='ex-gotcha'>This is a classic interview question: the outer array is new, but the inner object is not.</p>",
+
+    "Deep copying":
+      "<p><b>Simple definition:</b> A deep copy duplicates nested data, so changes to one copy do not affect the other.</p>" +
+      "<p><b>Technical definition:</b> Deep cloning duplicates all nested objects and arrays recursively, which avoids shared references.</p>" +
+      "<p><b>Why it is used:</b> It is useful for safe snapshots, forms, and data transforms that must not mutate the original object graph.</p>" +
+      "<p><b>When not to use:</b> Do not deep clone when the data is huge or when you only need a shallow copy; it costs more memory and CPU.</p>" +
+      "<pre><code>const original = [{ id: 1, tags: ['a'] }];\nconst copy = structuredClone(original);\ncopy[0].tags.push('b');\nconsole.log(original[0].tags); // ['a']</code></pre>" +
+      "<p class='ex-gotcha'>Deep copy is safer but more expensive. In real code, you often want the smallest correct copy strategy, not a full recursive clone.</p>",
+  },
+
 };
 
 /* =========================================================================

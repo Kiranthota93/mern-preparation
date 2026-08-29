@@ -174,8 +174,6 @@ window.EXPLANATIONS = {
   },
 
   /* ------------------------------------------------------------------ */
-
-  /* ------------------------------------------------------------------ */
   "Functions": {
     "Function basics (overview)":
       "<p><b>Simple definition:</b> A function is a reusable block of code that performs a task and can be called repeatedly.</p>" +
@@ -481,6 +479,210 @@ window.EXPLANATIONS = {
       "<p class='ex-gotcha'>Deep copy is safer but more expensive. In real code, you often want the smallest correct copy strategy, not a full recursive clone.</p>",
   },
 
+  /* ------------------------------------------------------------------ */
+  "this, objects & prototypes": {
+    "this":
+      "<p><b>Simple definition:</b> <code>this</code> is a keyword that points to the object a function is currently working on.</p>" +
+      "<p><b>Technical definition:</b> <code>this</code> is a binding created for each function call. Its value is decided by <em>how the function is called</em>, not where it was written.</p>" +
+      "<p><b>Why it is used:</b> It lets one method work for many objects. A single <code>greet()</code> can say the right name for every user, because <code>this</code> changes per call.</p>" +
+      "<p><b>When to use:</b> Use it inside object methods, classes, and constructor functions where the code must refer to the instance it belongs to.</p>" +
+      "<p><b>When not to use:</b> Avoid it in standalone utility functions. A plain function that takes its data as an argument is simpler and safer than one that depends on <code>this</code>.</p>" +
+      "<p><b>How it works internally:</b> On every call JavaScript asks one question: what is to the <em>left of the dot</em>? That object becomes <code>this</code>. If there is no dot, there is no owner, and <code>this</code> falls back to the global object (or <code>undefined</code> in strict mode).</p>" +
+      "<pre><code>const user = {\n  name: 'Ada',\n  greet() {\n    return 'Hi, ' + this.name;\n  }\n};\n\nuser.greet(); // 'Hi, Ada'  ← 'user' is left of the dot</code></pre>" +
+      "<p class='ex-gotcha'>The single most useful rule: <code>this</code> is set at <b>call time</b>, not at definition time. The same function can have four different <code>this</code> values depending on how you invoke it.</p>",
+
+    "this in regular functions":
+      "<p><b>Simple definition:</b> In a normal function, <code>this</code> depends entirely on how the function was called.</p>" +
+      "<p><b>Technical definition:</b> Regular functions (declarations, expressions, and methods) receive their own <code>this</code> binding on every invocation, determined by the call site.</p>" +
+      "<p><b>Why it is used:</b> This dynamic binding is what allows the same method to be shared across many objects and still refer to the right one.</p>" +
+      "<p><b>When not to use:</b> Do not rely on it inside callbacks passed to <code>setTimeout</code>, <code>map</code>, or event handlers unless you deliberately bind it, because the call site changes.</p>" +
+      "<p><b>The four call patterns:</b></p>" +
+      "<pre><code>function show() { return this; }\n\n// 1. Method call    → the object before the dot\nobj.show();        // this === obj\n\n// 2. Plain call     → globalThis, or undefined in strict mode\nshow();            // this === globalThis / undefined\n\n// 3. Explicit call  → whatever you pass\nshow.call(person); // this === person\n\n// 4. new call       → the brand-new object\nnew Show();        // this === the new instance</code></pre>" +
+      "<p><b>The classic trap — a lost method:</b></p>" +
+      "<pre><code>const user = { name: 'Ada', greet() { return this.name; } };\n\nconst fn = user.greet; // pulled off the object\nfn();                  // undefined — no dot, so no owner</code></pre>" +
+      "<p class='ex-gotcha'>Detaching a method loses its <code>this</code>. The function itself never stored a link back to <code>user</code>; the dot supplied it at call time. Fix with <code>user.greet.bind(user)</code>.</p>",
+
+    "this in arrow functions":
+      "<p><b>Simple definition:</b> Arrow functions do not get their own <code>this</code>. They borrow it from the code around them.</p>" +
+      "<p><b>Technical definition:</b> An arrow function has no <code>this</code> binding of its own. When you write <code>this</code> inside one, JavaScript resolves it lexically, exactly like any other variable, by looking outward to the enclosing scope.</p>" +
+      "<p><b>Why it is used:</b> It solves the callback problem. Before arrows, developers wrote <code>const self = this;</code> or <code>.bind(this)</code> just to keep the outer <code>this</code> alive inside a nested function.</p>" +
+      "<p><b>When to use:</b> Use arrows for callbacks written <em>inside</em> a method or class, where you want the surrounding <code>this</code> to carry through.</p>" +
+      "<p><b>When not to use:</b> Never use an arrow as an object method or a constructor. It will not bind to the object, and <code>new</code> will throw.</p>" +
+      "<pre><code>const timer = {\n  label: 'tick',\n  start() {\n    setTimeout(() => {\n      console.log(this.label); // 'tick' — inherited from start()\n    }, 100);\n  }\n};\ntimer.start();</code></pre>" +
+      "<p><b>The mirror-image mistake:</b></p>" +
+      "<pre><code>const user = {\n  name: 'Ada',\n  greet: () => this.name  // WRONG\n};\nuser.greet(); // undefined</code></pre>" +
+      "<p>An object literal does not create a scope, so <code>this</code> here comes from outside the object entirely, not from <code>user</code>.</p>" +
+      "<p class='ex-gotcha'>Because arrows have no <code>this</code> of their own, <code>call</code>, <code>apply</code>, and <code>bind</code> cannot change it. Passing a <code>thisArg</code> to an arrow is silently ignored.</p>",
+
+    "call":
+      "<p><b>Simple definition:</b> <code>call</code> runs a function immediately with a <code>this</code> value you choose.</p>" +
+      "<p><b>Technical definition:</b> <code>fn.call(thisArg, arg1, arg2, ...)</code> invokes <code>fn</code> with <code>this</code> set to <code>thisArg</code> and the remaining arguments passed individually.</p>" +
+      "<p><b>Why it is used:</b> It lets you borrow a method from one object and run it against another, without copying or rewriting it.</p>" +
+      "<p><b>When not to use:</b> Do not reach for it when a plain argument would do. Passing data in is almost always clearer than rebinding <code>this</code>.</p>" +
+      "<pre><code>function introduce(city, role) {\n  return this.name + ' from ' + city + ', ' + role;\n}\n\nconst person = { name: 'Ada' };\nintroduce.call(person, 'London', 'engineer');\n// 'Ada from London, engineer'</code></pre>" +
+      "<p><b>Returns:</b> whatever the function returns. It runs right away.</p>" +
+      "<p class='ex-gotcha'>Remember the shape: <code>call</code> takes arguments as a <b>comma-separated list</b>. Think \"<b>C</b>all = <b>C</b>ommas\".</p>",
+
+    "apply":
+      "<p><b>Simple definition:</b> <code>apply</code> is identical to <code>call</code>, except the arguments arrive as one array.</p>" +
+      "<p><b>Technical definition:</b> <code>fn.apply(thisArg, [arg1, arg2])</code> invokes <code>fn</code> with a chosen <code>this</code> and an array-like list of arguments spread into parameters.</p>" +
+      "<p><b>Why it is used:</b> It was the standard way to pass a dynamic, unknown-length argument list before spread syntax existed.</p>" +
+      "<p><b>When not to use:</b> In modern code, spread has largely replaced it. <code>fn.call(obj, ...args)</code> reads better than <code>fn.apply(obj, args)</code>.</p>" +
+      "<pre><code>const person = { name: 'Ada' };\nintroduce.apply(person, ['London', 'engineer']);\n// same result as .call — only the argument shape differs\n\n// The old spread trick:\nMath.max.apply(null, [4, 9, 2]); // 9\nMath.max(...[4, 9, 2]);          // 9 — modern equivalent</code></pre>" +
+      "<p class='ex-gotcha'>Think \"<b>A</b>pply = <b>A</b>rray\". <code>call</code> and <code>apply</code> do exactly the same job; only the argument packaging differs.</p>",
+
+    "bind":
+      "<p><b>Simple definition:</b> <code>bind</code> does not run the function. It returns a <em>new</em> function with <code>this</code> permanently locked in.</p>" +
+      "<p><b>Technical definition:</b> <code>fn.bind(thisArg, ...preset)</code> returns a bound function whose <code>this</code> is fixed to <code>thisArg</code> forever, optionally with some leading arguments pre-filled.</p>" +
+      "<p><b>Why it is used:</b> It is the fix for detached methods. Event handlers, <code>setTimeout</code> callbacks, and props passed to React components all lose their <code>this</code> unless bound.</p>" +
+      "<p><b>When not to use:</b> Inside a method you control, an arrow function is usually simpler than binding.</p>" +
+      "<pre><code>const user = { name: 'Ada', greet() { return this.name; } };\n\nconst loose = user.greet;\nloose();                       // undefined\n\nconst bound = user.greet.bind(user);\nbound();                       // 'Ada' — this is locked to user\nsetTimeout(bound, 100);        // still 'Ada'</code></pre>" +
+      "<p><b>Partial application bonus:</b></p>" +
+      "<pre><code>function multiply(a, b) { return a * b; }\nconst double = multiply.bind(null, 2);\ndouble(5); // 10 — 'a' was pre-filled</code></pre>" +
+      "<p><b>Returns:</b> a new function. The original is untouched.</p>" +
+      "<p class='ex-gotcha'>Two traps. First, <code>bind</code> returns a function &mdash; forgetting to call it means nothing happens. Second, the binding is permanent: <code>fn.bind(a).bind(b)</code> still uses <code>a</code>.</p>",
+
+    "Object creation":
+      "<p><b>Simple definition:</b> There are several ways to make an object; the literal <code>{}</code> is the one you will use almost every time.</p>" +
+      "<p><b>Technical definition:</b> Objects can be created with a literal, with <code>new Object()</code>, with a constructor function or class, or with <code>Object.create(proto)</code> to control the prototype directly.</p>" +
+      "<p><b>Why it is used:</b> Objects group related named values into one unit that can be passed, stored, and returned as a single thing.</p>" +
+      "<p><b>When to use which:</b> Use a literal for one-off data. Use a class or constructor when you need many objects of the same shape. Use <code>Object.create</code> when you specifically care about the prototype link.</p>" +
+      "<pre><code>// 1. Literal — the default choice\nconst user = { name: 'Ada', age: 36 };\n\n// 2. Class — many objects of one shape\nclass User { constructor(name) { this.name = name; } }\nconst u = new User('Ada');\n\n// 3. Object.create — explicit prototype\nconst base = { greet() { return 'hi'; } };\nconst child = Object.create(base);\n\n// 4. Factory function — returns a fresh object\nconst makeUser = name => ({ name });</code></pre>" +
+      "<p class='ex-gotcha'>Avoid <code>new Object()</code>; it is slower to read and offers nothing over <code>{}</code>. Also note the factory pattern needs <code>({ name })</code> with parentheses, or the arrow reads <code>{}</code> as a code block.</p>",
+
+    "Object properties":
+      "<p><b>Simple definition:</b> A property is a key-value pair inside an object, read with a dot or with brackets.</p>" +
+      "<p><b>Technical definition:</b> Properties are stored under string or symbol keys. Dot notation requires a fixed, valid identifier; bracket notation accepts any expression that evaluates to a key.</p>" +
+      "<p><b>Why it is used:</b> Bracket access is what makes objects dynamic. It lets a variable decide which property to read at runtime.</p>" +
+      "<p><b>When not to use:</b> Do not use brackets with a hardcoded literal (<code>user['name']</code>). The dot is cleaner when the key is known.</p>" +
+      "<pre><code>const user = { name: 'Ada', 'work role': 'engineer' };\n\nuser.name;            // 'Ada'          — dot, fixed key\nuser['work role'];    // 'engineer'     — brackets required (space in key)\n\nconst key = 'name';\nuser[key];            // 'Ada'          — dynamic key\nuser.key;             // undefined      — looks for a literal 'key' property\n\ndelete user.age;      // removes a property\n'name' in user;       // true — existence check</code></pre>" +
+      "<p><b>Reading a missing property returns <code>undefined</code></b>, it does not throw. Reading a property <em>of</em> <code>undefined</code> does throw.</p>" +
+      "<p class='ex-gotcha'>The <code>user.key</code> vs <code>user[key]</code> confusion is one of the most common beginner bugs. The dot always means the literal text after it; brackets evaluate first.</p>",
+
+    "Property descriptors conceptually":
+      "<p><b>Simple definition:</b> Every property secretly carries a few switches that control whether it can be changed, listed, or deleted.</p>" +
+      "<p><b>Technical definition:</b> Each property has a descriptor with <code>value</code>, <code>writable</code>, <code>enumerable</code>, and <code>configurable</code> flags (or <code>get</code>/<code>set</code> for accessor properties).</p>" +
+      "<p><b>Why it is used:</b> It lets library authors create read-only or hidden properties, and it explains why some built-in properties behave differently from yours.</p>" +
+      "<p><b>When not to use:</b> This is rarely needed in application code. Learn it to understand behavior and answer interview questions, not as a daily tool.</p>" +
+      "<p><b>What the three switches mean:</b></p>" +
+      "<pre><code>writable     → can the value be reassigned?\nenumerable   → does it show up in for...in and Object.keys?\nconfigurable → can it be deleted or its flags changed?</code></pre>" +
+      "<pre><code>const user = { name: 'Ada' };\nObject.getOwnPropertyDescriptor(user, 'name');\n// { value: 'Ada', writable: true, enumerable: true, configurable: true }\n\nObject.defineProperty(user, 'id', { value: 1 });\nuser.id = 99;\nconsole.log(user.id);        // 1 — silently ignored, writable defaults to false\nconsole.log(Object.keys(user)); // ['name'] — 'id' is not enumerable</code></pre>" +
+      "<p class='ex-gotcha'>The defaults flip depending on how the property is made. Normal assignment gives you all three flags as <code>true</code>; <code>Object.defineProperty</code> defaults every omitted flag to <code>false</code>. That asymmetry is the whole trick behind this question.</p>",
+
+    "Object methods":
+      "<p><b>Simple definition:</b> A method is just a function stored as a property of an object. <code>Object.keys</code>, <code>Object.values</code>, and <code>Object.entries</code> are the built-in helpers for inspecting objects.</p>" +
+      "<p><b>Technical definition:</b> Method shorthand (<code>greet() {}</code>) defines a function-valued property. The static <code>Object.*</code> helpers convert an object's own enumerable properties into arrays so array methods can be used on them.</p>" +
+      "<p><b>Why it is used:</b> Objects have no <code>map</code> or <code>filter</code> of their own. Converting to entries, transforming, and converting back is the standard way to process object data.</p>" +
+      "<p><b>When not to use:</b> If you find yourself repeatedly converting between objects and arrays, the data may have been better modelled as an array or a <code>Map</code> from the start.</p>" +
+      "<pre><code>const scores = { ada: 90, sam: 75 };\n\nObject.keys(scores);    // ['ada', 'sam']\nObject.values(scores);  // [90, 75]\nObject.entries(scores); // [['ada', 90], ['sam', 75]]\n\n// Transform an object with array methods:\nconst boosted = Object.fromEntries(\n  Object.entries(scores).map(([k, v]) => [k, v + 5])\n);\n// { ada: 95, sam: 80 }\n\nObject.assign({}, scores, { sam: 80 }); // merge into a new object</code></pre>" +
+      "<p class='ex-gotcha'>These helpers only see <b>own enumerable</b> properties. Anything inherited from the prototype chain is skipped, which is exactly why <code>Object.keys</code> on an instance never lists its class methods.</p>",
+
+    "Destructuring":
+      "<p><b>Simple definition:</b> Destructuring pulls values out of an object into standalone variables, matched <em>by name</em>.</p>" +
+      "<p><b>Technical definition:</b> A destructuring pattern on the left of <code>=</code> reads matching keys from the right-hand object and assigns them to the named bindings, with optional renaming and defaults.</p>" +
+      "<p><b>Why it is used:</b> It removes repetitive <code>const name = user.name;</code> lines and makes function signatures self-documenting.</p>" +
+      "<p><b>When not to use:</b> Deeply nested destructuring with renaming and defaults all at once becomes unreadable. Split it into two steps instead.</p>" +
+      "<pre><code>const user = { name: 'Ada', age: 36, address: { city: 'London' } };\n\nconst { name, age } = user;                // name = 'Ada', age = 36\nconst { name: fullName } = user;           // rename → fullName\nconst { role = 'user' } = user;            // default when key is missing\nconst { address: { city } } = user;        // nested → city = 'London'\nconst { name: n, ...rest } = user;         // rest = { age, address }</code></pre>" +
+      "<p><b>In function parameters:</b></p>" +
+      "<pre><code>function greet({ name, greeting = 'Hi' }) {\n  return greeting + ', ' + name;\n}\ngreet({ name: 'Ada' }); // 'Hi, Ada'</code></pre>" +
+      "<p class='ex-gotcha'>Two traps. Object destructuring matches by <b>key name</b> (order is irrelevant), while array destructuring matches by <b>position</b>. And the default only fires on <code>undefined</code>, never on <code>null</code>.</p>",
+
+    "Computed properties":
+      "<p><b>Simple definition:</b> Square brackets inside an object literal let you build a key from a variable or expression.</p>" +
+      "<p><b>Technical definition:</b> A computed property name <code>[expr]</code> is evaluated at object-creation time, and its string result becomes the key.</p>" +
+      "<p><b>Why it is used:</b> It is essential for dynamic data: form fields, API responses, and reducers that group items by a value known only at runtime.</p>" +
+      "<p><b>When not to use:</b> If every key is known ahead of time, write them literally. Computed keys make code harder to search.</p>" +
+      "<pre><code>const key = 'status';\n\nconst obj = { [key]: 'active' };\nconsole.log(obj);        // { status: 'active' }\n\n// Without computed syntax you would get the literal word 'key':\nconst wrong = { key: 'active' }; // { key: 'active' }</code></pre>" +
+      "<p><b>The real-world use — updating state by field name:</b></p>" +
+      "<pre><code>function updateField(state, field, value) {\n  return { ...state, [field]: value };\n}\nupdateField({ name: 'Ada' }, 'age', 36);\n// { name: 'Ada', age: 36 }</code></pre>" +
+      "<p class='ex-gotcha'>Keys are always coerced to strings (or symbols). <code>{ [1]: 'a' }</code> becomes the key <code>'1'</code>, and <code>{ [{}]: 'a' }</code> becomes the useless key <code>'[object Object]'</code>. Use a <code>Map</code> if you need real object keys.</p>",
+
+    "Optional chaining":
+      "<p><b>Simple definition:</b> <code>?.</code> reads a nested property and quietly gives back <code>undefined</code> instead of crashing when something along the path is missing.</p>" +
+      "<p><b>Technical definition:</b> The optional chaining operator short-circuits: if the value to its left is <code>null</code> or <code>undefined</code>, the whole expression evaluates to <code>undefined</code> and the rest of the chain is never executed.</p>" +
+      "<p><b>Why it is used:</b> API responses and optional config objects are full of properties that may not exist. It replaces long <code>a &amp;&amp; a.b &amp;&amp; a.b.c</code> guard chains.</p>" +
+      "<p><b>When not to use:</b> Do not scatter it everywhere to silence errors. If a value should always exist, a missing one is a real bug you want to see, not hide.</p>" +
+      "<pre><code>const user = { profile: null };\n\nuser.profile.city;   // TypeError: Cannot read properties of null\nuser.profile?.city;  // undefined — safe\n\n// Works on calls and indexes too:\nuser.getName?.();    // undefined if getName does not exist\nuser.tags?.[0];      // undefined if tags is missing</code></pre>" +
+      "<p><b>Returns:</b> the property value, or <code>undefined</code> if the chain short-circuited. Never <code>null</code>.</p>" +
+      "<p class='ex-gotcha'>It only guards against <code>null</code> and <code>undefined</code>. It will not save you from <code>0</code>, <code>''</code>, or a genuinely thrown error deeper in the expression. And it cannot be used on the left of an assignment.</p>",
+
+    "Nullish coalescing":
+      "<p><b>Simple definition:</b> <code>??</code> supplies a fallback value, but <em>only</em> when the left side is <code>null</code> or <code>undefined</code>.</p>" +
+      "<p><b>Technical definition:</b> The nullish coalescing operator returns its right operand when the left operand is nullish, and the left operand otherwise. Unlike <code>||</code>, it does not treat other falsy values as missing.</p>" +
+      "<p><b>Why it is used:</b> It fixes a long-standing bug pattern where legitimate values like <code>0</code>, <code>''</code>, or <code>false</code> were silently replaced by defaults.</p>" +
+      "<p><b>When to use which:</b> Use <code>??</code> when zero, empty string, or false are valid values you must keep. Use <code>||</code> only when <em>any</em> falsy value genuinely means \"not provided\".</p>" +
+      "<pre><code>const count = 0;\n\ncount || 10;   // 10  ← bug: 0 is falsy, so the real value is lost\ncount ?? 10;   // 0   ← correct: 0 is a real value\n\nconst name = '';\nname || 'Anonymous';  // 'Anonymous'\nname ?? 'Anonymous';  // ''  — an empty string was deliberately set</code></pre>" +
+      "<pre><code>// Common pairing with optional chaining:\nconst city = user.profile?.city ?? 'Unknown';</code></pre>" +
+      "<p class='ex-gotcha'>You cannot mix <code>??</code> with <code>||</code> or <code>&amp;&amp;</code> without parentheses &mdash; <code>a || b ?? c</code> is a SyntaxError. JavaScript forces you to make the precedence explicit.</p>",
+
+    "Prototype":
+      "<p><b>Simple definition:</b> Every object has a hidden link to another object it can borrow properties from. That other object is its prototype.</p>" +
+      "<p><b>Technical definition:</b> Each object holds an internal <code>[[Prototype]]</code> reference. When a property is not found on the object itself, the engine follows that reference and looks there instead.</p>" +
+      "<p><b>Why it is used:</b> It is how JavaScript shares behavior without copying. A thousand arrays do not each store their own <code>map</code> function; they all point at the same <code>Array.prototype</code>.</p>" +
+      "<p><b>When not to use:</b> Never add properties to built-in prototypes (<code>Array.prototype.myHelper = ...</code>). It affects every array in the program and breaks other code.</p>" +
+      "<p><b>Think of it as</b> a fallback dictionary. Ask an object for a word; if it does not have it, it asks the book behind it.</p>" +
+      "<pre><code>const animal = { speak() { return 'generic sound'; } };\nconst dog = Object.create(animal);\ndog.name = 'Rex';\n\ndog.name;    // 'Rex'           — own property\ndog.speak(); // 'generic sound' — borrowed from the prototype\n\ndog.hasOwnProperty('speak');       // false — it is not really dog's\nObject.getPrototypeOf(dog) === animal; // true</code></pre>" +
+      "<p class='ex-gotcha'>Do not confuse the two names. <code>obj.__proto__</code> (or <code>Object.getPrototypeOf(obj)</code>) is the link an object <em>uses</em>. <code>Fn.prototype</code> is a property on a <b>function</b>, holding the object that will become the prototype of instances made with <code>new Fn()</code>. They are different things with confusingly similar names.</p>",
+
+    "Prototype chain":
+      "<p><b>Simple definition:</b> If a property is not on the object or its prototype, JavaScript keeps walking up the chain until it finds it or runs out.</p>" +
+      "<p><b>Technical definition:</b> Property lookup traverses the <code>[[Prototype]]</code> links one level at a time. The chain terminates at <code>Object.prototype</code>, whose prototype is <code>null</code>.</p>" +
+      "<p><b>Why it is used:</b> It is the mechanism behind all inheritance in JavaScript. Classes and <code>extends</code> are a friendlier syntax over this same chain.</p>" +
+      "<p><b>How the lookup runs:</b></p>" +
+      "<pre><code>dog.toString()\n  ↓  not on dog\ndog.__proto__          (animal)\n  ↓  not on animal\nanimal.__proto__       (Object.prototype)\n  ↓  found toString here\n     → called\n\n// If it were still missing:\nObject.prototype.__proto__ === null → undefined</code></pre>" +
+      "<pre><code>const arr = [1, 2, 3];\narr.map(n => n);\n// arr → Array.prototype (has map) → Object.prototype → null</code></pre>" +
+      "<p><b>What is returned when nothing matches:</b> <code>undefined</code> for a property, or a <code>TypeError</code> if you tried to call it as a function.</p>" +
+      "<p class='ex-gotcha'>Longer chains mean slower lookups and harder debugging. In real code, prefer composition or shallow class hierarchies over deep prototype chains. Also, <code>for...in</code> walks the whole chain, which is why <code>Object.keys</code> is usually the safer choice.</p>",
+
+    "Object.create":
+      "<p><b>Simple definition:</b> <code>Object.create(proto)</code> makes a new empty object whose prototype is exactly the object you passed in.</p>" +
+      "<p><b>Technical definition:</b> It returns a new object with its <code>[[Prototype]]</code> set to the first argument, optionally with property descriptors supplied as a second argument.</p>" +
+      "<p><b>Why it is used:</b> It sets up inheritance directly, without involving constructor functions or the <code>new</code> keyword.</p>" +
+      "<p><b>When not to use:</b> For everyday application code, classes are clearer and more familiar to most teams. Reach for <code>Object.create</code> when you want a prototype link with no constructor ceremony, or a truly empty object.</p>" +
+      "<pre><code>const animal = {\n  speak() { return this.name + ' makes a sound'; }\n};\n\nconst dog = Object.create(animal);\ndog.name = 'Rex';\ndog.speak(); // 'Rex makes a sound'</code></pre>" +
+      "<p><b>The dictionary trick:</b></p>" +
+      "<pre><code>const dict = Object.create(null);\n// no prototype at all — no toString, no hasOwnProperty\n// safe to use arbitrary user input as keys</code></pre>" +
+      "<p class='ex-gotcha'><code>Object.create(animal)</code> is not the same as <code>{ ...animal }</code>. The first <b>links</b> to <code>animal</code>, so later changes to <code>animal</code> are visible. The second <b>copies</b> the properties once and then goes its own way.</p>",
+
+    "Constructor functions":
+      "<p><b>Simple definition:</b> A regular function called with <code>new</code>, used as a blueprint for building many similar objects.</p>" +
+      "<p><b>Technical definition:</b> When invoked with <code>new</code>, a function creates a fresh object, links it to the function's <code>.prototype</code>, binds <code>this</code> to it, runs the body, and returns that object implicitly.</p>" +
+      "<p><b>Why it is used:</b> It was the standard way to model object types before ES6 classes. Understanding it explains what classes actually do underneath.</p>" +
+      "<p><b>When not to use:</b> In new code, use <code>class</code>. It does the same job with clearer syntax and better error messages.</p>" +
+      "<p><b>What <code>new</code> does, step by step:</b></p>" +
+      "<pre><code>const u = new User('Ada');\n\n1. create {}                        an empty object\n2. link its prototype → User.prototype\n3. bind this → that object\n4. run the function body\n5. return this (unless the body returns an object)</code></pre>" +
+      "<pre><code>function User(name) {\n  this.name = name;              // per-instance data\n}\nUser.prototype.greet = function () {\n  return 'Hi, ' + this.name;     // shared across all instances\n};\n\nconst a = new User('Ada');\na.greet();                       // 'Hi, Ada'\na.hasOwnProperty('greet');       // false — it lives on the prototype</code></pre>" +
+      "<p class='ex-gotcha'>Forgetting <code>new</code> is the classic bug: <code>User('Ada')</code> runs as a plain call, so <code>this</code> is the global object (or <code>undefined</code> in strict mode), and the result is <code>undefined</code>. Classes protect you here &mdash; calling a class without <code>new</code> throws immediately.</p>",
+
+    "Classes":
+      "<p><b>Simple definition:</b> A class is cleaner syntax for creating objects that share the same structure and behavior.</p>" +
+      "<p><b>Technical definition:</b> <code>class</code> is syntactic sugar over constructor functions and prototypes. Methods defined in the class body are placed on <code>ClassName.prototype</code>, exactly as with the older pattern.</p>" +
+      "<p><b>Why it is used:</b> It expresses intent clearly, groups the constructor and methods in one block, and adds features like <code>#private</code> fields, getters, setters, and <code>static</code> members.</p>" +
+      "<p><b>When not to use:</b> Do not create a class for a bag of data with no behavior; a plain object or factory function is simpler. Classes earn their weight when there is real shared behavior and state.</p>" +
+      "<pre><code>class User {\n  #secret = 'hidden';          // truly private field\n\n  constructor(name) {\n    this.name = name;          // per-instance\n  }\n\n  greet() {                    // → User.prototype.greet\n    return 'Hi, ' + this.name;\n  }\n\n  get initials() {             // getter, read as a property\n    return this.name[0];\n  }\n\n  static create(name) {        // called on the class, not instances\n    return new User(name);\n  }\n}\n\nconst u = new User('Ada');\nu.greet();      // 'Hi, Ada'\nu.initials;     // 'A'  — no parentheses\nUser.create('Sam');\nu.#secret;      // SyntaxError — private outside the class</code></pre>" +
+      "<p class='ex-gotcha'>Classes are not hoisted the way function declarations are &mdash; using one before its definition throws a <code>ReferenceError</code> (temporal dead zone). Class bodies also run in strict mode automatically, and calling a class without <code>new</code> always throws.</p>",
+
+    "Inheritance":
+      "<p><b>Simple definition:</b> One class can build on another, reusing its behavior and adding or replacing parts.</p>" +
+      "<p><b>Technical definition:</b> <code>extends</code> links the subclass prototype to the superclass prototype, so instances inherit through the prototype chain. <code>super</code> calls the parent constructor or a parent method.</p>" +
+      "<p><b>Why it is used:</b> It avoids duplicating shared logic when several types are genuinely specialized versions of one general type.</p>" +
+      "<p><b>When not to use:</b> Inheritance is often overused. If the relationship is not a true \"is a\", prefer composition &mdash; pass in the behavior as a dependency instead of inheriting it. Deep hierarchies are hard to change safely.</p>" +
+      "<pre><code>class Animal {\n  constructor(name) { this.name = name; }\n  speak() { return this.name + ' makes a sound'; }\n}\n\nclass Dog extends Animal {\n  constructor(name, breed) {\n    super(name);          // must run before using 'this'\n    this.breed = breed;\n  }\n  speak() {               // override\n    return super.speak() + ' — a bark';\n  }\n}\n\nconst rex = new Dog('Rex', 'Lab');\nrex.speak();              // 'Rex makes a sound — a bark'\nrex instanceof Animal;    // true</code></pre>" +
+      "<p><b>The chain it builds:</b></p>" +
+      "<pre><code>rex → Dog.prototype → Animal.prototype → Object.prototype → null</code></pre>" +
+      "<p class='ex-gotcha'>Inside a subclass constructor, touching <code>this</code> before calling <code>super()</code> throws a <code>ReferenceError</code>. The parent constructor is what creates the object <code>this</code> refers to, so it must run first.</p>",
+
+    "Encapsulation concepts":
+      "<p><b>Simple definition:</b> Encapsulation means hiding internal details and exposing only a small, deliberate interface.</p>" +
+      "<p><b>Technical definition:</b> It is the practice of restricting direct access to internal state, allowing changes only through controlled methods that can validate and maintain invariants.</p>" +
+      "<p><b>Why it is used:</b> If anything can change a value directly, no rule about that value can be trusted. Encapsulation gives one place to enforce correctness, and lets you change the internals later without breaking callers.</p>" +
+      "<p><b>When not to use:</b> Do not wrap plain data in getters and setters that add no rules. That is ceremony, not encapsulation.</p>" +
+      "<p><b>Two ways JavaScript does it:</b></p>" +
+      "<pre><code>// 1. Closures — private by scope\nfunction makeAccount(start) {\n  let balance = start;              // unreachable from outside\n  return {\n    deposit(n) {\n      if (n <= 0) throw new Error('invalid');\n      balance += n;\n    },\n    get balance() { return balance; }\n  };\n}\n\nconst acc = makeAccount(100);\nacc.deposit(50);\nacc.balance;     // 150\nacc.balance = 0; // ignored — no setter defined</code></pre>" +
+      "<pre><code>// 2. Private class fields — private by syntax\nclass Account {\n  #balance = 0;\n  deposit(n) {\n    if (n <= 0) throw new Error('invalid');\n    this.#balance += n;\n  }\n  get balance() { return this.#balance; }\n}</code></pre>" +
+      "<p class='ex-gotcha'>A leading underscore (<code>this._balance</code>) is only a naming convention &mdash; nothing stops anyone from writing to it. Real privacy comes from closures or <code>#</code> fields. And beware leaking references: returning an internal array lets callers mutate your state through the back door, so return a copy.</p>",
+  },
+
 };
 
 /* =========================================================================
@@ -559,6 +761,60 @@ window.QUESTIONS = {
     { level: "hard", tag: "this & bind",
       q: "Why <code>undefined</code>, and fix it two ways?<pre><code>const user = {\n  name: \"Ada\",\n  greet() {\n    setTimeout(function () {\n      console.log(this.name);\n    }, 100);\n  }\n};\nuser.greet();</code></pre>",
       a: "<p>The plain callback has its own <code>this</code> (not <code>user</code>) → <code>undefined</code>.</p><p><b>Fix 1 — arrow</b> (inherits this):</p><pre><code>setTimeout(() => console.log(this.name), 100);</code></pre><p><b>Fix 2 — bind:</b></p><pre><code>setTimeout(function () {\n  console.log(this.name);\n}.bind(this), 100);</code></pre>" },
+  ],
+
+  "this, objects & prototypes": [
+    { level: "easy", tag: "this basics",
+      q: "What does each log?<pre><code>const user = {\n  name: \"Ada\",\n  greet() { return this.name; }\n};\n\nconsole.log(user.greet());\n\nconst fn = user.greet;\nconsole.log(fn());</code></pre>",
+      a: "<p><code>\"Ada\"</code>, then <code>undefined</code>.</p><p><code>this</code> is decided by the <b>call site</b>, not where the function was written. In <code>user.greet()</code>, <code>user</code> sits left of the dot → <code>this === user</code>. Assigning to <code>fn</code> strips the dot away, so there is no owner and <code>this</code> falls back to the global object (or <code>undefined</code> in strict mode).</p><p><b>Fix:</b> <code>const fn = user.greet.bind(user);</code></p>" },
+
+    { level: "easy", tag: "arrow vs method",
+      q: "Why does this print <code>undefined</code>, and what is the fix?<pre><code>const user = {\n  name: \"Ada\",\n  greet: () => this.name\n};\nconsole.log(user.greet());</code></pre>",
+      a: "<p>Arrow functions have <b>no <code>this</code> of their own</b> — they inherit it lexically from the surrounding scope. An object literal is <em>not</em> a scope, so <code>this</code> here comes from outside the object entirely, not from <code>user</code>.</p><p><b>Fix — use a regular method:</b></p><pre><code>const user = {\n  name: \"Ada\",\n  greet() { return this.name; }  // 'Ada'\n};</code></pre><p><b>Rule of thumb:</b> arrows are great for callbacks <em>inside</em> a method, wrong <em>as</em> the method.</p>" },
+
+    { level: "easy", tag: "optional chaining & ??",
+      q: "Predict each line:<pre><code>const user = { profile: null, count: 0 };\n\nuser.profile?.city;\nuser.count || 10;\nuser.count ?? 10;\nuser.profile.city;</code></pre>",
+      a: "<p><code>undefined</code>, <code>10</code>, <code>0</code>, then a <b>TypeError</b>.</p><ul><li><code>?.</code> short-circuits on null/undefined → <code>undefined</code>.</li><li><code>||</code> falls back on <em>any</em> falsy value, so a valid <code>0</code> is lost → <code>10</code>.</li><li><code>??</code> only falls back on null/undefined, so <code>0</code> survives.</li><li>The last line has no guard: reading <code>.city</code> of <code>null</code> throws.</li></ul><p>The <code>||</code> vs <code>??</code> distinction is the point of the whole question.</p>" },
+
+    { level: "medium", tag: "call / apply / bind",
+      q: "Fill in all three so each logs <code>\"Ada from London\"</code>:<pre><code>function intro(city) {\n  return this.name + \" from \" + city;\n}\nconst person = { name: \"Ada\" };\n\n// intro.call(...)\n// intro.apply(...)\n// intro.bind(...)</code></pre>",
+      a: "<pre><code>intro.call(person, \"London\");     // args as a list\nintro.apply(person, [\"London\"]);  // args as an array\n\nconst bound = intro.bind(person);\nbound(\"London\");                  // bind RETURNS a function</code></pre><p><b>Key difference:</b> <code>call</code> and <code>apply</code> invoke <em>immediately</em> and differ only in argument packaging (<b>C</b>all = <b>C</b>ommas, <b>A</b>pply = <b>A</b>rray). <code>bind</code> invokes nothing — it hands back a new function with <code>this</code> locked in permanently.</p>" },
+
+    { level: "medium", tag: "dynamic keys",
+      q: "Why is the second log <code>undefined</code>, and how do you build <code>{ status: \"active\" }</code> dynamically?<pre><code>const user = { name: \"Ada\" };\nconst key = \"name\";\n\nconsole.log(user[key]);\nconsole.log(user.key);</code></pre>",
+      a: "<p><code>\"Ada\"</code>, then <code>undefined</code>. Brackets <b>evaluate</b> the expression inside (<code>key</code> → <code>\"name\"</code>); the dot always means the <b>literal text</b> after it, so <code>user.key</code> looks for a property actually named <code>\"key\"</code>.</p><p><b>Building a dynamic key</b> — computed property syntax:</p><pre><code>const field = \"status\";\nconst obj = { [field]: \"active\" }; // { status: 'active' }\n\n// without brackets you get the literal word:\n{ field: \"active\" }                // { field: 'active' }</code></pre>" },
+
+    { level: "medium", tag: "destructuring",
+      q: "What are <code>city</code>, <code>role</code>, and <code>label</code>?<pre><code>const user = {\n  name: \"Ada\",\n  address: { city: \"London\" },\n  label: null\n};\n\nconst { address: { city } } = user;\nconst { role = \"guest\" } = user;\nconst { label = \"none\" } = user;</code></pre>",
+      a: "<p><code>city = \"London\"</code>, <code>role = \"guest\"</code>, <code>label = null</code>.</p><p>The nested pattern reaches into <code>address</code>. <code>role</code> is missing entirely → <code>undefined</code> → the default fires.</p><p><b>The trap is <code>label</code>:</b> defaults only trigger on <code>undefined</code>, <b>never on <code>null</code></b>. Since <code>label</code> exists and holds <code>null</code>, the default is skipped. Use <code>user.label ?? \"none\"</code> if you want null handled too.</p>" },
+
+    { level: "medium", tag: "prototype vs own",
+      q: "Predict all four:<pre><code>function User(name) { this.name = name; }\nUser.prototype.greet = function () { return this.name; };\n\nconst u = new User(\"Ada\");\n\nu.greet();\nu.hasOwnProperty(\"name\");\nu.hasOwnProperty(\"greet\");\nObject.keys(u);</code></pre>",
+      a: "<p><code>\"Ada\"</code>, <code>true</code>, <code>false</code>, <code>[\"name\"]</code>.</p><p><code>name</code> was assigned onto the instance by the constructor, so it is an <b>own</b> property. <code>greet</code> lives on <code>User.prototype</code> and is only <em>borrowed</em> through the prototype chain — the instance never owns it.</p><p><code>Object.keys</code> lists only own enumerable properties, which is exactly why prototype methods never show up there. That is the whole point: one shared <code>greet</code> serves a thousand instances instead of being copied into each.</p>" },
+
+    { level: "medium", tag: "new keyword",
+      q: "What happens here, and why?<pre><code>function User(name) {\n  this.name = name;\n}\n\nconst a = User(\"Ada\");   // note: no 'new'\nconsole.log(a);</code></pre>",
+      a: "<p><code>a</code> is <code>undefined</code>.</p><p>Without <code>new</code> this is an ordinary function call — no object is created and nothing is returned. In <b>strict mode</b> <code>this</code> is <code>undefined</code>, so <code>this.name = name</code> throws a TypeError. In <b>sloppy mode</b> it is worse: <code>this</code> is the global object, so it silently creates a global <code>name</code> variable and returns <code>undefined</code>.</p><p><b>What <code>new</code> actually does:</b></p><pre><code>1. create a fresh {}\n2. link its prototype → User.prototype\n3. bind this → that object\n4. run the body\n5. return this implicitly</code></pre><p>ES6 classes fix this by throwing immediately if called without <code>new</code>.</p>" },
+
+    { level: "medium", tag: "shallow copy",
+      q: "What does the last line log?<pre><code>const original = { name: \"Ada\", address: { city: \"London\" } };\nconst copy = { ...original };\n\ncopy.name = \"Sam\";\ncopy.address.city = \"Paris\";\n\nconsole.log(original.name);\nconsole.log(original.address.city);</code></pre>",
+      a: "<p><code>\"Ada\"</code>, then <code>\"Paris\"</code>.</p><p>Spread makes a <b>shallow</b> copy. Top-level primitives like <code>name</code> are genuinely duplicated, so changing the copy is safe. But <code>address</code> was copied <em>by reference</em> — both objects point at the same nested object, so mutating it through either name is visible from both.</p><p><b>Fixes:</b></p><pre><code>// deep clone\nconst copy = structuredClone(original);\n\n// or copy the nested level explicitly\nconst copy = { ...original, address: { ...original.address } };</code></pre>" },
+
+    { level: "hard", tag: "this in callbacks",
+      q: "Why does this log <code>undefined</code>, and what are three ways to fix it?<pre><code>const counter = {\n  count: 5,\n  report() {\n    setTimeout(function () {\n      console.log(this.count);\n    }, 100);\n  }\n};\ncounter.report();</code></pre>",
+      a: "<p>The callback passed to <code>setTimeout</code> is invoked as a <b>plain function</b>, not as a method of <code>counter</code>. It gets its own <code>this</code> (the timer/global object), so <code>this.count</code> is <code>undefined</code>.</p><p><b>Fix 1 — arrow function</b> (inherits <code>this</code> from <code>report</code>):</p><pre><code>setTimeout(() => console.log(this.count), 100);</code></pre><p><b>Fix 2 — bind:</b></p><pre><code>setTimeout(function () {\n  console.log(this.count);\n}.bind(this), 100);</code></pre><p><b>Fix 3 — capture it in a variable</b> (the pre-ES6 pattern):</p><pre><code>const self = this;\nsetTimeout(function () {\n  console.log(self.count);\n}, 100);</code></pre><p>In modern code, Fix 1 is the idiomatic answer.</p>" },
+
+    { level: "hard", tag: "prototype chain",
+      q: "Trace the lookup and predict the output:<pre><code>const animal = { speak() { return \"sound\"; } };\nconst dog = Object.create(animal);\nconst puppy = Object.create(dog);\n\npuppy.name = \"Rex\";\n\nconsole.log(puppy.speak());\nconsole.log(puppy.hasOwnProperty(\"speak\"));\nconsole.log(puppy.fly);</code></pre>",
+      a: "<p><code>\"sound\"</code>, <code>false</code>, <code>undefined</code>.</p><p><b>The walk for <code>speak</code>:</b></p><pre><code>puppy   → not found\ndog     → not found\nanimal  → FOUND → called</code></pre><p><b>The walk for <code>fly</code>:</b></p><pre><code>puppy → dog → animal → Object.prototype → null\n→ nothing found → undefined (no error)</code></pre><p>A missing <b>property</b> returns <code>undefined</code> quietly. Calling it (<code>puppy.fly()</code>) is what throws a TypeError. And <code>hasOwnProperty</code> is itself found on <code>Object.prototype</code> — proof the chain is working even as it reports <code>false</code>.</p>" },
+
+    { level: "hard", tag: "class inheritance",
+      q: "Find the bug, and explain what <code>super</code> does in both places:<pre><code>class Animal {\n  constructor(name) { this.name = name; }\n  speak() { return this.name + \" makes a sound\"; }\n}\n\nclass Dog extends Animal {\n  constructor(name, breed) {\n    this.breed = breed;\n    super(name);\n  }\n  speak() { return super.speak() + \" — a bark\"; }\n}\n\nnew Dog(\"Rex\", \"Lab\");</code></pre>",
+      a: "<p><b>Bug:</b> <code>this.breed = breed</code> runs before <code>super(name)</code> → <code>ReferenceError: Must call super constructor before accessing 'this'</code>.</p><p>In a derived class, the <b>parent constructor is what creates the object</b> that <code>this</code> refers to. Until <code>super()</code> returns, <code>this</code> does not exist yet.</p><pre><code>constructor(name, breed) {\n  super(name);        // must come first\n  this.breed = breed;\n}</code></pre><p><b>Two different jobs for <code>super</code>:</b></p><ul><li>In the constructor, <code>super(...)</code> <b>calls the parent constructor</b>.</li><li>In a method, <code>super.method()</code> <b>calls the parent's version</b> of an overridden method — here letting <code>Dog.speak</code> extend rather than replace <code>Animal.speak</code>.</li></ul><p>Fixed, it returns <code>\"Rex makes a sound — a bark\"</code>.</p>" },
+
+    { level: "hard", tag: "encapsulation",
+      q: "Which of these is truly private, and why does the third one leak?<pre><code>// A\nclass A { _balance = 100; }\n\n// B\nclass B { #balance = 100; }\n\n// C\nfunction makeC() {\n  const items = [\"a\"];\n  return { getItems() { return items; } };\n}</code></pre>",
+      a: "<p><b>A is not private.</b> The underscore is only a naming convention — <code>new A()._balance = 0</code> works fine. It signals intent, it enforces nothing.</p><p><b>B is truly private.</b> <code>#balance</code> is enforced by the language; touching it from outside the class body is a <b>SyntaxError</b>, not just a runtime failure.</p><p><b>C leaks by reference.</b> <code>items</code> is genuinely unreachable, but <code>getItems()</code> hands out the live array itself:</p><pre><code>const c = makeC();\nc.getItems().push(\"b\");   // mutated the private state!</code></pre><p><b>Fix — return a copy:</b></p><pre><code>getItems() { return [...items]; }</code></pre><p><b>Lesson:</b> hiding a variable is not enough if you then hand out a reference to it. Encapsulation has to cover what you return, not just what you store.</p>" },
   ],
 
 };

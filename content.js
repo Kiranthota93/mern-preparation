@@ -9,6 +9,16 @@ window.EXPLANATIONS = {
 
   /* ------------------------------------------------------------------ */
   "JavaScript fundamentals": {
+    "JavaScript fundamentals overview":
+      "<p><b>Simple definition:</b> JavaScript fundamentals are the core building blocks: variables, values, types, operators, scope, and control flow.</p>" +
+      "<p><b>Technical definition:</b> These concepts define how JavaScript stores data, evaluates expressions, manages scope and hoisting, and controls program execution.</p>" +
+      "<p><b>Why it is used:</b> Without these basics, every later topic (functions, arrays, objects, async code, React, Node, etc.) becomes harder to reason about because the language behavior is unclear.</p>" +
+      "<p><b>When to use:</b> Use these concepts whenever reading or writing JavaScript code, especially to decide which declaration to use, how values compare, and how data flows through the app.</p>" +
+      "<p><b>When not to use:</b> Do not rely on loose equality or <code>var</code> when you can avoid it; do not treat every value as the same because JavaScript has many implicit conversions.</p>" +
+      "<p><b>How it works internally:</b> JavaScript creates execution contexts, stores variables in scope chains, resolves hoisting, and evaluates expressions left-to-right with coercion rules when needed.</p>" +
+      "<pre><code>let count = 0;\nif (count === 0) {\n  console.log('start');\n}</code></pre>" +
+      "<p class='ex-gotcha'>These basics are the difference between 'code that works by accident' and 'code you can debug confidently'.</p>",
+
     "var, let, const":
       "<p>Three ways to declare a variable, differing in <b>scope</b> and reassignment.</p>" +
       "<pre><code>var a = 1;   // function-scoped, old style\nlet b = 2;   // block-scoped, reassignable\nconst c = 3; // block-scoped, no reassign</code></pre>" +

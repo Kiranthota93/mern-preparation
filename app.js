@@ -301,12 +301,12 @@ const TIERS = [
     "Bulkhead pattern","Sidecar pattern" ] },
 
   { stack: "js", n: 1, name: "JavaScript fundamentals", tag: "red", items: [
-    "var, let, const","Primitive vs reference types","Type coercion","== vs ===",
+    "JavaScript fundamentals overview","var, let, const","Primitive vs reference types","Type coercion","== vs ===",
     "Truthy and falsy values","null vs undefined","typeof","Scope","Global scope","Function scope",
     "Block scope","Lexical scope","Hoisting","Temporal Dead Zone","Execution context","Call stack",
     "Strict mode" ] },
   { stack: "js", n: 2, name: "Functions", tag: "red", items: [
-    "Function declarations","Function expressions","Arrow functions","Parameters and arguments",
+    "Function basics (overview)","Function declarations","Function expressions","Arrow functions","Parameters and arguments",
     "Default parameters","Rest parameters","Spread syntax","Higher-order functions",
     "Callback functions","First-class functions","Closures","IIFE","Pure vs impure functions",
     "Function composition","Currying concept","Partial application concept" ] },

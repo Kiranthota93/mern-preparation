@@ -222,6 +222,21 @@
       <main>
         <p class="intro">The building blocks of the language. Read a topic, note the <b style="color:var(--accent)">Gotcha</b>, then switch to the Coding Questions tab to test yourself.</p>
 
+        <section class="topic" id="overview">
+          <h2><span class="num">00</span> JavaScript fundamentals overview</h2>
+          <p><b>Simple definition:</b> JavaScript fundamentals are the core building blocks: variables, values, types, operators, scope, and control flow.</p>
+          <p><b>Technical definition:</b> These concepts define how JavaScript stores data, evaluates expressions, manages scope and hoisting, and controls program execution.</p>
+          <p><b>Why it is used:</b> Without these basics, later topics become harder because JavaScript behavior feels unpredictable instead of logical.</p>
+          <p><b>When to use:</b> Use these ideas whenever you read or write JavaScript code, especially when choosing declarations, comparing values, or debugging bugs.</p>
+          <p><b>When not to use:</b> Do not rely on loose equality or <code>var</code> when you can avoid it; do not assume all values behave the same under type coercion.</p>
+          <p><b>How it works internally:</b> JavaScript creates execution contexts, stores variables in scope chains, resolves hoisting, and evaluates expressions left-to-right with coercion rules when needed.</p>
+          <pre><code><span class="kw">let</span> count = 0;
+<span class="kw">if</span> (count === 0) {
+  console.log(<span class="st">"start"</span>);
+}</code></pre>
+          <div class="gotcha"><b>Gotcha</b><span>These basics are the difference between 'code that works by accident' and 'code you can reason about confidently'.</span></div>
+        </section>
+
         <section class="topic" id="t1">
           <h2><span class="num">01</span> Variables: var, let, const</h2>
           <p>Three ways to declare a variable. They differ in <b>scope</b> and whether they can be reassigned.</p>

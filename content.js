@@ -683,6 +683,956 @@ window.EXPLANATIONS = {
       "<p class='ex-gotcha'>A leading underscore (<code>this._balance</code>) is only a naming convention &mdash; nothing stops anyone from writing to it. Real privacy comes from closures or <code>#</code> fields. And beware leaking references: returning an internal array lets callers mutate your state through the back door, so return a copy.</p>",
   },
 
+  /* ------------------------------------------------------------------ */
+  "Asynchronous JavaScript": {
+    "Synchronous vs asynchronous execution":
+      "<p><b>Simple definition:</b> Synchronous code runs one line at a time, each line waiting for the last. Asynchronous code lets a slow operation run in the background while the rest of the program keeps going.</p>" +
+      "<p><b>Technical definition:</b> JavaScript itself is single-threaded &mdash; it can only run one piece of your code at a time. \"Async\" does not mean multiple threads; it means the slow part (a timer, a network request, a file read) is handed off to the browser or Node runtime, and your code is notified with a callback once it finishes.</p>" +
+      "<p><b>Why it is used:</b> Without it, a 2-second network request would freeze the entire page (or block the whole Node server) for those 2 seconds. Handing the wait off keeps the program responsive.</p>" +
+      "<p><b>How it works internally:</b> the runtime (not the JS engine) does the actual waiting.</p>" +
+      "<pre><code>call stack (your code)\n   ↓ hands off a slow task\nWeb API / Node API (timer, network, file system)\n   ↓ when done, queues a callback\ncallback queue\n   ↓ event loop moves it back\ncall stack (runs when stack is empty)</code></pre>" +
+      "<pre><code>console.log('1');\nsetTimeout(() => console.log('3'), 1000);\nconsole.log('2');\n// logs: 1, 2, 3 — the timer runs LATER, script keeps going now</code></pre>" +
+      "<p class='ex-gotcha'>\"Asynchronous\" does not mean \"runs in parallel\". Your JS callbacks still run one at a time, on the same single thread &mdash; async only changes <em>when</em> they run, not how many run at once.</p>",
+
+    "Callbacks":
+      "<p><b>Simple definition:</b> A callback is a function you hand to another function, to be run later &mdash; often once some slow work finishes.</p>" +
+      "<p><b>Technical definition:</b> Callbacks were JavaScript's original mechanism for asynchronous control flow, before Promises existed. The function that receives the callback decides when (and with what arguments) to invoke it.</p>" +
+      "<p><b>Why it is used:</b> It is still the basis for events (<code>addEventListener</code>) and many Node APIs, and every Promise is built on the same underlying idea.</p>" +
+      "<p><b>When not to use:</b> For new async code with multiple steps, prefer Promises/<code>async</code>-<code>await</code> &mdash; see \"Callback hell\" for why.</p>" +
+      "<pre><code>function loadUser(id, callback) {\n  setTimeout(() => {\n    callback(null, { id, name: 'Ada' }); // (error, result) convention\n  }, 500);\n}\n\nloadUser(1, (err, user) => {\n  if (err) return console.log('failed');\n  console.log(user.name); // 'Ada' — after 500ms\n});</code></pre>" +
+      "<p class='ex-gotcha'>The <code>(error, result)</code> parameter order (\"error-first callback\") is a Node.js convention, not a language rule &mdash; forgetting to check <code>err</code> first is a classic source of silent bugs.</p>",
+
+    "Callback hell":
+      "<p><b>Simple definition:</b> When each async step depends on the last, callback-based code nests deeper and deeper, until it becomes a sideways-growing pyramid that's hard to read or change.</p>" +
+      "<p><b>Technical definition:</b> Callback hell (the \"pyramid of doom\") arises because callbacks have no way to compose &mdash; the only way to sequence async steps with callbacks alone is to nest the next one inside the previous one's callback.</p>" +
+      "<p><b>Why it matters:</b> beyond ugliness, nested callbacks make error handling repetitive (every level needs its own <code>if (err)</code>) and control flow (loops, early returns, try/catch) far harder to reason about.</p>" +
+      "<pre><code>getUser(id, (err, user) => {\n  if (err) return handle(err);\n  getPosts(user.id, (err, posts) => {\n    if (err) return handle(err);\n    getComments(posts[0].id, (err, comments) => {\n      if (err) return handle(err);\n      console.log(comments); // 3 levels deep, and growing\n    });\n  });\n});</code></pre>" +
+      "<p class='ex-gotcha'>The fix is not \"write less nested code\" as a style rule &mdash; it's a structural problem that Promises and <code>async</code>/<code>await</code> solve directly, by letting async steps read top-to-bottom instead of nesting.</p>",
+
+    "Promises":
+      "<p><b>Simple definition:</b> A promise is an object that stands in for a value you don't have yet, but will (or will fail to) get eventually.</p>" +
+      "<p><b>Technical definition:</b> A <code>Promise</code> wraps an asynchronous operation and exposes a consistent interface (<code>.then</code>/<code>.catch</code>/<code>.finally</code>) for reacting to its eventual success or failure, regardless of how long it takes.</p>" +
+      "<p><b>Why it is used:</b> It replaces nested callbacks with a chain that reads top-to-bottom, and gives async code a single, predictable way to report success or failure.</p>" +
+      "<p><b>When to use:</b> Any time you're wrapping or consuming an async operation &mdash; a network call, a timer, a file read.</p>" +
+      "<pre><code>const promise = new Promise((resolve, reject) => {\n  setTimeout(() => {\n    const ok = true;\n    ok ? resolve('done') : reject(new Error('failed'));\n  }, 500);\n});\n\npromise.then(value => console.log(value)); // 'done', after 500ms</code></pre>" +
+      "<p><b>Returns:</b> the constructor returns a new promise object immediately &mdash; the executor function inside runs synchronously right away, but <code>resolve</code>/<code>reject</code> settle it later.</p>" +
+      "<p class='ex-gotcha'>Creating a promise does not start a timer or a fetch \"in the background\" by magic &mdash; the code inside the executor runs immediately and synchronously; it's <em>settling</em> (calling resolve/reject) that can happen later.</p>",
+
+    "Promise states":
+      "<p><b>Simple definition:</b> Every promise is in exactly one of three states: waiting, succeeded, or failed &mdash; and once it succeeds or fails, that's final.</p>" +
+      "<p><b>Technical definition:</b> A promise starts <b>pending</b>. It can transition once to either <b>fulfilled</b> (resolved with a value) or <b>rejected</b> (failed with a reason). Fulfilled and rejected are both called <em>settled</em>, and a settled promise can never change state again.</p>" +
+      "<p><b>Why it matters:</b> this permanence is what makes promises trustworthy &mdash; you can attach a <code>.then</code> at any time, even after it has already settled, and it will still fire with the correct final value exactly once.</p>" +
+      "<pre><code>pending\n  ├──→ fulfilled  (resolve() was called)   ─┐\n  └──→ rejected   (reject() was called)    ─┴─→ settled (permanent)</code></pre>" +
+      "<pre><code>const p = new Promise(resolve => resolve('first'));\np.then(v => console.log(v)); // 'first'\n// calling resolve again does nothing — already settled</code></pre>" +
+      "<p class='ex-gotcha'>Calling <code>resolve()</code> a second time, or calling <code>reject()</code> after <code>resolve()</code>, is silently ignored &mdash; the first settlement wins and every later one is a no-op.</p>",
+
+    ".then":
+      "<p><b>Simple definition:</b> <code>.then(onSuccess, onFailure)</code> registers what should happen once a promise settles.</p>" +
+      "<p><b>Technical definition:</b> <code>.then</code> takes up to two callbacks &mdash; one for fulfillment, one for rejection &mdash; and, critically, <b>always returns a brand-new promise</b>, which is what makes chaining possible.</p>" +
+      "<p><b>Why it is used:</b> It's the fundamental way to consume a promise's eventual value.</p>" +
+      "<pre><code>fetchUser(1)\n  .then(user => user.name)   // returns a NEW promise, resolved with the name\n  .then(name => console.log(name)); // 'Ada'</code></pre>" +
+      "<p><b>Returns:</b> a new promise. If the callback returns a plain value, the new promise resolves with it. If the callback returns <em>another promise</em>, the new promise waits for that one and adopts its outcome (auto-\"flattening\", no manual unwrapping needed).</p>" +
+      "<p class='ex-gotcha'>Forgetting to <code>return</code> inside a <code>.then</code> callback is one of the most common async bugs &mdash; the next <code>.then</code> in the chain receives <code>undefined</code> instead of the value you meant to pass along.</p>",
+
+    ".catch":
+      "<p><b>Simple definition:</b> <code>.catch(onFailure)</code> handles a rejection anywhere earlier in the chain.</p>" +
+      "<p><b>Technical definition:</b> <code>.catch(fn)</code> is exactly shorthand for <code>.then(undefined, fn)</code>. It catches a rejection from the promise it's attached to, and (importantly) from <em>any</em> earlier <code>.then</code> in the same chain that didn't already handle it.</p>" +
+      "<p><b>Why it is used:</b> A single <code>.catch</code> at the end of a chain is usually cleaner than passing an error handler to every individual <code>.then</code>.</p>" +
+      "<pre><code>fetchUser(1)\n  .then(user => { throw new Error('boom'); })\n  .then(x => console.log('never runs'))\n  .catch(err => console.log('caught:', err.message)); // 'caught: boom'</code></pre>" +
+      "<p class='ex-gotcha'>A <code>.catch</code> handles the error and, by returning normally, <b>resumes the chain as fulfilled</b> &mdash; any <code>.then</code> after the <code>.catch</code> runs normally, not as an error handler. If you re-throw inside <code>.catch</code>, the chain stays rejected.</p>",
+
+    ".finally":
+      "<p><b>Simple definition:</b> <code>.finally(fn)</code> runs after a promise settles, no matter whether it succeeded or failed.</p>" +
+      "<p><b>Technical definition:</b> The callback receives no arguments (it can't see the value or the error) and cannot change the outcome &mdash; the original fulfillment value or rejection reason passes through to whatever comes next, unless <code>finally</code>'s own callback throws.</p>" +
+      "<p><b>Why it is used:</b> Cleanup that must always happen &mdash; hiding a loading spinner, closing a connection &mdash; regardless of success or failure.</p>" +
+      "<pre><code>fetchUser(1)\n  .then(user => console.log(user))\n  .catch(err => console.log('failed'))\n  .finally(() => console.log('done loading')); // always runs last</code></pre>" +
+      "<p class='ex-gotcha'>Because it can't see the value, <code>.finally</code> is not the place to do anything with the result &mdash; and if its own callback throws or returns a rejected promise, <em>that</em> becomes the new outcome, overriding whatever came before.</p>",
+
+    "Promise chaining":
+      "<p><b>Simple definition:</b> Chaining is stringing multiple <code>.then</code> calls together to run async steps one after another, each using the result of the last.</p>" +
+      "<p><b>Technical definition:</b> Because every <code>.then</code> returns a new promise, and returning a promise from inside a <code>.then</code> callback makes the chain wait for it, you can sequence any number of async steps in a single flat chain instead of nesting them.</p>" +
+      "<p><b>Why it is used:</b> It's the direct fix for callback hell &mdash; a chain reads top-to-bottom instead of growing sideways.</p>" +
+      "<pre><code>getUser(1)\n  .then(user => getPosts(user.id))   // waits for this promise too\n  .then(posts => getComments(posts[0].id))\n  .then(comments => console.log(comments))\n  .catch(err => console.log('any step failed:', err.message));</code></pre>" +
+      "<p class='ex-gotcha'>Nesting <code>.then</code> calls instead of chaining them flat (<code>getUser().then(u => getPosts(u).then(p => ...))</code>) recreates callback hell with promises &mdash; the whole benefit is lost. Always <code>return</code> and chain flat.</p>",
+
+    "async/await":
+      "<p><b>Simple definition:</b> <code>async</code>/<code>await</code> is syntax that lets you write promise-based code that <em>looks</em> synchronous, top to bottom.</p>" +
+      "<p><b>Technical definition:</b> An <code>async</code> function always returns a promise. Inside it, <code>await</code> pauses that function's execution (without blocking anything else) until the awaited promise settles, then resumes with its value.</p>" +
+      "<p><b>Why it is used:</b> It reads like normal sequential code &mdash; loops, try/catch, and conditionals all work naturally, unlike inside a <code>.then</code> chain.</p>" +
+      "<p><b>When not to use:</b> Do not use <code>await</code> for independent operations that could run at the same time &mdash; see \"Sequential vs parallel async execution\".</p>" +
+      "<pre><code>async function loadDashboard(id) {\n  const user = await getUser(id);     // pauses here\n  const posts = await getPosts(user.id); // then here\n  return { user, posts };\n}\n\nloadDashboard(1).then(data => console.log(data));\n// loadDashboard itself always returns a promise</code></pre>" +
+      "<p><b>Returns:</b> whatever you <code>return</code> from an <code>async</code> function is automatically wrapped in a resolved promise. If you <code>throw</code>, the returned promise rejects.</p>" +
+      "<p class='ex-gotcha'>\"<code>await</code> pauses everything\" is the common misreading &mdash; it only pauses <em>that function</em>. The rest of the program (other code, the event loop, other async functions) keeps running normally.</p>",
+
+    "try/catch with async":
+      "<p><b>Simple definition:</b> Wrapping <code>await</code> in <code>try</code>/<code>catch</code> lets you handle a rejected promise the same way you'd handle a thrown error.</p>" +
+      "<p><b>Technical definition:</b> When an awaited promise rejects, <code>await</code> effectively re-throws that rejection reason at the point of the <code>await</code>, so an ordinary <code>catch</code> block around it will catch it.</p>" +
+      "<p><b>Why it is used:</b> It unifies error handling for sync and async code into one familiar pattern, instead of a separate <code>.catch()</code> chain.</p>" +
+      "<pre><code>async function loadUser(id) {\n  try {\n    const user = await fetchUser(id); // rejects\n    console.log(user);\n  } catch (err) {\n    console.log('failed:', err.message); // catches it\n  }\n}</code></pre>" +
+      "<p class='ex-gotcha'>The <code>try</code>/<code>catch</code> only catches a rejection from an <code>await</code> <em>inside its own block</em>. A promise you create but forget to <code>await</code> rejects on its own, outside the <code>try</code>, and the <code>catch</code> will never see it &mdash; it becomes an unhandled rejection instead.</p>",
+
+    "Promise.all":
+      "<p><b>Simple definition:</b> <code>Promise.all(promises)</code> waits for every promise in a list to succeed, and gives you back all their results together.</p>" +
+      "<p><b>Technical definition:</b> It returns a single promise that fulfills with an array of results (in the same order as the input) once <em>all</em> input promises fulfill, or rejects immediately as soon as <em>any one</em> of them rejects (\"fail-fast\").</p>" +
+      "<p><b>Why it is used:</b> Running independent async operations at the same time, when you need every result and can't proceed without all of them.</p>" +
+      "<pre><code>const [user, posts, settings] = await Promise.all([\n  fetchUser(1), fetchPosts(1), fetchSettings(1)\n]); // all three run concurrently, not one after another</code></pre>" +
+      "<p class='ex-gotcha'>Fail-fast means one failure discards everything &mdash; even if 2 of 3 requests already succeeded, <code>Promise.all</code> rejects and you get none of the results back. Use <code>Promise.allSettled</code> if you need the successes even when something fails.</p>",
+
+    "Promise.allSettled":
+      "<p><b>Simple definition:</b> Like <code>Promise.all</code>, but it never fails &mdash; it waits for every promise to finish, whether it succeeded or not, and reports both.</p>" +
+      "<p><b>Technical definition:</b> It always fulfills (never rejects) with an array of <code>{ status, value }</code> or <code>{ status, reason }</code> objects, one per input promise, once every one of them has settled.</p>" +
+      "<p><b>Why it is used:</b> When you want the results of everything that succeeded, even if some operations failed &mdash; e.g. loading several independent widgets where one failing shouldn't blank out the rest.</p>" +
+      "<pre><code>const results = await Promise.allSettled([\n  fetchA(), fetchB() // B rejects\n]);\n// [\n//   { status: 'fulfilled', value: 'A ok' },\n//   { status: 'rejected', reason: Error('B failed') }\n// ]\nresults\n  .filter(r => r.status === 'fulfilled')\n  .forEach(r => console.log(r.value));</code></pre>" +
+      "<p class='ex-gotcha'>Because it never rejects, wrapping it in <code>try</code>/<code>catch</code> is pointless &mdash; you must check each <code>result.status</code> yourself instead of relying on an exception.</p>",
+
+    "Promise.race":
+      "<p><b>Simple definition:</b> <code>Promise.race(promises)</code> settles as soon as the <em>first</em> promise settles &mdash; win or lose.</p>" +
+      "<p><b>Technical definition:</b> It returns a promise that adopts the outcome (fulfilled or rejected) of whichever input promise settles first; the rest keep running but their results are ignored.</p>" +
+      "<p><b>Why it is used:</b> The classic use case is a timeout &mdash; race a real request against a timer that rejects, so a hung request can't stall forever.</p>" +
+      "<pre><code>const timeout = new Promise((_, reject) =>\n  setTimeout(() => reject(new Error('timeout')), 3000)\n);\n\nconst data = await Promise.race([fetchData(), timeout]);\n// resolves with fetchData()'s result if it beats 3s, else rejects</code></pre>" +
+      "<p class='ex-gotcha'>\"Race\" means first to <b>settle</b>, not first to succeed &mdash; if the fastest promise rejects, <code>Promise.race</code> rejects too, even if a slower one would have fulfilled. That's the exact difference from <code>Promise.any</code>.</p>",
+
+    "Promise.any":
+      "<p><b>Simple definition:</b> <code>Promise.any(promises)</code> gives you the first one that <em>succeeds</em>, ignoring failures unless everything fails.</p>" +
+      "<p><b>Technical definition:</b> It fulfills as soon as any input promise fulfills. It only rejects if <em>all</em> of them reject, and in that case rejects with an <code>AggregateError</code> containing every individual rejection reason.</p>" +
+      "<p><b>Why it is used:</b> Trying several equivalent sources (mirrors, fallback servers) and taking whichever answers first, successfully.</p>" +
+      "<pre><code>const fastest = await Promise.any([\n  fetchFromMirrorA(),  // fails\n  fetchFromMirrorB(),  // succeeds\n  fetchFromMirrorC(),  // still pending\n]);\n// resolves with mirror B's result — A's failure is ignored</code></pre>" +
+      "<p class='ex-gotcha'>Don't confuse it with <code>Promise.race</code>: <code>race</code> cares about who settles first (success or failure); <code>any</code> specifically waits for the first <em>success</em> and only gives up if literally everything fails.</p>",
+
+    "Sequential vs parallel async execution":
+      "<p><b>Simple definition:</b> If async steps don't depend on each other, running them one-by-one with separate <code>await</code>s wastes time &mdash; you should start them together instead.</p>" +
+      "<p><b>Technical definition:</b> Each <code>await</code> pauses until that specific promise settles before moving to the next line. If the operations are independent, awaiting them in sequence adds their durations together, when starting them concurrently (e.g. with <code>Promise.all</code>) only takes as long as the slowest one.</p>" +
+      "<p><b>Why it matters:</b> this is one of the highest-impact real-world performance bugs in async code &mdash; three independent 1-second requests can take 3 seconds sequentially, or ~1 second run together.</p>" +
+      "<pre><code>// SEQUENTIAL — slow, ~3× the time (unnecessary, they don't depend on each other)\nconst a = await fetchA(); // waits\nconst b = await fetchB(); // then waits again\nconst c = await fetchC(); // then waits again\n\n// PARALLEL — fast, all start together\nconst [a, b, c] = await Promise.all([fetchA(), fetchB(), fetchC()]);</code></pre>" +
+      "<p class='ex-gotcha'>The classic version of this bug is <code>await</code> inside a <code>for</code> loop over independent items &mdash; it silently runs every iteration one after another. If the items don't depend on each other, map to an array of promises first, then <code>Promise.all</code> that array.</p>",
+
+    "Error propagation in promises":
+      "<p><b>Simple definition:</b> An error in a promise chain skips forward past every <code>.then</code> until it finds a <code>.catch</code> (or an <code>await</code> inside a <code>try</code>/<code>catch</code>).</p>" +
+      "<p><b>Technical definition:</b> A rejection (or a thrown error inside a <code>.then</code> callback, which becomes a rejection) propagates down the chain, skipping the success handlers of subsequent <code>.then</code> calls, until it reaches a rejection handler.</p>" +
+      "<p><b>Why it is used:</b> This mirrors synchronous <code>try</code>/<code>catch</code> propagation, so you don't need an error check after every single async step &mdash; one handler at the end (or one <code>try</code>/<code>catch</code>) is usually enough.</p>" +
+      "<pre><code>step1()\n  .then(step2)          // throws\n  .then(step3)          // SKIPPED — error is already propagating\n  .then(step4)          // SKIPPED\n  .catch(err => console.log('caught at the end:', err.message));</code></pre>" +
+      "<p class='ex-gotcha'>A promise that's created but never given a <code>.catch</code> (and never awaited inside a <code>try</code>) still fails silently at first &mdash; it becomes an <b>unhandled rejection</b>, which most environments will eventually log as a warning or crash the process.</p>",
+
+    "Promise cancellation concepts":
+      "<p><b>Simple definition:</b> Once a promise exists, you cannot cancel it directly &mdash; there's no built-in <code>.cancel()</code> method.</p>" +
+      "<p><b>Technical definition:</b> A <code>Promise</code> represents a value that will eventually exist, not a runnable task &mdash; it has no concept of being stopped. What you actually cancel is the underlying <em>operation</em> (a fetch, a timer), which then causes its promise to reject.</p>" +
+      "<p><b>Why it matters:</b> a component that unmounts, or a search box where the user typed a new query, both need a way to say \"ignore the result of that earlier request\" &mdash; and promises alone can't express that.</p>" +
+      "<pre><code>// A promise cannot stop itself:\nconst p = fetch('/slow-endpoint');\n// there is no p.cancel() — the request keeps running</code></pre>" +
+      "<p class='ex-gotcha'>\"Cancelling a promise\" is really shorthand for \"cancelling the operation and ignoring its promise's eventual result\" &mdash; see <code>AbortController</code>, the standard tool for the former.</p>",
+
+    "AbortController":
+      "<p><b>Simple definition:</b> <code>AbortController</code> is a standard way to tell a cancellable async operation (like <code>fetch</code>) to stop.</p>" +
+      "<p><b>Technical definition:</b> Creating an <code>AbortController</code> gives you a <code>.signal</code> to pass into a cancellable API, and an <code>.abort()</code> method to call when you want it to stop. The operation then rejects its promise with an <code>AbortError</code>.</p>" +
+      "<p><b>Why it is used:</b> Cancelling an in-flight request when a user navigates away, types a new search, or a component unmounts &mdash; so a stale, late-arriving response can't overwrite newer data.</p>" +
+      "<pre><code>const controller = new AbortController();\n\nfetch('/search?q=abc', { signal: controller.signal })\n  .then(res => res.json())\n  .catch(err => {\n    if (err.name === 'AbortError') console.log('cancelled');\n  });\n\ncontroller.abort(); // triggers the rejection above</code></pre>" +
+      "<p class='ex-gotcha'>Aborting doesn't magically undo work already done, and it doesn't stop the underlying network byte transfer instantly &mdash; it tells the API to stop and reject its promise so <em>your code</em> can ignore the result; always check <code>err.name === 'AbortError'</code> so you don't treat a deliberate cancel as a real failure.</p>",
+  },
+
+  /* ------------------------------------------------------------------ */
+  "Event loop": {
+    "Event loop":
+      "<p><b>Simple definition:</b> The event loop is the mechanism that lets single-threaded JavaScript handle many things \"at once\" &mdash; it keeps checking: is the call stack empty? If so, run the next queued callback.</p>" +
+      "<p><b>Technical definition:</b> The event loop is a continuously-running process that coordinates the call stack, the Web/Node APIs, and the callback queues. It never runs your code itself &mdash; it only decides <em>when</em> a waiting callback gets pushed onto the call stack.</p>" +
+      "<p><b>Why it is used:</b> It's what makes non-blocking async possible on a single thread &mdash; slow operations are handed off elsewhere, and the loop brings their results back at the right moment without ever running two callbacks at the same instant.</p>" +
+      "<p><b>How it works internally</b> &mdash; the loop's actual rule, every tick:</p>" +
+      "<pre><code>1. Run the current task on the call stack until it's empty.\n2. Drain the ENTIRE microtask queue (run every microtask,\n   even new ones added while draining).\n3. (In browsers) possibly render a frame.\n4. Take exactly ONE task from the macrotask queue, run it.\n5. Go back to step 1.</code></pre>" +
+      "<pre><code>console.log('A');\nsetTimeout(() => console.log('D'), 0);\nPromise.resolve().then(() => console.log('C'));\nconsole.log('B');\n// A, B, C, D — sync first, then ALL microtasks, then ONE macrotask</code></pre>" +
+      "<p class='ex-gotcha'>The loop does not run your code \"in parallel\" with itself &mdash; it strictly alternates: finish what's running, drain microtasks completely, then take just one macrotask. Understanding that asymmetry (drain vs. take-one) answers most ordering questions in this topic.</p>",
+
+    "Call stack":
+      "<p><b>Simple definition:</b> The call stack is where JavaScript keeps track of what function is currently running, and what called it.</p>" +
+      "<p><b>Technical definition:</b> It's a LIFO (last-in, first-out) stack of execution contexts. Calling a function pushes a new frame on top; returning from it pops that frame off. The event loop only moves a queued callback onto the call stack once it is completely empty.</p>" +
+      "<p><b>Why it matters:</b> because JS has exactly one call stack, it can only truly execute one line of your code at any instant &mdash; this is the literal meaning of \"single-threaded\".</p>" +
+      "<pre><code>function c() { console.log('in c'); }\nfunction b() { c(); }\nfunction a() { b(); }\na();\n\n// stack grows: a → b → c\n// 'in c' logs, then c returns, b returns, a returns\n// stack shrinks back to empty</code></pre>" +
+      "<p class='ex-gotcha'>\"Maximum call stack size exceeded\" (e.g. from infinite recursion with no base case) means the stack grew frame after frame with nothing ever popping off, until it overflowed its fixed size limit.</p>",
+
+    "Web APIs/runtime APIs":
+      "<p><b>Simple definition:</b> Things like <code>setTimeout</code>, <code>fetch</code>, and DOM events are not part of the JavaScript language itself &mdash; they're provided by the environment running your code (the browser, or Node).</p>" +
+      "<p><b>Technical definition:</b> The JS engine (e.g. V8) only implements the language spec &mdash; values, functions, closures, promises' mechanics. Timers, network requests, and file I/O are supplied by the host environment, which does the actual waiting outside the JS engine and hands a callback back to the queue when done.</p>" +
+      "<p><b>Why it matters:</b> this is <em>why</em> async doesn't block the single JS thread &mdash; the waiting happens in the runtime (often backed by real OS-level concurrency), not in your JS code, which stays free to keep running.</p>" +
+      "<pre><code>setTimeout(fn, 1000);\n// JS engine: 'not my job to wait' — hands the timer off\n// to the browser/Node runtime, which calls back into the\n// macrotask queue once 1000ms has passed</code></pre>" +
+      "<p class='ex-gotcha'>This is why the exact same JS language can behave slightly differently between a browser and Node &mdash; <code>setTimeout</code>, <code>fetch</code>, and the queue phases are runtime features, not JavaScript-the-language features.</p>",
+
+    "Task queue":
+      "<p><b>Simple definition:</b> Also called the macrotask queue &mdash; where callbacks from things like <code>setTimeout</code>, <code>setInterval</code>, and I/O wait their turn to run.</p>" +
+      "<p><b>Technical definition:</b> A FIFO queue of macrotasks. On every iteration of the event loop, after fully draining the microtask queue, the loop removes and runs exactly <b>one</b> task from this queue.</p>" +
+      "<p><b>Why it is used:</b> It's the mechanism that lets timers and I/O callbacks run only when the stack is free, in the order they became ready.</p>" +
+      "<pre><code>setTimeout(() => console.log('first timer'), 0);\nsetTimeout(() => console.log('second timer'), 0);\n// both queued as macrotasks — 'first timer' then 'second timer',\n// each getting the FULL microtask queue drained before the next one runs</code></pre>" +
+      "<p class='ex-gotcha'>Only <b>one</b> macrotask runs per loop iteration, even if several are ready &mdash; contrast with the microtask queue, which is always drained completely before moving on.</p>",
+
+    "Microtask queue":
+      "<p><b>Simple definition:</b> A separate, higher-priority queue for promise callbacks and <code>queueMicrotask</code> &mdash; it's always fully emptied before the next macrotask runs.</p>" +
+      "<p><b>Technical definition:</b> After each synchronous task finishes, the event loop repeatedly pulls and runs microtasks &mdash; including ones newly added by other microtasks &mdash; until the queue is completely empty, before doing anything else.</p>" +
+      "<p><b>Why it is used:</b> Promises need to resolve reliably and predictably before the next \"round\" of work, so promise reactions were given this stronger guarantee than timers.</p>" +
+      "<pre><code>Promise.resolve()\n  .then(() => {\n    console.log('1');\n    Promise.resolve().then(() => console.log('2')); // queued DURING the drain\n  });\nsetTimeout(() => console.log('3'), 0);\n// logs: 1, 2, 3 — the nested microtask (2) still runs before the macrotask (3)</code></pre>" +
+      "<p class='ex-gotcha'>Because the drain keeps consuming <em>newly added</em> microtasks too, a microtask that keeps scheduling another microtask can starve macrotasks (and browser rendering) indefinitely &mdash; see \"Event-loop starvation\".</p>",
+
+    "Macrotasks":
+      "<p><b>Simple definition:</b> The \"big\", lower-priority units of work &mdash; a <code>setTimeout</code> firing, a <code>setInterval</code> tick, a click event, a full script execution.</p>" +
+      "<p><b>Technical definition:</b> Macrotasks (sometimes just called \"tasks\") are scheduled in the task queue and processed one per event-loop iteration, always after the microtask queue has been fully drained.</p>" +
+      "<p><b>Why the distinction exists:</b> giving promises (microtasks) priority over timers (macrotasks) means promise chains resolve as soon as possible, without waiting behind whatever timers happen to be queued.</p>" +
+      "<pre><code>setTimeout(() => console.log('macrotask'), 0);\nPromise.resolve().then(() => console.log('microtask'));\n// microtask, THEN macrotask — always, regardless of delay=0</code></pre>" +
+      "<p class='ex-gotcha'>A <code>setTimeout(fn, 0)</code> never truly runs at 0ms &mdash; it's a macrotask, so it always runs after the current script and every pending microtask, and browsers additionally clamp very short/nested timeouts to a minimum of ~4ms.</p>",
+
+    "Promise callbacks":
+      "<p><b>Simple definition:</b> The functions you pass to <code>.then</code>, <code>.catch</code>, and <code>.finally</code> don't run immediately when the promise settles &mdash; they're scheduled as microtasks.</p>" +
+      "<p><b>Technical definition:</b> When a promise settles, its reaction callbacks are placed on the microtask queue rather than run synchronously, even if the promise was <em>already</em> settled at the time you attached the handler.</p>" +
+      "<pre><code>const p = Promise.resolve('already done');\nconsole.log('sync 1');\np.then(v => console.log(v)); // still deferred to a microtask\nconsole.log('sync 2');\n// sync 1, sync 2, already done — never runs synchronously, even though p was ready</code></pre>" +
+      "<p class='ex-gotcha'>Beginners often expect <code>.then</code> on an already-resolved promise to run its callback right away, synchronously &mdash; it never does. Promise callbacks are <em>always</em> asynchronous, even for a promise that was resolved before <code>.then</code> was even called.</p>",
+
+    "setTimeout":
+      "<p><b>Simple definition:</b> Schedules a function to run once, after at least the given number of milliseconds.</p>" +
+      "<p><b>Technical definition:</b> <code>setTimeout(fn, delay)</code> queues <code>fn</code> as a macrotask once <code>delay</code> ms have elapsed. The delay is a <em>minimum</em>, not a guarantee &mdash; the callback still has to wait for the current call stack to clear and the entire microtask queue to drain first.</p>" +
+      "<pre><code>const start = Date.now();\nsetTimeout(() => {\n  console.log('actual delay:', Date.now() - start);\n}, 100);\n\n// a long synchronous loop here would push the real delay well past 100ms</code></pre>" +
+      "<p class='ex-gotcha'><code>setTimeout(fn, 0)</code> does not mean \"run immediately\" &mdash; it means \"run as soon as possible <em>after</em> the current script and all pending microtasks finish\", which is never truly zero delay.</p>",
+
+    "setInterval":
+      "<p><b>Simple definition:</b> Like <code>setTimeout</code>, but repeats every <code>delay</code> ms until you stop it.</p>" +
+      "<p><b>Technical definition:</b> <code>setInterval(fn, delay)</code> queues <code>fn</code> as a macrotask repeatedly. Each firing still has to wait its turn behind the call stack and microtask queue, so if a tick's work takes longer than <code>delay</code>, ticks can pile up or fire back-to-back once the stack finally clears.</p>" +
+      "<pre><code>let count = 0;\nconst id = setInterval(() => {\n  console.log(++count);\n  if (count === 3) clearInterval(id); // must clear it, or it runs forever\n}, 100);</code></pre>" +
+      "<p class='ex-gotcha'>If the callback's own work regularly takes longer than the interval, ticks don't queue up infinitely waiting &mdash; browsers typically skip overlapping ticks, so the effective rate silently slows down. A common fix is a self-rescheduling <code>setTimeout</code> instead, which waits for one tick to finish before scheduling the next.</p>",
+
+    "queueMicrotask":
+      "<p><b>Simple definition:</b> A direct way to schedule a function as a microtask, without needing a promise as a vehicle for it.</p>" +
+      "<p><b>Technical definition:</b> <code>queueMicrotask(fn)</code> adds <code>fn</code> straight to the microtask queue &mdash; functionally equivalent to <code>Promise.resolve().then(fn)</code>, but without creating a promise object.</p>" +
+      "<p><b>Why it is used:</b> When you want microtask-priority scheduling (runs before any macrotask) without the overhead or semantics of a promise.</p>" +
+      "<pre><code>console.log('1');\nqueueMicrotask(() => console.log('3'));\nconsole.log('2');\n// 1, 2, 3 — runs after current sync code, but before any setTimeout</code></pre>" +
+      "<p class='ex-gotcha'>It's easy to assume this is some exotic API, but it's simply a cleaner way to say \"run this as a microtask\" &mdash; every place you've used <code>Promise.resolve().then(fn)</code> purely for its timing (not its value) can usually be replaced with it.</p>",
+
+    "Execution order":
+      "<p><b>Simple definition:</b> Working out exactly what logs when sync code, microtasks, and macrotasks are mixed together &mdash; the classic interview whiteboard question for this whole topic.</p>" +
+      "<p><b>The rule to apply, every time:</b> run all synchronous code first, then drain the microtask queue completely (including newly-added ones), then run exactly one macrotask, then repeat.</p>" +
+      "<pre><code>console.log('A');\n\nsetTimeout(() => console.log('F — timeout'), 0);\n\nPromise.resolve().then(() => {\n  console.log('C — promise');\n  return Promise.resolve();\n}).then(() => console.log('E — promise chained'));\n\nconsole.log('B');\n\nqueueMicrotask(() => console.log('D — micro'));\n\n// actual order: A, B, C, D, E, F</code></pre>" +
+      "<p>Walking it: <code>A</code> and <code>B</code> run first — the script itself is synchronous top to bottom, so both logs happen before any queued callback. That leaves two microtasks queued, <em>in the order each scheduling call was reached</em>: the first <code>.then</code> was attached before <code>queueMicrotask</code> was called, so it goes first in line — draining gives <code>C</code>, then <code>D</code>. The first <code>.then</code>'s return value creates a <em>new</em> microtask for the second <code>.then</code>, which gets appended to the end of the (still-draining) queue — so it runs after <code>D</code>, giving <code>E</code>. Only once the microtask queue is completely empty does the loop take the one macrotask, <code>F</code>.</p>" +
+      "<p class='ex-gotcha'>The safest way to answer these in an interview: list every scheduling call in the order it's <em>reached</em> during the synchronous pass, tag each as sync/microtask/macrotask, then apply \"sync → drain all microtasks in queued order → one macrotask\".</p>",
+
+    "Event-loop starvation":
+      "<p><b>Simple definition:</b> When something keeps the event loop too busy to ever get to macrotasks (like rendering, timers, or I/O), those things starve &mdash; they never get their turn.</p>" +
+      "<p><b>Technical definition:</b> Two distinct causes: (1) a long-running <b>synchronous</b> block of code holds the call stack and blocks everything, including microtasks and rendering, until it finishes; (2) a microtask that keeps scheduling <em>another</em> microtask never lets the queue fully drain, so the loop never reaches the macrotask step or a render.</p>" +
+      "<pre><code>// Cause 1 — long synchronous work blocks EVERYTHING\nfunction blockFor(ms) {\n  const end = Date.now() + ms;\n  while (Date.now() < end) {} // nothing else can run — no timers, no clicks, no rendering\n}\n\n// Cause 2 — a self-perpetuating microtask starves macrotasks\nfunction loopForever() {\n  Promise.resolve().then(loopForever); // queue never empties\n}\n// setTimeout callbacks queued elsewhere will NEVER run</code></pre>" +
+      "<p class='ex-gotcha'>A common real-world version of cause 1 is a heavy synchronous computation (parsing huge JSON, a big loop) run directly on the main thread &mdash; the UI visibly freezes because rendering is also blocked behind it. Fixes: break work into chunks with <code>setTimeout</code>/<code>requestIdleCallback</code>, or move it to a Web Worker.</p>",
+  },
+
+  /* ------------------------------------------------------------------ */
+  "Error handling": {
+    "try/catch":
+      "<p><b>Simple definition:</b> <code>try</code>/<code>catch</code> lets you run risky code, and if it throws, recover instead of crashing.</p>" +
+      "<p><b>Technical definition:</b> Code in the <code>try</code> block runs normally; if any statement inside it throws, execution jumps immediately to the <code>catch</code> block with the thrown value, skipping the rest of <code>try</code>. An optional <code>finally</code> block always runs afterward, regardless of outcome.</p>" +
+      "<p><b>Why it is used:</b> To handle expected failure points (parsing untrusted input, a risky calculation) without letting one error take down the whole program.</p>" +
+      "<p><b>When not to use:</b> Don't wrap code in <code>try</code>/<code>catch</code> \"just in case\" everywhere &mdash; catching errors you can't meaningfully handle just hides real bugs. Only catch where you can actually do something useful with the failure.</p>" +
+      "<pre><code>try {\n  JSON.parse(\"not valid json\");\n} catch (err) {\n  console.log(\"parse failed:\", err.message);\n}\nconsole.log(\"program continues\");</code></pre>" +
+      "<p class='ex-gotcha'><code>try</code>/<code>catch</code> only catches <b>synchronous</b> errors thrown directly inside its block (or from an <code>await</code>ed promise inside it). It does <em>not</em> catch an error thrown inside a <code>setTimeout</code> callback or from a promise you didn't <code>await</code> &mdash; by the time that code runs, the <code>try</code> block has already finished.</p>",
+
+    "throw":
+      "<p><b>Simple definition:</b> <code>throw</code> immediately stops normal execution and hands a value up to the nearest <code>catch</code>.</p>" +
+      "<p><b>Technical definition:</b> <code>throw</code> can raise any value &mdash; a string, a number, an object &mdash; but the value that unwinds the stack is whatever you give it. If nothing catches it, the program (or that call stack) terminates with an uncaught exception.</p>" +
+      "<p><b>Why it is used:</b> To signal that something has gone wrong in a way the calling code needs to know about and can't just ignore.</p>" +
+      "<pre><code>function withdraw(balance, amount) {\n  if (amount > balance) throw new Error(\"Insufficient funds\");\n  return balance - amount;\n}\ntry {\n  withdraw(100, 500);\n} catch (err) {\n  console.log(err.message); // 'Insufficient funds'\n}</code></pre>" +
+      "<p class='ex-gotcha'>You <em>can</em> <code>throw \"just a string\"</code>, but you should always throw an actual <code>Error</code> (or subclass) &mdash; only <code>Error</code> objects capture a <code>.stack</code> trace, which is essential for debugging where the throw actually happened.</p>",
+
+    "Custom errors":
+      "<p><b>Simple definition:</b> Extending the built-in <code>Error</code> class lets you create your own named error types, so calling code can tell different failures apart.</p>" +
+      "<p><b>Technical definition:</b> A custom error class extends <code>Error</code>, calls <code>super(message)</code> to set up the message and stack trace, and typically sets <code>this.name</code> to the class name (since the default <code>name</code> is inherited as <code>\"Error\"</code> otherwise).</p>" +
+      "<p><b>Why it is used:</b> Lets code distinguish <code>catch</code> logic by error type (\"was this a validation problem or a network problem?\") instead of parsing message strings.</p>" +
+      "<pre><code>class ValidationError extends Error {\n  constructor(message, field) {\n    super(message);\n    this.name = \"ValidationError\"; // otherwise it would say 'Error'\n    this.field = field;\n  }\n}\n\ntry {\n  throw new ValidationError(\"Email is required\", \"email\");\n} catch (err) {\n  if (err instanceof ValidationError) {\n    console.log(err.name, err.message, err.field);\n    // ValidationError Email is required email\n  }\n}</code></pre>" +
+      "<p class='ex-gotcha'>Forgetting <code>this.name = \"ValidationError\"</code> is a common miss &mdash; without it, <code>err.name</code> still reports the generic <code>\"Error\"</code>, and <code>err.toString()</code> prints <code>\"Error: ...\"</code> instead of <code>\"ValidationError: ...\"</code>, even though <code>instanceof</code> still works correctly either way.</p>",
+
+    "Error objects":
+      "<p><b>Simple definition:</b> The built-in <code>Error</code> object bundles a human-readable message with a stack trace showing where it was created.</p>" +
+      "<p><b>Technical definition:</b> <code>new Error(message)</code> creates an object with a <code>.message</code>, a <code>.name</code> (<code>\"Error\"</code> by default), and a <code>.stack</code> string. Built-in subtypes like <code>TypeError</code>, <code>RangeError</code>, and <code>ReferenceError</code> are thrown automatically by the engine for their matching mistakes.</p>" +
+      "<pre><code>null.foo;        // TypeError: Cannot read properties of null\nundefinedVar;    // ReferenceError: undefinedVar is not defined\nnew Array(-1);   // RangeError: Invalid array length</code></pre>" +
+      "<p class='ex-gotcha'><code>error.stack</code> is only populated correctly if the object was created with <code>new Error(...)</code> (or a subclass) &mdash; a thrown plain object or string has no stack trace, making the failure much harder to locate later.</p>",
+
+    "Error propagation":
+      "<p><b>Simple definition:</b> An uncaught error doesn't just stop where it happened &mdash; it keeps bubbling up through each calling function until something catches it, or nothing does.</p>" +
+      "<p><b>Technical definition:</b> When a function throws and doesn't catch it itself, the exception unwinds the call stack one frame at a time, skipping the remaining code in each function, until a <code>try</code>/<code>catch</code> is found (or the stack empties and the program crashes / the process reports an uncaught exception).</p>" +
+      "<pre><code>function c() { throw new Error(\"deep failure\"); }\nfunction b() { c(); console.log(\"never runs\"); }\nfunction a() {\n  try {\n    b();\n  } catch (err) {\n    console.log(\"caught in a:\", err.message);\n  }\n}\na(); // 'caught in a: deep failure' — b and c never handled it themselves</code></pre>" +
+      "<p class='ex-gotcha'>You don't need a <code>try</code>/<code>catch</code> in every function along the way &mdash; one <code>catch</code> higher up the call chain is often the right amount, exactly like how one <code>.catch()</code> at the end of a promise chain covers every step before it.</p>",
+
+    "Synchronous errors":
+      "<p><b>Simple definition:</b> Errors thrown by code that runs immediately, in order &mdash; the kind a normal <code>try</code>/<code>catch</code> is built to handle.</p>" +
+      "<p><b>Technical definition:</b> A synchronous error is thrown during the same call-stack execution that reached the <code>throw</code> &mdash; it happens \"right now\", so a <code>try</code>/<code>catch</code> physically wrapping that code will always see it.</p>" +
+      "<pre><code>try {\n  JSON.parse(\"{ bad json\");\n} catch (err) {\n  console.log(\"caught:\", err.message); // works — this IS synchronous\n}</code></pre>" +
+      "<p class='ex-gotcha'>This is the baseline case that works exactly how you'd expect &mdash; the contrast worth remembering is the next entry, \"Asynchronous errors\", where the same <code>try</code>/<code>catch</code> pattern silently fails to catch anything.</p>",
+
+    "Asynchronous errors":
+      "<p><b>Simple definition:</b> An error thrown inside a callback that runs <em>later</em> (a timer, an event, an un-awaited promise) is not caught by a <code>try</code>/<code>catch</code> wrapped around the code that scheduled it.</p>" +
+      "<p><b>Technical definition:</b> By the time an asynchronous callback actually runs, the synchronous <code>try</code>/<code>catch</code> block that set it up has already finished executing and been popped off the call stack &mdash; there's no longer any <code>catch</code> in scope to receive the throw.</p>" +
+      "<pre><code>try {\n  setTimeout(() => {\n    throw new Error(\"boom\"); // NOT caught below\n  }, 100);\n} catch (err) {\n  console.log(\"never runs\");\n}\n// the error instead crashes as an uncaught exception, 100ms later</code></pre>" +
+      "<p><b>Fix:</b> put the <code>try</code>/<code>catch</code> <em>inside</em> the callback itself:</p>" +
+      "<pre><code>setTimeout(() => {\n  try {\n    throw new Error(\"boom\");\n  } catch (err) {\n    console.log(\"caught:\", err.message); // works now\n  }\n}, 100);</code></pre>" +
+      "<p class='ex-gotcha'>This is one of the most common real-world mistakes with error handling &mdash; wrapping a function call that <em>schedules</em> async work in <code>try</code>/<code>catch</code> gives a false sense of safety for anything that actually goes wrong inside the callback later.</p>",
+
+    "Promise rejection":
+      "<p><b>Simple definition:</b> A promise's version of <code>throw</code> &mdash; instead of crashing immediately, a rejected promise carries its error along until something handles it with <code>.catch</code> or a <code>try</code>/<code>catch</code> around an <code>await</code>.</p>" +
+      "<p><b>Technical definition:</b> A throw inside a <code>.then</code> callback, or inside an <code>async</code> function, is automatically converted into a rejected promise rather than crashing synchronously &mdash; which is exactly what makes <code>await</code> + <code>try</code>/<code>catch</code> work for async code.</p>" +
+      "<pre><code>async function risky() {\n  throw new Error(\"async boom\"); // becomes a rejected promise\n}\n\nrisky().catch(err => console.log(\"caught:\", err.message));\n\n// equivalently, inside another async function:\ntry {\n  await risky();\n} catch (err) {\n  console.log(\"caught:\", err.message);\n}</code></pre>" +
+      "<p class='ex-gotcha'>A promise that rejects with <em>nothing</em> attached to handle it &mdash; no <code>.catch</code>, never awaited in a <code>try</code> &mdash; becomes an <b>unhandled rejection</b>. It doesn't throw synchronously where you can see it; it's reported separately (a console warning in browsers, and can crash a Node process depending on version/config).</p>",
+
+    "Global error handling concepts":
+      "<p><b>Simple definition:</b> A last-resort, catch-everything net for errors that slipped past every local <code>try</code>/<code>catch</code> &mdash; useful for logging, not for normal control flow.</p>" +
+      "<p><b>Technical definition:</b> Browsers expose <code>window.addEventListener('error', ...)</code> for uncaught synchronous errors and <code>window.addEventListener('unhandledrejection', ...)</code> for unhandled promise rejections. Node exposes the equivalent as <code>process.on('uncaughtException', ...)</code> and <code>process.on('unhandledRejection', ...)</code>.</p>" +
+      "<p><b>Why it is used:</b> To log/report errors that would otherwise disappear silently (or crash the process) with no record of what happened, e.g. sending them to an error-tracking service.</p>" +
+      "<pre><code>window.addEventListener('unhandledrejection', (event) => {\n  console.log('Unhandled:', event.reason);\n  // report to a monitoring service\n});</code></pre>" +
+      "<p class='ex-gotcha'>These global handlers are a safety net for <em>observability</em>, not a substitute for real error handling &mdash; by the time one fires, the specific operation has already failed uncontrolled; you generally can't recover gracefully from here, only log and (in Node) often still need to exit the process safely.</p>",
+  },
+
+  /* ------------------------------------------------------------------ */
+  "Objects & immutability": {
+    "Object destructuring":
+      "<p><b>Simple definition:</b> Pulls named properties out of an object into their own variables, in one step.</p>" +
+      "<p><b>Technical definition:</b> A destructuring pattern reads matching keys from the source object by name (not position), with optional renaming (<code>: newName</code>) and defaults (<code>= value</code>).</p>" +
+      "<p><b>Why it is used:</b> Removes repetitive <code>const x = obj.x;</code> lines and documents exactly which fields a function needs, right in its signature.</p>" +
+      "<pre><code>const user = { name: 'Ada', age: 36 };\nconst { name, age = 18 } = user; // name='Ada', age=36 (already present)\nconst { name: userName } = user;  // rename → userName\n\nfunction greet({ name }) { return 'Hi, ' + name; } // in parameters</code></pre>" +
+      "<p class='ex-gotcha'>Object destructuring matches by <b>key name</b>, so order doesn't matter — unlike array destructuring, which matches by position. Mixing the two mental models up is a common early bug.</p>",
+
+    "Object spread":
+      "<p><b>Simple definition:</b> <code>{ ...obj }</code> copies an object's own properties into a new object literal.</p>" +
+      "<p><b>Technical definition:</b> Spread inside an object literal enumerates the source's own enumerable properties and copies them into the new object, in order — later keys (including ones written after the spread) override earlier ones.</p>" +
+      "<pre><code>const user = { name: 'Ada', role: 'admin' };\nconst updated = { ...user, role: 'editor' }; // { name: 'Ada', role: 'editor' }\nconst copy = { ...user };                    // a shallow copy</code></pre>" +
+      "<p class='ex-gotcha'>Spread only makes a <b>shallow</b> copy — nested objects are still shared by reference between the original and the copy. See \"Shallow copy\" for the consequences.</p>",
+
+    "Object rest":
+      "<p><b>Simple definition:</b> In a destructuring pattern, <code>...rest</code> collects every property that wasn't explicitly pulled out into a new object.</p>" +
+      "<p><b>Technical definition:</b> When used at the end of an object destructuring pattern, <code>...name</code> gathers the source's remaining own enumerable properties into a fresh object — the common pattern for \"take this one field out, keep everything else together\".</p>" +
+      "<pre><code>const user = { id: 1, name: 'Ada', password: 'secret' };\nconst { password, ...safeUser } = user;\nconsole.log(safeUser); // { id: 1, name: 'Ada' } — password removed</code></pre>" +
+      "<p class='ex-gotcha'>Object rest must come <b>last</b> in the pattern, just like array rest — <code>{ ...rest, name }</code> is a SyntaxError.</p>",
+
+    "Object.keys":
+      "<p><b>Simple definition:</b> Returns an array of an object's own property names.</p>" +
+      "<p><b>Technical definition:</b> <code>Object.keys(obj)</code> returns an array of <code>obj</code>'s own <b>enumerable</b> string-keyed property names, in insertion order (with integer-like keys sorted first).</p>" +
+      "<pre><code>const scores = { ada: 90, sam: 75 };\nObject.keys(scores); // ['ada', 'sam']</code></pre>" +
+      "<p class='ex-gotcha'>\"Own\" and \"enumerable\" both matter: inherited properties (from the prototype chain) are never included, and neither are properties explicitly marked non-enumerable (e.g. via <code>Object.defineProperty</code>).</p>",
+
+    "Object.values":
+      "<p><b>Simple definition:</b> Returns an array of just an object's property values.</p>" +
+      "<p><b>Technical definition:</b> <code>Object.values(obj)</code> is the value-counterpart of <code>Object.keys</code> — same rules (own, enumerable, insertion order), but returns the values instead of the keys.</p>" +
+      "<pre><code>const scores = { ada: 90, sam: 75 };\nObject.values(scores);              // [90, 75]\nObject.values(scores).reduce((a,b)=>a+b, 0); // 165 — sum via array methods</code></pre>" +
+      "<p class='ex-gotcha'>This is the usual bridge for using array methods (<code>reduce</code>, <code>map</code>, <code>filter</code>) on object data, since objects don't have those methods themselves.</p>",
+
+    "Object.entries":
+      "<p><b>Simple definition:</b> Returns an array of <code>[key, value]</code> pairs — everything <code>Object.keys</code> and <code>Object.values</code> give you, zipped together.</p>" +
+      "<p><b>Technical definition:</b> <code>Object.entries(obj)</code> returns an array of two-element arrays, one per own enumerable property, each holding that property's key and value.</p>" +
+      "<pre><code>const scores = { ada: 90, sam: 75 };\nObject.entries(scores);\n// [['ada', 90], ['sam', 75]]\n\nfor (const [name, score] of Object.entries(scores)) {\n  console.log(name, score);\n}</code></pre>" +
+      "<p><b>Its inverse is <code>Object.fromEntries</code></b> — turning pairs back into an object, useful for transforming an object via array methods and converting back:</p>" +
+      "<pre><code>Object.fromEntries(\n  Object.entries(scores).map(([k, v]) => [k, v + 5])\n); // { ada: 95, sam: 80 }</code></pre>" +
+      "<p class='ex-gotcha'>Each entry is an array, so destructure it as <code>[key, value]</code> — accessing <code>entry.key</code> is a common but wrong assumption from developers used to other languages' map/dictionary APIs.</p>",
+
+    "Object.assign":
+      "<p><b>Simple definition:</b> Copies properties from one or more source objects into a target object.</p>" +
+      "<p><b>Technical definition:</b> <code>Object.assign(target, ...sources)</code> copies each source's own enumerable properties onto <code>target</code>, <b>mutating and returning it</b>, with later sources overwriting earlier ones for the same key.</p>" +
+      "<pre><code>const defaults = { theme: 'light', notifications: true };\nconst userPrefs = { theme: 'dark' };\n\n// mutates defaults! usually NOT what you want:\nObject.assign(defaults, userPrefs);\n\n// the safe pattern — merge into a brand-new empty object:\nconst merged = Object.assign({}, defaults, userPrefs);\n// or the modern equivalent: { ...defaults, ...userPrefs }</code></pre>" +
+      "<p class='ex-gotcha'>The classic mistake is calling <code>Object.assign(defaults, userPrefs)</code> and forgetting that it <b>mutates the first argument</b> — always pass a fresh <code>{}</code> as the target unless mutation is genuinely intended. Object spread (<code>{ ...a, ...b }</code>) is the modern, safer-by-default equivalent.</p>",
+
+    "Object.freeze":
+      "<p><b>Simple definition:</b> Locks an object so its existing properties can't be changed, added, or removed.</p>" +
+      "<p><b>Technical definition:</b> <code>Object.freeze(obj)</code> makes every existing own property non-writable and non-configurable, and prevents new properties from being added. It returns the <em>same</em> object (not a copy), now frozen. Attempted mutations fail silently in sloppy mode and throw a <code>TypeError</code> in strict mode/modules.</p>" +
+      "<pre><code>const config = Object.freeze({ apiUrl: 'https://api.example.com' });\nconfig.apiUrl = 'https://evil.com'; // silently ignored (or throws in strict mode)\nconsole.log(config.apiUrl);         // still the original URL\nObject.isFrozen(config);            // true</code></pre>" +
+      "<p class='ex-gotcha'><code>Object.freeze</code> is <b>shallow</b> — it only locks the object's own top-level properties. A nested object inside a frozen object is completely unprotected and can still be mutated freely: <code>frozen.nested.x = 1</code> works fine even though <code>frozen.x = 1</code> does not.</p>",
+
+    "Shallow copy":
+      "<p><b>Simple definition:</b> A shallow copy duplicates the outer object, but any nested objects inside it are still the exact same shared objects as before.</p>" +
+      "<p><b>Technical definition:</b> Spread (<code>{ ...obj }</code>), <code>Object.assign({}, obj)</code>, and array's <code>slice</code>/<code>[...arr]</code> all copy only the top level — for any property whose value is itself an object, both the original and the copy hold a reference to that <em>same</em> object.</p>" +
+      "<pre><code>const original = { name: 'Ada', address: { city: 'London' } };\nconst copy = { ...original };\n\ncopy.name = 'Sam';               // safe — top-level primitive, truly separate\ncopy.address.city = 'Paris';     // NOT safe — same nested object\n\nconsole.log(original.name);         // 'Ada' — unaffected\nconsole.log(original.address.city); // 'Paris' — changed too!</code></pre>" +
+      "<p class='ex-gotcha'>This is the single most common interview trap in this topic: a shallow copy <em>looks</em> completely independent until you mutate something nested — then the illusion breaks and both \"copies\" change together.</p>",
+
+    "Deep copy":
+      "<p><b>Simple definition:</b> A deep copy duplicates everything, all the way down — nested objects included — so the two copies never affect each other, no matter what you mutate.</p>" +
+      "<p><b>Technical definition:</b> Deep cloning recursively copies every nested object/array, producing an entirely independent object graph with no shared references anywhere.</p>" +
+      "<pre><code>const original = { name: 'Ada', address: { city: 'London' } };\nconst copy = structuredClone(original);\n\ncopy.address.city = 'Paris';\nconsole.log(original.address.city); // 'London' — truly independent</code></pre>" +
+      "<p><b>When to use it:</b> when you need a safe, fully independent snapshot — e.g. before letting a form freely mutate a draft of some saved data.</p>" +
+      "<p class='ex-gotcha'>Deep cloning costs more time and memory than a shallow copy, and is overkill if you're not actually going to mutate anything nested — reach for the smallest correct copy strategy, not automatically the deepest one.</p>",
+
+    "Structured cloning":
+      "<p><b>Simple definition:</b> <code>structuredClone(value)</code> is the browser/Node built-in for making a real, deep copy of most JavaScript values.</p>" +
+      "<p><b>Technical definition:</b> It implements the structured clone algorithm, correctly deep-copying nested objects/arrays and also handling <code>Date</code>, <code>Map</code>, <code>Set</code>, typed arrays, and even circular references — none of which the older <code>JSON.parse(JSON.stringify(x))</code> hack can do correctly.</p>" +
+      "<pre><code>const original = { tags: ['a', 'b'], when: new Date(), self: null };\noriginal.self = original; // circular reference\n\nconst clone = structuredClone(original); // works fine\n\n// the old hack would throw on the circular ref, and silently mangle the Date:\nJSON.parse(JSON.stringify(original)); // TypeError: Converting circular structure to JSON</code></pre>" +
+      "<p class='ex-gotcha'><code>structuredClone</code> cannot clone functions or DOM nodes — it throws a <code>DataCloneError</code> on them. If your object contains methods, use a manual/library deep-clone approach instead, or clone just the plain-data parts.</p>",
+
+    "Mutation vs immutability":
+      "<p><b>Simple definition:</b> Mutating means changing a value in place; the immutable approach means never changing it — instead, creating a new value with the change applied.</p>" +
+      "<p><b>Technical definition:</b> A mutation modifies the existing object/array through a reference (<code>obj.x = 1</code>, <code>arr.push(x)</code>). An immutable update leaves the original untouched and produces a brand-new object/array reflecting the change (<code>{ ...obj, x: 1 }</code>, <code>[...arr, x]</code>).</p>" +
+      "<pre><code>// mutation\nconst state = { count: 0 };\nstate.count += 1; // same object, changed in place\n\n// immutable update\nconst state2 = { count: 0 };\nconst next = { ...state2, count: state2.count + 1 }; // new object</code></pre>" +
+      "<p><b>Why it matters:</b> immutable updates are predictable and easy to debug (the old value is still there, unchanged, for comparison), and they're what makes cheap change-detection possible — see \"Referential equality\".</p>" +
+      "<p class='ex-gotcha'>Frameworks like React specifically rely on immutable state updates: if you mutate state directly instead of creating a new object, React can't tell anything changed (same reference), and your component silently fails to re-render.</p>",
+
+    "Referential equality":
+      "<p><b>Simple definition:</b> Two objects are only <code>===</code> equal if they are the literal <em>same</em> object in memory — having identical contents is not enough.</p>" +
+      "<p><b>Technical definition:</b> For objects (and arrays, functions), <code>===</code> compares references, not structure. Two separately-created objects with identical properties are never equal, no matter how deeply their contents match.</p>" +
+      "<pre><code>{} === {};                          // false — two different objects\nconst a = { x: 1 };\nconst b = a;\na === b;                              // true — same reference\n\n[1,2,3] === [1,2,3];                // false\nconst arr = [1,2,3];\narr === arr;                          // true</code></pre>" +
+      "<p><b>Why it matters:</b> this is exactly why React (and similar libraries) can cheaply check \"did this prop/state change?\" with a fast <code>===</code> comparison instead of a slow deep comparison — <em>as long as</em> you follow the immutable-update rule and always produce a new reference on change.</p>" +
+      "<p class='ex-gotcha'>Mutating an object in place and then comparing it to its old self with <code>===</code> will always say \"unchanged\" — because it's literally still the same reference — even though the contents are now different. This is the root cause of a huge class of \"my component won't re-render\" bugs.</p>",
+  },
+
+  /* ------------------------------------------------------------------ */
+  "Modules & runtime": {
+    "CommonJS":
+      "<p><b>Simple definition:</b> The older module system Node.js uses by default — <code>require</code> to import, <code>module.exports</code> to export.</p>" +
+      "<p><b>Technical definition:</b> CommonJS (CJS) modules load <b>synchronously</b> and are resolved at <b>runtime</b> — <code>require(path)</code> is a normal function call, evaluated when execution reaches it, which means it can be called conditionally or with a dynamic path.</p>" +
+      "<pre><code>// math.js\nfunction add(a, b) { return a + b; }\nmodule.exports = { add };\n\n// app.js\nconst { add } = require('./math');\nconsole.log(add(2, 3)); // 5</code></pre>" +
+      "<p class='ex-gotcha'>Node uses CommonJS by default for <code>.js</code> files unless you opt into ES Modules with <code>\"type\": \"module\"</code> in <code>package.json</code>, or a <code>.mjs</code> extension — this default surprises a lot of MERN learners coming from browser-only ES module experience.</p>",
+
+    "ES Modules":
+      "<p><b>Simple definition:</b> The standard, modern JavaScript module system — <code>import</code>/<code>export</code>, built into the language itself.</p>" +
+      "<p><b>Technical definition:</b> ES Modules (ESM) are <b>statically analyzed</b> at parse time, before any code runs — the engine can see the entire import/export graph up front. Imports are also <b>asynchronous</b> and hoisted, and they create <b>live, read-only bindings</b> to the exporting module's values, not copies.</p>" +
+      "<pre><code>// math.js\nexport function add(a, b) { return a + b; }\n\n// app.js\nimport { add } from './math.js';\nconsole.log(add(2, 3)); // 5</code></pre>" +
+      "<p class='ex-gotcha'>\"Live binding\" is the subtle but important difference from CJS: if the exporting module later reassigns an exported <code>let</code> variable, every importer sees the <em>new</em> value automatically — CJS instead hands importers a one-time snapshot copy taken at require time.</p>",
+
+    "require":
+      "<p><b>Simple definition:</b> The CommonJS function that loads another module and gives you back whatever it exported.</p>" +
+      "<p><b>Technical definition:</b> <code>require(path)</code> synchronously reads, executes, and caches the target module (see \"Module caching concept\"), then returns its <code>module.exports</code> value. Because it's a real function call, it can be used anywhere a value is allowed — inside an <code>if</code>, a function body, or with a computed path.</p>" +
+      "<pre><code>if (process.env.NODE_ENV === 'test') {\n  const mock = require('./mockDb'); // conditional require — only CJS allows this\n}\nconst db = require('./db');</code></pre>" +
+      "<p class='ex-gotcha'>This dynamic, run-anywhere flexibility is exactly why CJS can't be reliably tree-shaken — a bundler can't know at build time which <code>require</code> calls will actually execute, or with what path.</p>",
+
+    "import":
+      "<p><b>Simple definition:</b> The ES Modules keyword for pulling in values exported by another file.</p>" +
+      "<p><b>Technical definition:</b> Static <code>import</code> declarations must appear at the top level of a module (never conditionally inside an <code>if</code> or function) and are hoisted — resolved before any of the module's own code runs. For runtime-conditional loading, use the separate <code>import()</code> function form (see \"Dynamic imports\").</p>" +
+      "<pre><code>import { add, subtract } from './math.js'; // named\nimport MathUtils from './math.js';         // default\nimport * as math from './math.js';         // namespace — everything</code></pre>" +
+      "<p class='ex-gotcha'>Writing <code>if (cond) { import x from 'y'; }</code> is a <code>SyntaxError</code> — static <code>import</code> must be top-level. Reach for <code>import()</code> (returns a promise) when the choice to load a module is genuinely conditional.</p>",
+
+    "module.exports":
+      "<p><b>Simple definition:</b> In CommonJS, whatever you assign to <code>module.exports</code> is what another file gets back from <code>require</code>.</p>" +
+      "<p><b>Technical definition:</b> Every CJS file has its own <code>module</code> object with an <code>exports</code> property, defaulting to <code>{}</code>. Assigning to <code>module.exports</code> replaces that whole object; assigning individual properties onto the existing <code>exports</code> shorthand (<code>exports.x = ...</code>) adds to it instead.</p>" +
+      "<pre><code>// single export\nmodule.exports = function add(a, b) { return a + b; };\n\n// multiple named exports\nmodule.exports = { add, subtract };\n// or, equivalently, one at a time:\nexports.add = add;\nexports.subtract = subtract;</code></pre>" +
+      "<p class='ex-gotcha'>Reassigning <code>exports = { add }</code> directly (instead of <code>module.exports = { add }</code>) silently breaks the export — <code>exports</code> is just a local variable that initially points at the same object as <code>module.exports</code>; reassigning the variable itself severs that link, and the module still exports the original empty object.</p>",
+
+    "export":
+      "<p><b>Simple definition:</b> The ES Modules keyword that makes a value available for other files to <code>import</code>.</p>" +
+      "<p><b>Technical definition:</b> <code>export</code> can be attached to a declaration (<code>export const x = 1;</code>), used inline for multiple names (<code>export { a, b };</code>), or used as <code>export default</code> for a module's single primary export. See \"Named exports\" and \"Default exports\" for the distinction that matters most in practice.</p>" +
+      "<pre><code>export const PI = 3.14;\nexport function circleArea(r) { return PI * r * r; }\n\nexport default class Circle { /* ... */ } // the module's main export</code></pre>" +
+      "<p class='ex-gotcha'>A module can have any number of named exports, but at most <b>one</b> default export — mixing both in one file is legal and common, but conflating the two import syntaxes (<code>import { x }</code> for a default, or plain <code>import x</code> for a named export) is a frequent beginner error.</p>",
+
+    "Module caching concept":
+      "<p><b>Simple definition:</b> A module's code only runs <b>once</b> — every later import/require of the same file reuses the already-computed result instead of re-running it.</p>" +
+      "<p><b>Technical definition:</b> Both CJS and ESM cache modules by resolved file path after first load. Subsequent <code>require</code>/<code>import</code> calls for the same path return the cached exports object directly, without re-executing the module body.</p>" +
+      "<pre><code>// counter.js\nconsole.log('counter.js is running'); // only logs ONCE, ever\nlet count = 0;\nmodule.exports = { increment: () => ++count };\n\n// used from two different files:\nconst a = require('./counter');\nconst b = require('./counter');\na.increment();\nconsole.log(b.increment()); // 2 — SAME module instance, shared state</code></pre>" +
+      "<p class='ex-gotcha'>Because the module only ever runs once, importing the same module from many files doesn't give each file its own private copy — they all share the exact same instance, including any mutable state it holds. This is <em>why</em> the module pattern naturally produces a singleton.</p>",
+
+    "Circular dependencies":
+      "<p><b>Simple definition:</b> Module A imports from module B, and module B imports from module A — a loop in the dependency graph that can leave one side with an incomplete version of the other.</p>" +
+      "<p><b>Technical definition:</b> When Node encounters a require cycle, it returns whatever the in-progress module's <code>exports</code> object contains <em>at that point in execution</em> — often a partially-populated (or entirely empty) object, since the module hasn't finished running yet. ESM handles this somewhat better thanks to hoisting and live bindings, but can still hit temporal-dead-zone-like errors accessing a not-yet-initialized export.</p>" +
+      "<pre><code>// a.js\nconst b = require('./b'); // b.js starts requiring a.js mid-execution\nconsole.log('b.value in a.js:', b.value); // may be undefined!\nmodule.exports = { name: 'a' };\n\n// b.js\nconst a = require('./a'); // gets a's exports so far — possibly {}\nmodule.exports = { value: 42 };</code></pre>" +
+      "<p class='ex-gotcha'>The safest fix is almost always to <b>restructure</b> — pull the shared logic both modules need into a third file they both depend on, removing the cycle entirely, rather than trying to carefully order requires around the problem.</p>",
+
+    "Dynamic imports":
+      "<p><b>Simple definition:</b> <code>import(path)</code> loads a module <em>at runtime</em>, on demand, instead of upfront when the file is parsed.</p>" +
+      "<p><b>Technical definition:</b> Unlike static <code>import</code>, the <code>import()</code> function can be called anywhere — conditionally, inside a function, with a computed path — and returns a <b>promise</b> that resolves to the module's namespace object. It works in both CJS and ESM contexts.</p>" +
+      "<pre><code>async function loadChart() {\n  const { Chart } = await import('./chart.js'); // only fetched when actually needed\n  return new Chart();\n}\n\nif (userWantsDarkMode) {\n  const theme = await import('./dark-theme.js');\n}</code></pre>" +
+      "<p><b>Why it is used:</b> Code splitting (only download a heavy module when it's actually needed) and conditional loading based on runtime state.</p>" +
+      "<p class='ex-gotcha'>It's the one form of <code>import</code> allowed inside conditionals and functions — the static form's top-level-only restriction doesn't apply, precisely because dynamic import is resolved at runtime, not parse time.</p>",
+
+    "Tree-shaking concept":
+      "<p><b>Simple definition:</b> A bundler's ability to detect and strip out exported code that nothing actually uses, shrinking the final bundle.</p>" +
+      "<p><b>Technical definition:</b> Tree-shaking relies on ESM's <b>static</b> structure — because imports/exports are fixed and analyzable at build time (not conditional, not dynamically computed), a bundler can build an accurate graph of what's actually reachable from your entry point and discard the rest.</p>" +
+      "<pre><code>// utils.js — exports 10 functions\nexport function used() { /* ... */ }\nexport function neverImported() { /* ... */ } // safely dropped\n\n// app.js\nimport { used } from './utils.js';\n// a tree-shaking bundler ships only 'used', not the other 9 exports</code></pre>" +
+      "<p class='ex-gotcha'>This is exactly why CommonJS doesn't tree-shake well — <code>require</code> calls can be conditional or dynamically pathed, so a bundler can't prove ahead of time which exports are truly unreachable, and generally has to keep the whole module. Preferring many small named exports over one big default-exported object also shakes better, since the bundler can see which individual names are actually used.</p>",
+  },
+
+  /* ------------------------------------------------------------------ */
+  "Performance": {
+    "Debouncing":
+      "<p><b>Simple definition:</b> Debouncing waits for a pause in activity before doing anything — if the event keeps firing, it keeps resetting the timer.</p>" +
+      "<p><b>Technical definition:</b> A debounced function delays running until <code>delay</code> ms have passed with <em>no new calls</em>. Every new call cancels the previous pending timer and starts a fresh one, so only the final call in a burst actually executes.</p>" +
+      "<p><b>Why it matters for performance:</b> a search-as-you-type input firing an API call on every keystroke can trigger dozens of wasted requests for a single word; debouncing collapses that burst into one request, sent only once the user pauses.</p>" +
+      "<pre><code>function debounce(fn, delay) {\n  let timer;\n  return (...args) => {\n    clearTimeout(timer);\n    timer = setTimeout(() => fn(...args), delay);\n  };\n}\n\nconst search = debounce(query => fetchResults(query), 300);\ninput.addEventListener('input', e => search(e.target.value));\n// typing \"hello\" fast → only ONE fetch, 300ms after the last keystroke</code></pre>" +
+      "<pre><code>keystrokes: h-e-l-l-o (fast)\ntimer:      reset—reset—reset—reset—reset\n                                        └─ 300ms silence → fn runs ONCE</code></pre>" +
+      "<p class='ex-gotcha'>Debouncing means the function might <em>never</em> run if the trigger never pauses — that's correct for search-as-you-type, but wrong for something that must fire at a steady rate (like a scroll progress indicator), which needs throttling instead.</p>",
+
+    "Throttling":
+      "<p><b>Simple definition:</b> Throttling guarantees the function runs at most once every fixed interval, no matter how often the event fires.</p>" +
+      "<p><b>Technical definition:</b> A throttled function executes immediately on the first call, then ignores further calls until <code>interval</code> ms have passed, at which point the next call is allowed through again.</p>" +
+      "<p><b>Why it matters for performance:</b> a scroll or mousemove handler can fire dozens of times per second — running expensive logic (layout reads, state updates) on every single event can visibly jank the page. Throttling caps the rate to something the browser can keep up with.</p>" +
+      "<pre><code>function throttle(fn, interval) {\n  let ready = true;\n  return (...args) => {\n    if (!ready) return;\n    fn(...args);\n    ready = false;\n    setTimeout(() => { ready = true; }, interval);\n  };\n}\n\nconst onScroll = throttle(() => updateProgressBar(), 100);\nwindow.addEventListener('scroll', onScroll);\n// fires dozens of times per second, but updateProgressBar runs at most every 100ms</code></pre>" +
+      "<pre><code>scroll events: | | | | | | | | | | | | | |  (very frequent)\nthrottled run: X-------X-------X-------X    (fixed-rate, guaranteed)</code></pre>" +
+      "<p class='ex-gotcha'>Debounce vs throttle is the classic mix-up: <b>debounce waits for silence</b> (search input, resize-end); <b>throttle guarantees a steady maximum rate</b> even during continuous activity (scroll, mousemove, drag). Pick based on whether \"eventually once\" or \"steadily, but capped\" is what the UX actually needs.</p>",
+
+    "Memoization":
+      "<p><b>Simple definition:</b> Remembering the result of an expensive function call, so calling it again with the same input returns the cached answer instantly instead of recomputing.</p>" +
+      "<p><b>Technical definition:</b> A memoized function wraps the original, keeping a cache (typically a <code>Map</code>) keyed by its arguments. On each call it checks whether that key's result is already cached; if so, it returns the cache hit immediately, skipping the real computation entirely.</p>" +
+      "<pre><code>function memoize(fn) {\n  const cache = new Map();\n  return (arg) => {\n    if (cache.has(arg)) return cache.get(arg); // cache hit — instant\n    const result = fn(arg);                    // cache miss — do the work\n    cache.set(arg, result);\n    return result;\n  };\n}\n\nconst slowSquare = n => { for (let i=0;i<1e8;i++){} return n*n; };\nconst fastSquare = memoize(slowSquare);\nfastSquare(5); // slow — computes and caches\nfastSquare(5); // instant — cache hit</code></pre>" +
+      "<p><b>The performance trade-off:</b> memoization spends memory (the cache) to save time (repeated computation) — worthwhile when the same inputs recur often and the computation is genuinely expensive; wasteful when inputs are rarely repeated, since you pay the memory cost for cache entries that are never reused.</p>" +
+      "<p class='ex-gotcha'>Memoization only works correctly for <b>pure functions</b> — same input always produces the same output, with no dependence on outside state. Memoizing an impure function (one that reads a changing global, the current time, or random values) will happily return stale, wrong cached results.</p>",
+
+    "Avoiding unnecessary computation":
+      "<p><b>Simple definition:</b> A lot of \"performance\" is just not doing work you don't need to do — computing something once instead of on every iteration, or stopping early once you have your answer.</p>" +
+      "<p><b>Technical definition:</b> Common patterns: hoisting invariant expressions out of a loop, caching a repeatedly-accessed value (like <code>array.length</code> or a DOM lookup) in a local variable, and using short-circuiting (<code>&amp;&amp;</code>, early <code>return</code>, <code>break</code>) to skip work once the answer is already determined.</p>" +
+      "<pre><code>// wasteful — recomputes .length and re-derives 'threshold' every iteration\nfor (let i = 0; i < items.length; i++) {\n  const threshold = config.base * config.multiplier;\n  if (items[i].value > threshold) { /* ... */ }\n}\n\n// better — computed once, outside the loop\nconst threshold = config.base * config.multiplier;\nconst len = items.length;\nfor (let i = 0; i < len; i++) {\n  if (items[i].value > threshold) { /* ... */ }\n}</code></pre>" +
+      "<p class='ex-gotcha'>Don't chase this kind of micro-optimization <em>before measuring</em> — modern JS engines already optimize many simple cases like <code>array.length</code> automatically, and hand-optimizing code that isn't actually a bottleneck just adds complexity for no real gain. Profile first, then optimize what's actually slow.</p>",
+
+    "Memory management":
+      "<p><b>Simple definition:</b> Making sure your program doesn't hold onto memory it no longer needs, which would otherwise slow things down or crash the page/process over time.</p>" +
+      "<p><b>Technical definition:</b> JavaScript's garbage collector automatically frees memory for objects that are no longer <b>reachable</b> from any root reference. Performance problems arise when references linger longer than intended, keeping large objects reachable (and un-collectable) far past when they're actually needed.</p>" +
+      "<pre><code>let cache = {};\nfunction store(key, bigData) {\n  cache[key] = bigData; // grows forever — never evicted\n}\n// a cache with no eviction strategy is a slow, silent memory leak</code></pre>" +
+      "<p><b>Practical habits:</b> clear timers you no longer need (<code>clearInterval</code>/<code>clearTimeout</code>), remove event listeners when a component unmounts, and cap the size of any manually-managed cache (e.g. evict the oldest entry once it grows past a limit).</p>" +
+      "<p class='ex-gotcha'>The most common real-world memory issue isn't a dramatic \"leak\" — it's a slow accumulation from things like forgotten <code>setInterval</code> timers, detached DOM nodes still referenced by a closure, or listeners that were added but never removed. See \"Memory leaks\" (Advanced JavaScript) for the full breakdown.</p>",
+
+    "Large-array processing":
+      "<p><b>Simple definition:</b> Processing big arrays efficiently means avoiding patterns that scale badly, and not doing more passes over the data than necessary.</p>" +
+      "<p><b>Technical definition:</b> Two common performance traps: an O(n²) pattern (e.g. repeatedly calling <code>.includes()</code> or <code>.find()</code> on an array inside a loop, when a <code>Set</code>/<code>Map</code> lookup would be O(1)), and chaining many separate array passes (<code>.map().filter().map()</code>) when a single <code>reduce</code> could do the same work in one pass.</p>" +
+      "<pre><code>// O(n²) — .includes() rescans the whole array every iteration\nconst blocked = [/* thousands of ids */];\nconst filtered = users.filter(u => blocked.includes(u.id)); // slow at scale\n\n// O(n) — one Set lookup is O(1)\nconst blockedSet = new Set(blocked);\nconst filtered2 = users.filter(u => blockedSet.has(u.id)); // fast at scale</code></pre>" +
+      "<p><b>Chunking for very large lists:</b> if you must process a huge array on the main thread, break it into chunks with <code>setTimeout</code>/<code>requestIdleCallback</code> between batches, so the UI stays responsive instead of freezing for one long synchronous pass — see \"Event-loop blocking\".</p>" +
+      "<p class='ex-gotcha'>Swapping a linear scan for a <code>Set</code>/<code>Map</code> lookup is one of the highest-leverage, lowest-effort performance fixes available — an O(n²) algorithm that's fine on 100 items can become genuinely unusable on 100,000.</p>",
+
+    "Event-loop blocking":
+      "<p><b>Simple definition:</b> A long synchronous piece of code freezes everything else — clicks, animations, timers, rendering — until it finishes, because JavaScript runs on a single thread.</p>" +
+      "<p><b>Technical definition:</b> The event loop can only move to the next task (a rendered frame, a timer callback, an event handler) once the call stack is empty. A synchronous loop that runs for, say, 2 seconds occupies the stack the whole time, so nothing else — including the browser's own rendering — gets a turn.</p>" +
+      "<pre><code>function blockFor(ms) {\n  const end = Date.now() + ms;\n  while (Date.now() < end) {} // the page is frozen for the whole duration\n}\nblockFor(2000); // clicks, scrolling, animations — all frozen for 2s</code></pre>" +
+      "<p><b>Mitigations:</b> break the work into chunks and yield control back between them with <code>setTimeout(fn, 0)</code> or <code>requestIdleCallback</code>, or move genuinely CPU-heavy work off the main thread entirely with a Web Worker.</p>" +
+      "<pre><code>function processInChunks(items, chunkSize, onDone) {\n  let i = 0;\n  function step() {\n    const end = Math.min(i + chunkSize, items.length);\n    for (; i < end; i++) processItem(items[i]);\n    if (i < items.length) setTimeout(step, 0); // yield, then continue\n    else onDone();\n  }\n  step();\n}</code></pre>" +
+      "<p class='ex-gotcha'>Wrapping heavy work in a Promise or <code>async</code> function does <b>not</b> make it non-blocking by itself — <code>async</code> only changes when a function's result is delivered, not whether its own synchronous body still hogs the single thread while running.</p>",
+
+    "Async parallelization":
+      "<p><b>Simple definition:</b> Running independent async operations at the same time instead of one after another, so the total wait is the slowest one, not the sum of all of them.</p>" +
+      "<p><b>Technical definition:</b> Sequentially <code>await</code>ing several independent promises forces each to fully complete before the next one even starts, adding their durations together. Starting them all first (e.g. via <code>Promise.all</code>) lets them run concurrently, so the total time is roughly bounded by the slowest single one.</p>" +
+      "<pre><code>// SEQUENTIAL — ~3 seconds if each call takes ~1s\nconst user = await fetchUser();\nconst posts = await fetchPosts();\nconst comments = await fetchComments();\n\n// PARALLEL — ~1 second, all three run concurrently\nconst [user, posts, comments] = await Promise.all([\n  fetchUser(), fetchPosts(), fetchComments()\n]);</code></pre>" +
+      "<p class='ex-gotcha'>The most common version of this performance bug is <code>await</code> inside a <code>for</code> loop over independent items — each iteration silently waits for the last to finish. If the items don't depend on each other, map to an array of promises first, then <code>Promise.all</code> the whole array at once.</p>",
+
+    "Code splitting concept":
+      "<p><b>Simple definition:</b> Breaking one big JavaScript bundle into smaller pieces that load only when actually needed, instead of forcing every user to download all the code upfront.</p>" +
+      "<p><b>Technical definition:</b> Bundlers (Webpack, Vite, etc.) can split code at points marked by a dynamic <code>import()</code> call, generating separate chunk files. The initial page load only needs the entry chunk; other chunks are fetched on demand — e.g. per-route in a single-page app, or for a rarely-used feature.</p>" +
+      "<pre><code>// route-based code splitting in a React app\nconst SettingsPage = React.lazy(() => import('./SettingsPage'));\n// SettingsPage's code isn't downloaded until a user actually navigates there</code></pre>" +
+      "<p><b>Why it matters for performance:</b> a smaller initial bundle means less JavaScript to download, parse, and execute before the page becomes interactive — directly improving load-time metrics for the common path, at the cost of a small delay the first time a split-off feature is used.</p>" +
+      "<p class='ex-gotcha'>Code splitting depends on <code>import()</code>'s dynamic, on-demand nature (see \"Dynamic imports\" under Modules & runtime) — it's a build-tool feature layered on top of a language feature, not something the JS engine does automatically on its own.</p>",
+
+    "Lazy loading":
+      "<p><b>Simple definition:</b> Deferring the loading of something (a module, an image, a component) until it's actually about to be needed, rather than upfront.</p>" +
+      "<p><b>Technical definition:</b> Lazy loading applies the same \"defer until needed\" idea across several layers: dynamic <code>import()</code> for JS modules, the native <code>loading=\"lazy\"</code> attribute for images/iframes (deferred until near the viewport), and route-based component splitting in frameworks.</p>" +
+      "<pre><code>&lt;img src=\"large-photo.jpg\" loading=\"lazy\" alt=\"\" /&gt;\n&lt;!-- browser defers fetching this until it's about to scroll into view --&gt;\n\nconst Modal = React.lazy(() => import('./Modal'));\n// Modal's code only loads the first time it's actually rendered</code></pre>" +
+      "<p><b>Why it matters for performance:</b> not every part of a page or app is used by every visitor on every visit — loading it all eagerly wastes bandwidth and delays the parts that ARE needed immediately.</p>" +
+      "<p class='ex-gotcha'>Lazy loading trades a smaller upfront cost for a small delay the first time the deferred thing is actually used — that trade-off is wrong for anything critical to the initial view (e.g. lazy-loading an above-the-fold hero image causes a visible pop-in); reserve it for things genuinely below the fold or rarely used.</p>",
+  },
+
+  /* ------------------------------------------------------------------ */
+  "JavaScript patterns & engineering": {
+    "Separation of concerns":
+      "<p><b>Simple definition:</b> Keeping different responsibilities (fetching data, transforming it, displaying it) in different, separately-testable pieces instead of tangled together in one function.</p>" +
+      "<p><b>Technical definition:</b> A function or module that does one job is easier to test, reuse, and change without breaking unrelated behavior. Mixing concerns means a change to one responsibility risks breaking the others, and no piece can be reused or tested alone.</p>" +
+      "<pre><code>// BEFORE — fetch, transform, and render all tangled together\nasync function showUserCard(id) {\n  const res = await fetch('/api/users/' + id);\n  const data = await res.json();\n  const name = data.name.toUpperCase();\n  document.querySelector('#card').innerHTML = '&lt;h2&gt;' + name + '&lt;/h2&gt;';\n}\n\n// AFTER — each piece is separately testable and reusable\nasync function fetchUser(id) {\n  const res = await fetch('/api/users/' + id);\n  return res.json();\n}\nfunction formatUserName(user) { return user.name.toUpperCase(); }\nfunction renderCard(name) {\n  document.querySelector('#card').innerHTML = '&lt;h2&gt;' + name + '&lt;/h2&gt;';\n}\n\nasync function showUserCard(id) {\n  const user = await fetchUser(id);\n  renderCard(formatUserName(user));\n}</code></pre>" +
+      "<p class='ex-gotcha'><code>formatUserName</code> can now be unit-tested with a plain object, no network or DOM required — that's the concrete payoff, not just \"cleaner code\" as an abstract virtue.</p>",
+
+    "Pure functions":
+      "<p><b>Simple definition:</b> A function that always gives the same output for the same input, and doesn't change anything outside itself.</p>" +
+      "<p><b>Technical definition:</b> A pure function has no side effects (no mutating arguments, no writing to outside variables/DOM/storage) and depends only on its arguments, never on external mutable state.</p>" +
+      "<pre><code>// IMPURE — depends on and mutates outside state\nlet total = 0;\nfunction addToTotal(n) { total += n; return total; }\n\n// PURE — same input always gives same output, no outside effects\nfunction add(a, b) { return a + b; }</code></pre>" +
+      "<p><b>Why it matters for MERN work:</b> React reducers (<code>(state, action) => newState</code>) are required to be pure — that purity is exactly what lets React safely skip re-rendering when it can prove the output would be identical, and what makes time-travel debugging (replaying past actions) possible at all.</p>" +
+      "<p class='ex-gotcha'>A function that looks pure but secretly reads a module-level variable, <code>Date.now()</code>, or <code>Math.random()</code> is not pure — its output silently depends on something other than its parameters, which breaks memoization and predictable testing.</p>",
+
+    "Immutability":
+      "<p><b>Simple definition:</b> Instead of changing a value in place, you create a new value with the change applied, leaving the original untouched.</p>" +
+      "<p><b>Technical definition:</b> Immutable updates replace mutation (<code>obj.x = 1</code>, <code>arr.push(x)</code>) with the creation of a new object/array (<code>{ ...obj, x: 1 }</code>, <code>[...arr, x]</code>), so the old reference remains a valid, unchanged snapshot.</p>" +
+      "<pre><code>// MUTATING — React can't tell this changed (same reference)\nfunction addItem(state, item) {\n  state.items.push(item);\n  return state;\n}\n\n// IMMUTABLE — new reference, change detection works\nfunction addItem(state, item) {\n  return { ...state, items: [...state.items, item] };\n}</code></pre>" +
+      "<p><b>Why it matters:</b> React (and similar libraries) detect changes with a fast <code>===</code> reference check, not a deep comparison. Mutating state in place keeps the same reference, so the check reports \"unchanged\" even though the data really did change — the classic \"my component won't re-render\" bug.</p>" +
+      "<p class='ex-gotcha'>Immutability isn't a rule to follow everywhere blindly — a purely local variable inside a tight algorithm can often be mutated freely with zero downside. It matters specifically wherever change-detection or predictable history (undo, time-travel debugging) depends on comparing references.</p>",
+
+    "Functional programming concepts":
+      "<p><b>Simple definition:</b> A style of writing code around functions that transform data, favoring composition and avoiding shared mutable state, over step-by-step instructions that mutate things as they go.</p>" +
+      "<p><b>Technical definition:</b> Core ideas: functions as first-class values (store, pass, return them), higher-order functions (<code>map</code>/<code>filter</code>/<code>reduce</code>), pure functions with no side effects, and declarative code (\"what to compute\") over imperative code (\"the exact steps to mutate state into the answer\").</p>" +
+      "<pre><code>// IMPERATIVE — describes HOW, step by step, with mutation\nconst adults = [];\nfor (let i = 0; i < users.length; i++) {\n  if (users[i].age >= 18) adults.push(users[i].name);\n}\n\n// DECLARATIVE / FUNCTIONAL — describes WHAT\nconst adults = users\n  .filter(u => u.age >= 18)\n  .map(u => u.name);</code></pre>" +
+      "<p class='ex-gotcha'>JavaScript is not a purely functional language — it's a multi-paradigm language that <em>supports</em> functional patterns. Don't force every piece of code into a functional style; a simple loop is sometimes clearer than a contorted chain of five array methods.</p>",
+
+    "Composition":
+      "<p><b>Simple definition:</b> Building complex behavior by combining small, focused functions (or objects) together, rather than one large function or a deep inheritance chain.</p>" +
+      "<p><b>Technical definition:</b> Function composition chains single-purpose functions so one's output feeds the next's input, typically implemented with a <code>pipe</code>/<code>compose</code> helper built on <code>reduce</code>. \"Composition over inheritance\" is the same idea applied to objects — assembling behavior from small pieces instead of a rigid parent/child hierarchy.</p>" +
+      "<pre><code>const pipe = (...fns) => (x) => fns.reduce((acc, fn) => fn(acc), x);\n\nconst trim = s => s.trim();\nconst lower = s => s.toLowerCase();\nconst removeSpaces = s => s.replace(/\\s+/g, '-');\n\nconst slugify = pipe(trim, lower, removeSpaces);\nslugify('  Hello World  '); // 'hello-world'</code></pre>" +
+      "<p><b>Real-world MERN example:</b> Express middleware IS composition — each middleware handles one concern (auth, logging, parsing) and calls <code>next()</code> to hand off to the next piece, rather than one giant handler doing everything.</p>" +
+      "<p class='ex-gotcha'>Composing too many tiny functions deep can actually hurt readability and make stack traces harder to follow — composition is a tool for clarity, not a goal to maximize; stop composing when the pipeline itself becomes harder to read than the code it replaced.</p>",
+
+    "Factory pattern":
+      "<p><b>Simple definition:</b> A function whose whole job is to create and configure objects for you, so callers don't need to know the construction details.</p>" +
+      "<p><b>Technical definition:</b> A factory function encapsulates object creation logic — often reading config, applying defaults, or choosing between variants — and returns a ready-to-use object, without requiring <code>new</code> or exposing the object's internal construction.</p>" +
+      "<pre><code>function createApiClient(baseUrl, { timeout = 5000, retries = 3 } = {}) {\n  return {\n    get: (path) => fetch(baseUrl + path, { timeout }),\n    // ...\n  };\n}\n\nconst client = createApiClient('https://api.example.com', { retries: 5 });\n// caller never has to know HOW the client is assembled internally</code></pre>" +
+      "<p class='ex-gotcha'>Don't reach for a factory just to wrap a trivial object literal with no real setup logic — it earns its place when there's actual configuration, defaulting, or variant-selection work to hide from the caller.</p>",
+
+    "Module pattern":
+      "<p><b>Simple definition:</b> Using a function's private scope (a closure) to hide internal details, exposing only a small, deliberate public interface.</p>" +
+      "<p><b>Technical definition:</b> The classic module pattern wraps state and helper functions inside an IIFE (or any enclosing function), returning only the object of methods meant to be public — anything not returned is permanently unreachable from outside, exactly like private class fields.</p>" +
+      "<pre><code>const Counter = (function () {\n  let count = 0; // truly private — no outside access\n  return {\n    increment() { return ++count; },\n    reset() { count = 0; }\n  };\n})();\n\nCounter.increment(); // 1\nCounter.count;       // undefined — not exposed</code></pre>" +
+      "<p class='ex-gotcha'>ES modules have largely superseded this pattern for organizing whole files — a module's top-level variables are private to that file automatically, without needing an IIFE wrapper. The pattern is still genuinely useful <em>inside</em> a file, for privacy at the object/closure level (see \"Encapsulation concepts\" under this, objects &amp; prototypes).</p>",
+
+    "Strategy pattern":
+      "<p><b>Simple definition:</b> Instead of one function with a big <code>if</code>/<code>switch</code> chain choosing behavior, you plug in a small, swappable \"strategy\" function that defines the behavior.</p>" +
+      "<p><b>Technical definition:</b> The calling code depends only on a common interface (a function with a consistent shape), while the actual behavior is selected and passed in — new strategies can be added without modifying the code that uses them.</p>" +
+      "<pre><code>// BEFORE — a growing if/else chain\nfunction validate(type, value) {\n  if (type === 'email') return value.includes('@');\n  if (type === 'phone') return /^\\d{10}$/.test(value);\n  if (type === 'zip') return /^\\d{5}$/.test(value);\n  // every new type means editing this function again\n}\n\n// AFTER — strategies are swappable, independent functions\nconst validators = {\n  email: v => v.includes('@'),\n  phone: v => /^\\d{10}$/.test(v),\n  zip: v => /^\\d{5}$/.test(v),\n};\nfunction validate(type, value) { return validators[type](value); }\n// adding 'creditCard' means adding one entry — validate() never changes</code></pre>" +
+      "<p class='ex-gotcha'>This pattern's payoff is specifically <em>avoiding repeated edits</em> to a central function as cases grow — for two or three cases that will never grow, a plain <code>if</code>/<code>switch</code> is simpler and the pattern is overkill.</p>",
+
+    "Observer pattern":
+      "<p><b>Simple definition:</b> One or more \"listeners\" subscribe to be notified whenever something happens, without the thing that happens needing to know who's listening.</p>" +
+      "<p><b>Technical definition:</b> A subject maintains a list of subscriber callbacks; when a relevant event occurs, it iterates the list and invokes each one, decoupling the event source from whatever reacts to it.</p>" +
+      "<pre><code>class EventBus {\n  #listeners = {};\n  on(event, callback) {\n    (this.#listeners[event] ??= []).push(callback);\n  }\n  emit(event, data) {\n    (this.#listeners[event] || []).forEach(cb => cb(data));\n  }\n}\n\nconst bus = new EventBus();\nbus.on('userLoggedIn', user => console.log(user.name + ' logged in'));\nbus.emit('userLoggedIn', { name: 'Ada' }); // 'Ada logged in'</code></pre>" +
+      "<p><b>Where you already use this:</b> <code>addEventListener</code> in the DOM, Node's <code>EventEmitter</code>, and (conceptually) how React components re-render when subscribed state changes — all the same subscribe/notify shape.</p>" +
+      "<p class='ex-gotcha'>Forgetting to unsubscribe a listener you no longer need is a classic memory leak — the subject keeps a reference to the callback (and anything it closes over) forever, even after the subscriber should have gone away.</p>",
+
+    "Dependency injection concept":
+      "<p><b>Simple definition:</b> Instead of a function reaching out and grabbing what it needs itself (importing a database, creating a logger), you hand those dependencies to it as arguments.</p>" +
+      "<p><b>Technical definition:</b> Dependency injection inverts control of dependency creation — the function receives its collaborators (a db client, a logger, a fetcher) from the caller, rather than instantiating or importing them internally.</p>" +
+      "<pre><code>// WITHOUT injection — hardcoded, hard to test\nconst db = require('./realDatabase');\nfunction getUser(id) { return db.query('SELECT * FROM users WHERE id = ?', id); }\n\n// WITH injection — the dependency is a parameter\nfunction getUser(db, id) { return db.query('SELECT * FROM users WHERE id = ?', id); }\n\n// now trivially testable with a fake:\nconst fakeDb = { query: () => ({ id: 1, name: 'Test User' }) };\ngetUser(fakeDb, 1); // no real database needed for the test</code></pre>" +
+      "<p class='ex-gotcha'>This is the real selling point, worth remembering over any abstract definition: <b>dependency injection is what makes code testable</b> without hitting a real database, network, or filesystem — you simply pass in a fake/mock version of the dependency instead.</p>",
+
+    "Defensive programming":
+      "<p><b>Simple definition:</b> Validating inputs at the boundaries of your program (user input, API responses, function arguments from elsewhere) so bad data is caught early with a clear error, instead of causing a confusing failure somewhere else entirely.</p>" +
+      "<p><b>Technical definition:</b> Fail fast at trust boundaries — check preconditions and throw clear, specific errors immediately when they're violated, rather than letting invalid data silently propagate deeper into the system where the eventual failure is far removed from its true cause.</p>" +
+      "<pre><code>function createUser({ email, age }) {\n  if (typeof email !== 'string' || !email.includes('@')) {\n    throw new Error('createUser: a valid email is required');\n  }\n  if (typeof age !== 'number' || age < 0) {\n    throw new Error('createUser: age must be a non-negative number');\n  }\n  // from here on, the rest of the function can safely trust its inputs\n}</code></pre>" +
+      "<p><b>The balance that matters:</b> guard the <em>edges</em> — user input, API boundaries, public function arguments — and then trust the interior. Sprinkling null-checks and try/catches around every single internal call, even ones you fully control, doesn't add safety; it just hides real bugs behind swallowed errors and makes the code harder to read.</p>" +
+      "<p class='ex-gotcha'>Over-defensive code that catches and silently ignores every possible error is often worse than no defense at all — a bug that fails loudly and immediately at its source is far easier to fix than one that gets silently swallowed three layers deep and resurfaces as a mystery somewhere else.</p>",
+
+    "Error boundaries at application level":
+      "<p><b>Simple definition:</b> A single, deliberate place where unexpected errors are caught and handled gracefully, instead of scattering try/catch everywhere or letting one failure crash the whole app.</p>" +
+      "<p><b>Technical definition:</b> Different layers of a MERN app have their own boundary mechanism: React <b>error boundaries</b> (a class component implementing <code>componentDidCatch</code>/<code>getDerivedStateFromError</code>) catch rendering errors in their child tree and show a fallback UI instead of a blank white screen; Express uses dedicated <b>error-handling middleware</b> — a function with the signature <code>(err, req, res, next)</code> — to catch errors from route handlers in one place.</p>" +
+      "<pre><code>// Express error-handling middleware — note the 4 params, that's what marks it as one\napp.use((err, req, res, next) => {\n  console.error(err);\n  res.status(500).json({ error: 'Something went wrong' });\n});\n\n// every route just throws or calls next(err) — no repeated try/catch per route\napp.get('/users/:id', async (req, res, next) => {\n  try {\n    const user = await db.findUser(req.params.id);\n    res.json(user);\n  } catch (err) {\n    next(err); // forwarded to the boundary above\n  }\n});</code></pre>" +
+      "<p class='ex-gotcha'>The whole point is catching at the <b>boundary</b>, not everywhere — one React error boundary around a feature area, one Express error-handling middleware at the end of the chain, rather than a try/catch wrapped around every single component or route individually.</p>",
+  },
+
+  /* ------------------------------------------------------------------ */
+  "Advanced JavaScript": {
+    "Closures in depth":
+      "<p><b>Simple definition:</b> A closure is a function that remembers the variables from the scope it was created in, even after that outer scope has finished running.</p>" +
+      "<p><b>Technical definition:</b> When a function is created, it keeps a live reference to its enclosing lexical environment, not a snapshot — so it can read and even update those outer variables long after the function that created it has returned.</p>" +
+      "<pre><code>function makeCounter() {\n  let count = 0; // private — no way to reach it from outside\n  return () => ++count;\n}\nconst a = makeCounter();\nconst b = makeCounter();\na(); a(); // 1, 2\nb();      // 1 — a completely independent closure, its own 'count'</code></pre>" +
+      "<p><b>The classic loop bug:</b></p>" +
+      "<pre><code>for (var i = 0; i < 3; i++) setTimeout(() => console.log(i), 0); // 3, 3, 3\nfor (let i = 0; i < 3; i++) setTimeout(() => console.log(i), 0); // 0, 1, 2</code></pre>" +
+      "<p><code>var</code> is function-scoped, so all three callbacks close over the exact same single <code>i</code>, whose final value is <code>3</code> by the time any callback runs. <code>let</code> creates a fresh binding for <em>each iteration</em>, so each callback closes over its own separate <code>i</code>.</p>" +
+      "<p class='ex-gotcha'>A closure keeps its <em>entire</em> enclosing scope reachable, not just the one variable you use — this is directly why closures can cause memory leaks if they capture something large and are kept alive longer than intended (see \"Memory leaks\").</p>",
+
+    "Lexical environment":
+      "<p><b>Simple definition:</b> The internal structure JavaScript uses to keep track of a scope's variables and how to find variables from an outer scope.</p>" +
+      "<p><b>Technical definition:</b> A lexical environment holds a record of the variable bindings declared in that scope, plus a reference to the <em>outer</em> lexical environment (its parent). This is not the same as saying \"a function stores its variables inside itself\" — the environment is a separate structure the function's closure points to, and multiple calls to the same function each get their own fresh environment.</p>" +
+      "<pre><code>function outer() {\n  const msg = 'hi'; // lives in outer's lexical environment\n  return function inner() {\n    return msg; // inner's environment has NO 'msg' of its own —\n                // it looks outward to outer's environment and finds it there\n  };\n}</code></pre>" +
+      "<p><b>Why \"lexical\":</b> which outer environment a function is linked to is determined by <em>where the function is written in the source code</em>, not by how or where it's later called — this is what makes scope resolution predictable and is the direct foundation of closures.</p>" +
+      "<p class='ex-gotcha'>Don't confuse this with <code>this</code> — <code>this</code> is resolved dynamically at <b>call time</b> based on how a function is invoked; the lexical environment (and therefore ordinary variable lookup) is fixed at <b>definition time</b> based on where the code was written. That contrast is the single most important thing to remember here.</p>",
+
+    "Execution contexts":
+      "<p><b>Simple definition:</b> The environment JavaScript sets up every time a function runs — it holds that call's local variables, its <code>this</code>, and a link to the outer scope.</p>" +
+      "<p><b>Technical definition:</b> Each execution context goes through a <b>creation phase</b> (hoisting: variable/function declarations are set up, <code>this</code> is determined) before the <b>execution phase</b> (code actually runs line by line). A new execution context is pushed onto the call stack for every function call, and popped when it returns.</p>" +
+      "<pre><code>console.log(a); // undefined, not an error — 'var a' was hoisted in the creation phase\nvar a = 5;\nconsole.log(a); // 5 — now the execution phase has run the assignment</code></pre>" +
+      "<p class='ex-gotcha'>\"Hoisting\" isn't magic code-reordering — it's simply that the creation phase sets up (but doesn't yet assign) declarations before the execution phase runs any actual statements, which is why a <code>var</code> exists as <code>undefined</code> before its assignment line, but a <code>let</code>/<code>const</code> exists in an inaccessible \"temporal dead zone\" until its own line runs.</p>",
+
+    "Scope chain":
+      "<p><b>Simple definition:</b> When a variable isn't found in the current scope, JavaScript keeps looking outward, one enclosing scope at a time, until it finds it or runs out of scopes.</p>" +
+      "<p><b>Technical definition:</b> The scope chain is the sequence of lexical environments — current, then its outer, then its outer's outer, and so on up to the global scope — searched in order to resolve a variable reference. This chain is fixed at the point a function is <em>defined</em>, based on nesting in the source code.</p>" +
+      "<pre><code>const x = 'global';\nfunction outer() {\n  const y = 'outer';\n  function inner() {\n    const z = 'inner';\n    console.log(z, y, x); // 'inner' 'outer' 'global' — each found by walking outward\n  }\n  inner();\n}\nouter();</code></pre>" +
+      "<p><b>The key contrast with <code>this</code>:</b> the scope chain is resolved <b>lexically</b> — fixed by where a function is <em>written</em> — while <code>this</code> is resolved dynamically, based on how a function is <em>called</em>. A function's scope chain never changes no matter how it's invoked; its <code>this</code> can change on every call.</p>" +
+      "<p class='ex-gotcha'>An inner scope can shadow (reuse the same name as) an outer variable — the scope chain search stops at the <em>first</em> match found, so the inner declaration wins and the outer one becomes unreachable from inside that inner scope.</p>",
+
+    "Garbage collection concepts":
+      "<p><b>Simple definition:</b> JavaScript automatically frees memory for objects your program can no longer reach — you don't manually free anything yourself.</p>" +
+      "<p><b>Technical definition:</b> Modern engines use <b>mark-and-sweep</b>: starting from a set of \"roots\" (global variables, currently-running function scopes), the collector marks every object reachable by following references, then frees everything left unmarked. It is based on <b>reachability</b>, not on counting how many references point to an object.</p>" +
+      "<pre><code>let obj = { data: 'large' };\nobj = null; // no more references point to the original object\n// it's now unreachable from any root — eligible for garbage collection</code></pre>" +
+      "<p class='ex-gotcha'>A common misconception is that JS uses simple reference counting — it doesn't (or at least, not as the primary strategy). Reference counting alone fails on circular references (two objects only pointing at each other, but unreachable from any root); mark-and-sweep correctly identifies such cycles as garbage since neither is reachable from a root, even though they reference each other.</p>",
+
+    "Memory leaks":
+      "<p><b>Simple definition:</b> Memory that's no longer needed but stays \"reachable\" anyway, so the garbage collector can never free it — the program's memory usage quietly grows over time.</p>" +
+      "<p><b>Technical definition:</b> A leak happens when a reference chain accidentally keeps an object reachable from a root longer than intended. The object itself isn't broken — the program simply forgot to let go of a reference to it.</p>" +
+      "<pre><code>// 1. Forgotten timers — the closure (and anything it captures) lives forever\nsetInterval(() => { /* uses some captured data */ }, 1000); // never cleared\n\n// 2. Listeners never removed — same idea\nel.addEventListener('click', handleClick); // el is removed from the DOM, but\n                                            // the listener reference keeps it \"reachable\"\n\n// 3. An ever-growing cache with no eviction\nconst cache = {};\nfunction store(key, data) { cache[key] = data; } // grows forever, nothing ever removed</code></pre>" +
+      "<p class='ex-gotcha'>A \"detached DOM node\" leak is a classic browser-specific case: removing an element from the visible page (<code>el.remove()</code>) does NOT free its memory if JavaScript still holds a reference to it somewhere (a variable, a closure, an event listener) — the node is gone from the page but still fully alive in memory.</p>",
+
+    "WeakMap/WeakSet use cases":
+      "<p><b>Simple definition:</b> Like <code>Map</code>/<code>Set</code>, but they hold their object keys/values <b>weakly</b> — meaning that reference alone won't stop the garbage collector from freeing that object.</p>" +
+      "<p><b>Technical definition:</b> <code>WeakMap</code> keys (and <code>WeakSet</code> members) must be objects, are held with a \"weak\" reference that doesn't count toward reachability, are not iterable, and have no <code>.size</code> — you can never enumerate what's inside, only check/get/set for a specific object you already have.</p>" +
+      "<pre><code>let user = { name: 'Ada' };\nconst metadata = new WeakMap();\nmetadata.set(user, { lastLogin: Date.now() });\n\nuser = null; // no other references to the original object exist now\n// the WeakMap entry (and its value) becomes eligible for garbage collection too —\n// a REGULAR Map would have kept the object alive forever via its strong key reference</code></pre>" +
+      "<p><b>Why it is used:</b> attaching extra data to an object (caching, metadata, private state) without preventing that object from ever being garbage collected once the rest of the program is done with it.</p>" +
+      "<p class='ex-gotcha'>The lack of iteration/<code>.size</code> isn't a missing feature — it's deliberate. If you could enumerate a <code>WeakMap</code>'s contents, that would require exposing exactly which objects are currently still alive, which is inherently unpredictable and timing-dependent since the GC can run at any point.</p>",
+
+    "Event delegation":
+      "<p><b>Simple definition:</b> Instead of attaching a listener to every individual child element, attach one listener to a shared parent and figure out which child was actually clicked.</p>" +
+      "<p><b>Technical definition:</b> Because events bubble from the target up through its ancestors, a single listener on a parent can inspect <code>event.target</code> (the actual element clicked) and use <code>.closest(selector)</code> to identify which matching child triggered it — even for children added to the DOM later.</p>" +
+      "<pre><code>document.querySelector('#list').addEventListener('click', (event) => {\n  const item = event.target.closest('.list-item');\n  if (!item) return; // click was on the list but not an item\n  console.log('clicked:', item.dataset.id);\n});\n\n// works even for items added AFTER this listener was set up —\n// no need to re-attach a listener to each new item</code></pre>" +
+      "<p class='ex-gotcha'>Delegation both reduces memory usage (one listener instead of hundreds) and automatically covers dynamically-added elements — a per-element listener approach requires manually re-attaching every time new elements appear, and easily leaks memory if elements are removed without their listeners being cleaned up.</p>",
+
+    "Debouncing":
+      "<p><b>Simple definition:</b> Waits for a pause in rapid-fire events before running — every new call resets the wait, so only the last call in a burst executes.</p>" +
+      "<p><b>Technical definition:</b> A debounced wrapper clears any pending timer on each new call and schedules a fresh one, so the wrapped function only runs once activity has genuinely stopped for the configured delay.</p>" +
+      "<pre><code>function debounce(fn, delay) {\n  let timer;\n  return (...args) => {\n    clearTimeout(timer);\n    timer = setTimeout(() => fn(...args), delay);\n  };\n}\nconst onResize = debounce(() => recalcLayout(), 200);\nwindow.addEventListener('resize', onResize); // recalcLayout runs once, after resizing stops</code></pre>" +
+      "<p class='ex-gotcha'>See \"Throttling\" for the direct comparison — debounce can mean the function never fires if activity never pauses, which is fine for a search box but wrong for something needing a steady rate.</p>",
+
+    "Throttling":
+      "<p><b>Simple definition:</b> Guarantees a function runs at most once per fixed interval, no matter how often the triggering event fires.</p>" +
+      "<p><b>Technical definition:</b> A throttled wrapper runs immediately on the first call, then ignores further calls until the interval has elapsed, after which the next call is allowed through again.</p>" +
+      "<pre><code>function throttle(fn, interval) {\n  let ready = true;\n  return (...args) => {\n    if (!ready) return;\n    fn(...args);\n    ready = false;\n    setTimeout(() => { ready = true; }, interval);\n  };\n}\nconst onScroll = throttle(() => updateProgress(), 100); // fires at most every 100ms</code></pre>" +
+      "<p class='ex-gotcha'>Debounce vs throttle: debounce waits for <b>silence</b> (search-as-you-type); throttle guarantees a <b>steady maximum rate</b> during continuous activity (scroll, drag, mousemove).</p>",
+
+    "Memoization":
+      "<p><b>Simple definition:</b> Caching a function's result by its arguments, so repeated calls with the same input skip the computation entirely.</p>" +
+      "<p><b>Technical definition:</b> A memoized wrapper checks a cache (usually a <code>Map</code>) keyed by the arguments before running the real function; on a cache hit it returns instantly, on a miss it computes, stores, then returns.</p>" +
+      "<pre><code>function memoize(fn) {\n  const cache = new Map();\n  return (arg) => {\n    if (cache.has(arg)) return cache.get(arg);\n    const result = fn(arg);\n    cache.set(arg, result);\n    return result;\n  };\n}</code></pre>" +
+      "<p class='ex-gotcha'>Only safe for <b>pure</b> functions — memoizing a function whose result depends on anything besides its arguments (the time, a mutable global) will happily return stale, wrong cached values.</p>",
+
+    "Lazy evaluation concepts":
+      "<p><b>Simple definition:</b> Delaying a computation until its result is actually needed, instead of computing it eagerly upfront — and sometimes never computing it at all if it's never used.</p>" +
+      "<p><b>Technical definition:</b> Lazy evaluation defers work behind a thunk (a zero-argument function wrapping the computation) or a generator, which is only invoked/advanced at the point of actual use — this avoids wasted work for values that end up unused, and enables things like infinite sequences that would be impossible to compute eagerly.</p>" +
+      "<pre><code>// EAGER — computes immediately, whether it's used or not\nconst value = expensiveComputation();\n\n// LAZY — nothing runs until getValue() is actually called\nconst getValue = () => expensiveComputation();\n\n// generators are lazy by nature — infinite sequence, computed on demand\nfunction* naturals() {\n  let n = 1;\n  while (true) yield n++;\n}\nconst gen = naturals();\ngen.next().value; // 1 — only this one value has been computed so far</code></pre>" +
+      "<p class='ex-gotcha'>JavaScript's <code>&amp;&amp;</code> and <code>||</code> already short-circuit lazily — the right-hand side isn't even evaluated if the left side already determines the result, which is why <code>obj &amp;&amp; obj.value</code> safely avoids touching <code>.value</code> when <code>obj</code> is falsy.</p>",
+
+    "Recursion":
+      "<p><b>Simple definition:</b> A function that calls itself, breaking a problem into a smaller version of the same problem, until it hits a case simple enough to answer directly.</p>" +
+      "<p><b>Technical definition:</b> Every correct recursive function needs a <b>base case</b> (a condition that stops the recursion and returns directly) and a <b>recursive case</b> that makes measurable progress toward that base case with each call.</p>" +
+      "<pre><code>function factorial(n) {\n  if (n <= 1) return 1;              // base case\n  return n * factorial(n - 1);        // recursive case, progressing toward n<=1\n}\nfactorial(5); // 120</code></pre>" +
+      "<p class='ex-gotcha'>Each recursive call adds a new frame to the call stack — a missing or unreachable base case causes infinite recursion and a <code>\"Maximum call stack size exceeded\"</code> error, not an infinite loop that just runs forever silently.</p>",
+
+    "Tail-call concept":
+      "<p><b>Simple definition:</b> A tail call is when a function's very last action is to call another function and immediately return its result, with nothing left to do afterward.</p>" +
+      "<p><b>Technical definition:</b> Proper Tail Call Optimization (TCO), part of the ES2015 spec, would let an engine reuse the current stack frame for a tail call instead of pushing a new one — turning tail-recursive functions into effectively constant stack space, avoiding the usual recursion depth limit.</p>" +
+      "<pre><code>// tail-recursive form — the recursive call is the LAST thing that happens\nfunction factorial(n, acc = 1) {\n  if (n <= 1) return acc;\n  return factorial(n - 1, n * acc); // tail position — nothing left to do after this returns\n}</code></pre>" +
+      "<p class='ex-gotcha'>Be honest about this one in interviews: TCO is in the language <em>spec</em>, but in practice it's effectively only implemented in Safari/JavaScriptCore — V8 (Chrome, Node, Edge) has never shipped it. Writing tail-recursive JavaScript today does NOT reliably protect you from stack overflow on most engines; treat it as a concept worth knowing, not a technique to depend on in production code.</p>",
+
+    "Iterators":
+      "<p><b>Simple definition:</b> An object that knows how to produce a sequence of values, one at a time, on request.</p>" +
+      "<p><b>Technical definition:</b> The iteration protocol: an object is <b>iterable</b> if it has a <code>[Symbol.iterator]()</code> method returning an <b>iterator</b> — an object with a <code>.next()</code> method that returns <code>{ value, done }</code> each time it's called, until <code>done</code> is <code>true</code>.</p>" +
+      "<pre><code>function makeRange(start, end) {\n  let current = start;\n  return {\n    [Symbol.iterator]() {\n      return {\n        next() {\n          if (current < end) return { value: current++, done: false };\n          return { value: undefined, done: true };\n        }\n      };\n    }\n  };\n}\nfor (const n of makeRange(1, 4)) console.log(n); // 1, 2, 3</code></pre>" +
+      "<p class='ex-gotcha'>This protocol is exactly what powers <code>for...of</code>, array/string spread, and destructuring — any object implementing <code>[Symbol.iterator]()</code> correctly gets all of that for free, which is why custom data structures can be made to work seamlessly with native JS syntax.</p>",
+
+    "Generators":
+      "<p><b>Simple definition:</b> A special kind of function (<code>function*</code>) that can pause itself midway with <code>yield</code> and resume later — the easy way to build an iterator without writing <code>.next()</code> by hand.</p>" +
+      "<p><b>Technical definition:</b> Calling a generator function doesn't run its body — it returns a generator object that <em>is</em> an iterator. Each call to <code>.next()</code> runs the body until the next <code>yield</code>, returns that value, and pauses; the next <code>.next()</code> call resumes exactly where it left off.</p>" +
+      "<pre><code>function* naturals() {\n  let n = 1;\n  while (true) { // infinite, but safe — nothing runs until .next() is called\n    yield n++;\n  }\n}\nconst gen = naturals();\ngen.next().value; // 1\ngen.next().value; // 2\n\nfor (const n of naturals()) {\n  if (n > 3) break; // 1, 2, 3 — then stop, no infinite loop\n  console.log(n);\n}</code></pre>" +
+      "<p class='ex-gotcha'>Generators are <b>lazy</b> — an infinite generator like <code>naturals()</code> never actually loops forever in practice, because each value is only computed the instant it's requested by <code>.next()</code> (or a <code>for...of</code> consuming it, which can <code>break</code> at any point).</p>",
+  },
+
+  /* ------------------------------------------------------------------ */
+  "Browser JavaScript": {
+    "DOM":
+      "<p><b>Simple definition:</b> The Document Object Model is the live, in-memory tree of objects the browser builds from your HTML — the thing JavaScript actually reads and modifies to change what's on screen.</p>" +
+      "<p><b>Technical definition:</b> The DOM is a tree data structure (one node per element, text, comment, etc.) that the browser exposes through a set of Web APIs — it's not JavaScript-the-language, it's an API the browser provides that JS can call.</p>" +
+      "<pre><code>const el = document.querySelector('#title');\nel.textContent = 'Updated!'; // mutates the live DOM node — page updates instantly\nel.classList.add('highlight');</code></pre>" +
+      "<p class='ex-gotcha'>The DOM tree is not the same thing as your original HTML source — the browser can and does modify the live tree (via JS, or its own parsing corrections) without ever changing the HTML file itself; \"View Source\" shows the original file, while DevTools' Elements panel shows the current DOM.</p>",
+
+    "Event propagation":
+      "<p><b>Simple definition:</b> When you click an element, the click doesn't just fire on that one element — it travels through the DOM tree in a defined order, first down then back up.</p>" +
+      "<p><b>Technical definition:</b> An event goes through three phases: <b>capturing</b> (from the root down to the target), the <b>target</b> phase (the element actually clicked), then <b>bubbling</b> (back up from the target to the root). Listeners attach to the bubble phase by default.</p>" +
+      "<pre><code>window (capture) ↓\n  document (capture) ↓\n    #parent (capture) ↓\n      #child ← TARGET PHASE (the actual clicked element)\n    #parent (bubble) ↑\n  document (bubble) ↑\nwindow (bubble) ↑</code></pre>" +
+      "<pre><code>parent.addEventListener('click', () => console.log('parent (bubble)'));\nparent.addEventListener('click', () => console.log('parent (capture)'), true); // capture phase\nchild.addEventListener('click', () => console.log('child'));\n// clicking child logs: 'parent (capture)', 'child', 'parent (bubble)'</code></pre>" +
+      "<p class='ex-gotcha'>Most listeners you write are bubble-phase by default (pass no third argument, or <code>{capture:false}</code>) — the capture phase is rarely used, but understanding it exists explains why <code>addEventListener</code> has that mysterious third boolean parameter.</p>",
+
+    "Capturing":
+      "<p><b>Simple definition:</b> The first phase of event propagation — the event travels from the outermost ancestor <em>down</em> toward the actual clicked element, before the normal bubbling most people know happens.</p>" +
+      "<p><b>Technical definition:</b> Passing <code>true</code> (or <code>{ capture: true }</code>) as the third argument to <code>addEventListener</code> registers that listener for the capture phase, meaning it runs on the way <em>down</em> the tree, before the target itself or any bubble-phase listener fires.</p>" +
+      "<pre><code>document.body.addEventListener(\n  'click',\n  () => console.log('captured at body — before the target even sees it'),\n  true // <- capture phase\n);</code></pre>" +
+      "<p><b>When it's actually used:</b> intercepting an event before a child gets a chance to <code>stopPropagation()</code> and prevent it from ever bubbling — capturing runs first, so it can't be blocked by a descendant stopping the bubble phase.</p>" +
+      "<p class='ex-gotcha'>It's rare in everyday code, but it's exactly what explains the third argument's existence — if you've only ever seen <code>addEventListener(type, fn)</code>, you've been implicitly using bubble-phase listeners the whole time.</p>",
+
+    "Bubbling":
+      "<p><b>Simple definition:</b> After an event reaches its target, it travels back <em>up</em> through every ancestor element, triggering their listeners too — this is the phase most listeners actually run in.</p>" +
+      "<p><b>Technical definition:</b> By default (no <code>capture</code> flag), <code>addEventListener</code> registers a listener for the bubble phase — it fires only after the target phase completes, and only if propagation wasn't stopped earlier.</p>" +
+      "<pre><code>document.querySelector('#inner').addEventListener('click', () => console.log('inner'));\ndocument.querySelector('#outer').addEventListener('click', () => console.log('outer'));\n// clicking #inner logs 'inner' THEN 'outer' — the click bubbles up to the parent too</code></pre>" +
+      "<p><b>Why it matters:</b> bubbling is exactly what makes \"Event delegation\" possible — a single listener on a distant ancestor can react to clicks on any descendant, because the click bubbles all the way up to it.</p>" +
+      "<p class='ex-gotcha'>Not every event bubbles — <code>focus</code> and <code>blur</code> famously don't (their delegated equivalents are <code>focusin</code>/<code>focusout</code>, which do bubble). Always check whether the specific event type you're relying on actually bubbles before building delegation around it.</p>",
+
+    "Event delegation":
+      "<p><b>Simple definition:</b> Put one listener on a parent instead of one on every child — bubbling carries the event up to the parent, which figures out what was actually clicked.</p>" +
+      "<p><b>Technical definition:</b> A single listener on an ancestor inspects <code>event.target</code> (the element actually clicked) and typically calls <code>.closest(selector)</code> on it to find the matching descendant, working correctly even for elements added to the DOM after the listener was attached.</p>" +
+      "<pre><code>document.querySelector('#list').addEventListener('click', (e) => {\n  const item = e.target.closest('.list-item');\n  if (!item) return;\n  console.log('clicked item:', item.dataset.id);\n});\n// new .list-item elements added later still work — no new listener needed</code></pre>" +
+      "<p class='ex-gotcha'>Delegation only works for events that actually bubble (see \"Bubbling\") — trying to delegate <code>focus</code>/<code>blur</code> directly on a parent silently does nothing; use <code>focusin</code>/<code>focusout</code> instead, which are the bubbling equivalents.</p>",
+
+    "preventDefault":
+      "<p><b>Simple definition:</b> Cancels whatever the browser was automatically going to do because of this event — like following a link, or submitting a form.</p>" +
+      "<p><b>Technical definition:</b> <code>event.preventDefault()</code> stops the browser's built-in default action for that event, but does <b>not</b> stop the event from continuing to propagate (bubble/capture) to other listeners.</p>" +
+      "<pre><code>form.addEventListener('submit', (e) => {\n  e.preventDefault(); // stop the page from reloading\n  submitViaFetch(new FormData(form));\n});\n\nlink.addEventListener('click', (e) => {\n  e.preventDefault(); // stop navigating to the href\n  showModalInstead();\n});</code></pre>" +
+      "<p class='ex-gotcha'>See \"stopPropagation\" for the other half of this: these two methods do <b>completely different things</b> and neither implies the other — calling one alone leaves the other behavior fully intact.</p>",
+
+    "stopPropagation":
+      "<p><b>Simple definition:</b> Stops an event from continuing to bubble (or capture) any further — ancestor listeners further along the chain never see it.</p>" +
+      "<p><b>Technical definition:</b> <code>event.stopPropagation()</code> halts the event's journey through the capture/bubble phases at the current listener, but it does <b>not</b> cancel the browser's default action (a link will still navigate, a form will still submit) unless you also call <code>preventDefault()</code>.</p>" +
+      "<pre><code>child.addEventListener('click', (e) => {\n  e.stopPropagation(); // parent's listener below will NOT fire\n  console.log('child handled it');\n});\nparent.addEventListener('click', () => console.log('parent — never runs on a child click'));</code></pre>" +
+      "<p class='ex-gotcha'>The confusion table worth memorizing: <code>preventDefault</code> cancels the browser's default action but the event STILL propagates; <code>stopPropagation</code> stops propagation but the default action STILL happens. They're independent — use both together if you genuinely need neither effect.</p>",
+
+    "Browser storage":
+      "<p><b>Simple definition:</b> The umbrella term for the browser's built-in ways to persist data on the user's machine — <code>localStorage</code>, <code>sessionStorage</code>, and cookies being the main three.</p>" +
+      "<p><b>Technical definition:</b> Each mechanism trades off capacity, lifetime, and visibility differently — choosing between them is a real, common interview question, not just trivia.</p>" +
+      "<table><tr><th>Mechanism</th><th>Capacity</th><th>Lifetime</th><th>Sent to server?</th></tr><tr><td>localStorage</td><td>~5-10MB</td><td>until explicitly cleared</td><td>never</td></tr><tr><td>sessionStorage</td><td>~5-10MB</td><td>until the tab closes</td><td>never</td></tr><tr><td>Cookies</td><td>~4KB</td><td>configurable expiry</td><td>with EVERY matching request</td></tr></table>" +
+      "<p class='ex-gotcha'>All of them are per-<b>origin</b> (scheme + host + port) — data stored by <code>https://a.com</code> is invisible to <code>https://b.com</code>, and even <code>https://a.com</code> and <code>http://a.com</code> count as different origins entirely.</p>",
+
+    "localStorage":
+      "<p><b>Simple definition:</b> Key-value storage in the browser that survives closing the tab, the browser, even restarting the computer — until something explicitly clears it.</p>" +
+      "<p><b>Technical definition:</b> <code>localStorage</code> is synchronous, string-only (non-strings are coerced via <code>.toString()</code>, so objects need <code>JSON.stringify</code>/<code>JSON.parse</code>), roughly 5-10MB per origin, and persists indefinitely until cleared by code, the user, or browser settings.</p>" +
+      "<pre><code>localStorage.setItem('theme', 'dark');\nlocalStorage.getItem('theme');   // 'dark'\n\nlocalStorage.setItem('user', JSON.stringify({ name: 'Ada' }));\nconst user = JSON.parse(localStorage.getItem('user'));\n\nlocalStorage.removeItem('theme');\nlocalStorage.clear(); // wipes everything for this origin</code></pre>" +
+      "<p class='ex-gotcha'><code>localStorage.getItem('missingKey')</code> returns <code>null</code>, not <code>undefined</code> — and calling <code>JSON.parse(null)</code> actually returns <code>null</code> too (it doesn't throw), which can mask a missing-key bug if you're not careful checking for it.</p>",
+
+    "sessionStorage":
+      "<p><b>Simple definition:</b> Same API as <code>localStorage</code>, but the data disappears the moment that specific browser tab is closed.</p>" +
+      "<p><b>Technical definition:</b> <code>sessionStorage</code> shares <code>localStorage</code>'s API exactly (<code>setItem</code>/<code>getItem</code>/<code>removeItem</code>/<code>clear</code>), but its lifetime is scoped to a single tab/window session, and it is <b>not shared between tabs</b> even if they're on the same origin.</p>" +
+      "<pre><code>sessionStorage.setItem('formDraft', JSON.stringify({ title: 'Draft...' }));\n// survives a page refresh in THIS tab, but is gone if the tab is closed,\n// and a second tab on the same site won't see it at all</code></pre>" +
+      "<p class='ex-gotcha'>\"Same origin, different tab\" is the trap: unlike <code>localStorage</code> (shared across every tab on the same origin), each tab gets its own completely separate <code>sessionStorage</code> — even duplicating a tab starts a fresh copy of the data, not a live shared one.</p>",
+
+    "Cookies":
+      "<p><b>Simple definition:</b> Small pieces of data stored by the browser that get automatically attached to every matching HTTP request — the original way the web tracked sessions before <code>localStorage</code> existed.</p>" +
+      "<p><b>Technical definition:</b> Cookies are limited to ~4KB, can carry an expiry, and support flags like <code>HttpOnly</code> (inaccessible to JS, mitigating XSS theft), <code>Secure</code> (HTTPS only), and <code>SameSite</code> (controls cross-site sending, mitigating CSRF).</p>" +
+      "<pre><code>document.cookie = 'theme=dark; max-age=3600; path=/';\nconsole.log(document.cookie); // 'theme=dark' (plus any other readable cookies)\n// an HttpOnly cookie set by the SERVER is invisible to document.cookie entirely</code></pre>" +
+      "<p class='ex-gotcha'>This is the key difference from <code>localStorage</code>/<code>sessionStorage</code>, worth stating explicitly: cookies are sent with <b>every</b> matching HTTP request automatically, adding overhead to every call — <code>localStorage</code> and <code>sessionStorage</code> are never sent to the server at all unless your code explicitly reads and includes them.</p>",
+
+    "Fetch API":
+      "<p><b>Simple definition:</b> The modern, promise-based way to make HTTP requests from the browser (or Node), replacing the older <code>XMLHttpRequest</code>.</p>" +
+      "<p><b>Technical definition:</b> <code>fetch(url, options)</code> returns a promise that resolves to a <code>Response</code> object once headers arrive — reading the body (<code>.json()</code>, <code>.text()</code>) is a <em>separate</em> step that itself returns another promise.</p>" +
+      "<pre><code>const res = await fetch('/api/users/1');\nconst data = await res.json(); // .json() itself returns a PROMISE, not the data directly\n\nawait fetch('/api/users', {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/json' },\n  body: JSON.stringify({ name: 'Ada' })\n});</code></pre>" +
+      "<p class='ex-gotcha'><b>The single most important gotcha in this whole topic:</b> <code>fetch</code> does <b>NOT</b> reject on an HTTP error status — a 404 or 500 response still resolves normally. It only rejects on a genuine network failure (DNS failure, no connection, CORS block). You must always check <code>response.ok</code> (or <code>response.status</code>) yourself:</p>" +
+      "<pre><code>const res = await fetch('/api/users/999');\nif (!res.ok) throw new Error('HTTP ' + res.status); // fetch alone won't do this for you</code></pre>",
+
+    "AbortController":
+      "<p><b>Simple definition:</b> The standard way to cancel an in-flight <code>fetch</code> (or other cancellable async operation).</p>" +
+      "<p><b>Technical definition:</b> Creating an <code>AbortController</code> gives you a <code>.signal</code> to pass into <code>fetch</code>'s options, and an <code>.abort()</code> method that, when called, makes that fetch's promise reject with an <code>AbortError</code>.</p>" +
+      "<pre><code>const controller = new AbortController();\nfetch('/search?q=abc', { signal: controller.signal })\n  .then(res => res.json())\n  .catch(err => {\n    if (err.name === 'AbortError') console.log('request cancelled');\n  });\n\n// e.g. cancel the previous search request when the user types a new query\ncontroller.abort();</code></pre>" +
+      "<p class='ex-gotcha'>A very common real use in a search box: cancel the <em>previous</em> in-flight request every time a new keystroke fires a new one — otherwise a slow, stale response can arrive AFTER a faster, newer one and incorrectly overwrite the results the user actually wants to see.</p>",
+
+    "Web APIs":
+      "<p><b>Simple definition:</b> The features you use constantly in browser JS — <code>fetch</code>, <code>setTimeout</code>, the DOM, <code>localStorage</code> — are not part of the JavaScript language itself; they're provided by the browser.</p>" +
+      "<p><b>Technical definition:</b> The JS engine (e.g. V8) implements only the ECMAScript language spec — values, functions, closures, promise mechanics. Everything else (DOM manipulation, timers, network requests, storage) is supplied by the host environment as Web APIs, which is also why Node.js has some different globals (no <code>window</code>/<code>document</code>, but has <code>process</code>, different timer/file APIs).</p>" +
+      "<pre><code>// none of these are 'JavaScript the language' — they're browser-provided APIs:\nfetch('/api');\nsetTimeout(fn, 1000);\ndocument.querySelector('#el');\nlocalStorage.getItem('x');</code></pre>" +
+      "<p class='ex-gotcha'>This is directly connected to the event loop: it's the Web APIs (not the JS engine) that do the actual waiting for a timer or network request, then hand a callback back to the queue — see \"Web APIs/runtime APIs\" under Event loop for the full mechanism.</p>",
+
+    "CORS concept":
+      "<p><b>Simple definition:</b> A browser security rule that blocks a web page from freely reading responses from a different origin, unless that other server explicitly says it's okay.</p>" +
+      "<p><b>Technical definition:</b> Cross-Origin Resource Sharing is enforced entirely by the <b>browser</b>, not the requesting JavaScript code. The server opts in by returning an <code>Access-Control-Allow-Origin</code> header; for many request types the browser first sends an automatic <code>OPTIONS</code> \"preflight\" request to check permission before sending the real one.</p>" +
+      "<pre><code>// server response header that allows a specific origin:\nAccess-Control-Allow-Origin: https://myapp.com\n\n// without a matching header, the browser blocks the JS from reading the\n// response — even though the request itself often still reaches the server</code></pre>" +
+      "<p class='ex-gotcha'>CORS protects the <b>user</b>, not the server, and it cannot be \"fixed\" from client-side JavaScript at all — no header, config, or trick in your frontend code can bypass it; the target server must explicitly grant permission via its own response headers.</p>",
+
+    "Browser rendering concept":
+      "<p><b>Simple definition:</b> The pipeline the browser runs to turn your HTML/CSS/JS into actual pixels on screen — and understanding it explains why some DOM changes are much more expensive than others.</p>" +
+      "<p><b>Technical definition:</b> Roughly: parse HTML into the <b>DOM</b>, parse CSS into the <b>CSSOM</b>, combine them into a <b>render tree</b>, compute <b>layout</b> (a.k.a. reflow — the size/position of everything), then <b>paint</b> pixels, then <b>composite</b> layers together.</p>" +
+      "<pre><code>HTML → DOM ─┐\n            ├─→ Render Tree → Layout (reflow) → Paint → Composite\nCSS  → CSSOM ┘</code></pre>" +
+      "<p><b>Reflow vs repaint:</b> changing something that affects layout (size, position, adding/removing elements) triggers an expensive <b>reflow</b> (recalculating positions) followed by a repaint. Changing only visual properties that don't affect layout (color, <code>opacity</code>, <code>transform</code>) triggers just a cheaper <b>repaint</b>/composite, skipping layout entirely.</p>" +
+      "<p class='ex-gotcha'><b>Layout thrashing:</b> repeatedly reading a layout property (like <code>offsetHeight</code>) and then writing a style change, in a tight loop, forces the browser to recalculate layout synchronously on every single iteration instead of batching the work — a well-known real-world performance bug. Fix by batching all your reads first, then all your writes.</p>",
+  },
+
+  /* ------------------------------------------------------------------ */
+  "ES6+ language features": {
+    "Template literals":
+      "<p><b>Simple definition:</b> Backtick-quoted strings that let you interpolate variables directly and span multiple lines without special escape characters.</p>" +
+      "<p><b>What ES6 added:</b> before this, building a string with variables meant painful concatenation (<code>'Hi, ' + name + '!'</code>); template literals let you write <code>`Hi, ${name}!`</code> directly, and backticked strings can span multiple lines as-is.</p>" +
+      "<pre><code>const name = 'Ada';\nconst greeting = `Hello, ${name}! You are ${2024 - 1815} years old.`;\n\nconst multi = `line one\nline two`; // real newline, no \\n needed</code></pre>" +
+      "<p class='ex-gotcha'>Tagged templates (<code>tag\\`text ${value}\\`</code>) let a function intercept and process the literal's pieces before the final string is built — this is how libraries like <code>styled-components</code> parse CSS written inside a template literal.</p>",
+
+    "Destructuring":
+      "<p><b>Simple definition:</b> ES6's syntax for pulling values out of arrays (by position) or objects (by name) directly into variables.</p>" +
+      "<p><b>What ES6 added:</b> a concise, built-in replacement for writing individual <code>const x = obj.x;</code> or <code>const first = arr[0];</code> lines one at a time.</p>" +
+      "<pre><code>const [a, b] = [1, 2];             // array — by position\nconst { name, age } = user;        // object — by name</code></pre>" +
+      "<p class='ex-gotcha'>For the full depth of object destructuring (nesting, renaming, defaults), see \"Destructuring\" under this, objects &amp; prototypes — here it's about recognizing it as one of ES6's headline syntax additions.</p>",
+
+    "Spread syntax":
+      "<p><b>Simple definition:</b> The <code>...</code> operator that expands an array or object into its individual elements/properties.</p>" +
+      "<p><b>What ES6 added (ES2018 for objects):</b> a concise way to copy, merge, or pass array/object contents without <code>concat</code>, <code>Object.assign</code>, or <code>apply</code>.</p>" +
+      "<pre><code>[...[1,2], ...[3,4]];   // [1,2,3,4]\n{ ...user, age: 30 };   // shallow-copy + override</code></pre>" +
+      "<p class='ex-gotcha'>See \"Spread with arrays\" / \"Object spread\" elsewhere in this app for the shallow-copy caveat — the important thing here is recognizing <code>...</code> as one syntax with two related but distinct uses (arrays vs objects, expand vs collect).</p>",
+
+    "Rest parameters":
+      "<p><b>Simple definition:</b> The same <code>...</code> syntax, but used in a parameter list to <em>collect</em> the remaining arguments into a real array.</p>" +
+      "<p><b>What ES6 added:</b> a real-array replacement for the old, awkward <code>arguments</code> object (which isn't a true array and doesn't exist at all in arrow functions).</p>" +
+      "<pre><code>function sum(...nums) { return nums.reduce((a,b) => a+b, 0); }\nsum(1, 2, 3); // 6 — 'nums' is a genuine array</code></pre>" +
+      "<p class='ex-gotcha'>Rest <em>collects</em> (in a parameter list); spread <em>expands</em> (in a call or literal) — same three dots, opposite direction, and it's easy to mix the two names up under pressure.</p>",
+
+    "Default parameters":
+      "<p><b>Simple definition:</b> A fallback value a parameter takes when its argument is missing or explicitly <code>undefined</code>.</p>" +
+      "<p><b>What ES6 added:</b> before this, defaults required a manual check inside the function body (<code>b = b || 2;</code>) — with its own bug, since that also overrides a deliberately passed <code>0</code>.</p>" +
+      "<pre><code>function multiply(a, b = 2) { return a * b; }\nmultiply(5);       // 10\nmultiply(5, null); // 0 — default only triggers on undefined, NOT null</code></pre>" +
+      "<p class='ex-gotcha'>The old <code>b || 2</code> pattern breaks on any falsy argument (<code>0</code>, <code>''</code>); ES6 default parameters correctly trigger only on <code>undefined</code>, which is the whole reason this feature exists as language syntax rather than a userland idiom.</p>",
+
+    "Arrow functions":
+      "<p><b>Simple definition:</b> Shorter function syntax that also, distinctively, has no <code>this</code> of its own — it inherits <code>this</code> lexically from its surrounding scope.</p>" +
+      "<p><b>What ES6 added:</b> concise syntax AND solved the classic \"lost <code>this</code> in a callback\" problem that previously required <code>.bind(this)</code> or <code>const self = this;</code> workarounds.</p>" +
+      "<pre><code>const double = n => n * 2;\n\nconst timer = {\n  label: 'x',\n  start() { setTimeout(() => console.log(this.label), 100); } // inherits start()'s this\n};</code></pre>" +
+      "<p class='ex-gotcha'>For the full depth on <code>this</code> inheritance and when NOT to use an arrow (never as an object method), see \"this in arrow functions\" under this, objects &amp; prototypes — the point here is recognizing arrow functions as the ES6 feature that fixed this long-standing pain point.</p>",
+
+    "Enhanced object literals":
+      "<p><b>Simple definition:</b> ES6 shorthand for writing object literals — method shorthand, property shorthand, and computed keys, all without the old boilerplate.</p>" +
+      "<p><b>Technical definition:</b> Before ES6: <code>{ name: name, greet: function() {...} }</code>. After: property shorthand when the variable name matches the key, method shorthand dropping <code>function</code>, and <code>[expr]:</code> for computed keys — all in one literal.</p>" +
+      "<pre><code>const name = 'Ada';\nconst key = 'role';\n\nconst user = {\n  name,                    // shorthand for name: name\n  greet() { return 'hi'; }, // shorthand for greet: function(){...}\n  [key]: 'admin'            // computed key\n};</code></pre>" +
+      "<p class='ex-gotcha'>Method shorthand (<code>greet() {}</code>) creates a regular function, not an arrow — it still gets its own <code>this</code>, bound normally by how it's called. Don't assume shorthand syntax changes <code>this</code> behavior; it doesn't.</p>",
+
+    "Computed property names":
+      "<p><b>Simple definition:</b> Using <code>[expression]</code> as an object literal's key, so the key itself can be a variable or any computed value.</p>" +
+      "<p><b>What ES6 added:</b> before this, a dynamic key required creating the object first, then assigning the property in a separate step (<code>const obj = {}; obj[key] = value;</code>).</p>" +
+      "<pre><code>const field = 'status';\nconst obj = { [field]: 'active' }; // { status: 'active' } — built inline</code></pre>" +
+      "<p class='ex-gotcha'>Keys are always coerced to strings (or left as symbols) — <code>{ [{}]: 'x' }</code> silently becomes the key <code>'[object Object]'</code>, which is rarely what's intended; use a <code>Map</code> if you genuinely need object keys.</p>",
+
+    "Modules":
+      "<p><b>Simple definition:</b> ES6's native way to split code across files, with <code>import</code>/<code>export</code>, replacing older non-standard patterns (global script tags, CommonJS in the browser via bundlers, AMD).</p>" +
+      "<p><b>Technical definition:</b> Each ES module has its own scope (nothing leaks to global by accident), is statically analyzed at parse time, and its imports are hoisted and resolved before the module's own code runs — see \"ES Modules\" under Modules &amp; runtime for the full CJS-vs-ESM comparison.</p>" +
+      "<pre><code>// math.js\nexport function add(a, b) { return a + b; }\n\n// app.js\nimport { add } from './math.js';</code></pre>" +
+      "<p class='ex-gotcha'>In the browser, a script must be explicitly marked as a module (<code>&lt;script type=\"module\"&gt;</code>) to use <code>import</code>/<code>export</code> at all — plain scripts don't get this syntax, and modules also run in strict mode automatically and defer execution until the DOM is parsed.</p>",
+
+    "import":
+      "<p><b>Simple definition:</b> The ES6 keyword for pulling named or default values out of another module.</p>" +
+      "<pre><code>import { add, subtract } from './math.js'; // named\nimport Calculator from './calc.js';        // default\nimport * as math from './math.js';         // namespace object — everything</code></pre>" +
+      "<p class='ex-gotcha'>Static <code>import</code> must sit at the top level of a file — never inside an <code>if</code> or a function — because it's resolved before any code runs; use the separate <code>import()</code> function form (see \"Dynamic imports\") for conditional, runtime-decided loading.</p>",
+
+    "export":
+      "<p><b>Simple definition:</b> The ES6 keyword that marks a value as available for other modules to import.</p>" +
+      "<pre><code>export const PI = 3.14;               // named export, attached to a declaration\nexport { add, subtract };              // named exports, listed separately\nexport default class Calculator {}     // the module's one default export</code></pre>" +
+      "<p class='ex-gotcha'>A module can have unlimited named exports but at most one default — see \"Named exports\" / \"Default exports\" for the practical difference in how each is imported.</p>",
+
+    "Named exports":
+      "<p><b>Simple definition:</b> Exports referred to by their exact name — a module can have as many as it wants, and importers must use (or explicitly rename) that same name.</p>" +
+      "<pre><code>// utils.js\nexport const add = (a, b) => a + b;\nexport const subtract = (a, b) => a - b;\n\n// app.js\nimport { add, subtract as minus } from './utils.js'; // rename with 'as'</code></pre>" +
+      "<p class='ex-gotcha'>Named imports must be wrapped in <code>{ }</code> and must match an actual exported name — <code>import add from './utils.js'</code> (no braces) is trying to import a <em>default</em> export that doesn't exist here, and silently gives <code>undefined</code> rather than an error in some setups.</p>",
+
+    "Default exports":
+      "<p><b>Simple definition:</b> A module's single \"main\" export, imported without needing curly braces and importable under any name the importer chooses.</p>" +
+      "<pre><code>// Calculator.js\nexport default class Calculator { /* ... */ }\n\n// app.js — the imported name doesn't have to match anything\nimport Calc from './Calculator.js';\nimport MyCalculator from './Calculator.js'; // also valid, same module</code></pre>" +
+      "<p class='ex-gotcha'>Because a default import's local name is entirely up to the importer, typos are never caught — <code>import Calclator from './Calculator.js'</code> (misspelled) works fine syntactically, unlike a named import typo, which fails immediately since it must match the real exported name.</p>",
+
+    "Optional chaining":
+      "<p><b>Simple definition:</b> <code>?.</code> safely reads a nested property, returning <code>undefined</code> instead of throwing if something along the way is <code>null</code>/<code>undefined</code>.</p>" +
+      "<p><b>What it replaced:</b> long, repetitive guard chains like <code>user &amp;&amp; user.profile &amp;&amp; user.profile.city</code>.</p>" +
+      "<pre><code>user.profile?.city;   // undefined instead of a TypeError, if profile is missing\nuser.getName?.();     // safe optional call\nuser.tags?.[0];        // safe optional index</code></pre>" +
+      "<p class='ex-gotcha'>It only guards against <code>null</code>/<code>undefined</code> — it won't protect you from other genuine errors deeper in an expression, and it can't be used on the left side of an assignment.</p>",
+
+    "Nullish coalescing":
+      "<p><b>Simple definition:</b> <code>??</code> provides a fallback, but only when the left side is <code>null</code> or <code>undefined</code> — unlike <code>||</code>, it doesn't treat <code>0</code>, <code>''</code>, or <code>false</code> as \"missing\".</p>" +
+      "<pre><code>const count = 0;\ncount || 10;  // 10 — bug: 0 is falsy, treated as missing\ncount ?? 10;  // 0  — correct: 0 is a real, valid value</code></pre>" +
+      "<p class='ex-gotcha'>You cannot mix <code>??</code> directly with <code>||</code> or <code>&amp;&amp;</code> without parentheses — <code>a || b ?? c</code> is a <code>SyntaxError</code>, forcing you to make the intended precedence explicit.</p>",
+
+    "Logical assignment operators":
+      "<p><b>Simple definition:</b> <code>||=</code>, <code>&amp;&amp;=</code>, and <code>??=</code> combine a logical check with an assignment, only assigning when the check passes.</p>" +
+      "<p><b>Technical definition:</b> <code>a ||= b</code> assigns <code>b</code> to <code>a</code> only if <code>a</code> is currently falsy; <code>a &amp;&amp;= b</code> assigns only if <code>a</code> is truthy; <code>a ??= b</code> assigns only if <code>a</code> is <code>null</code>/<code>undefined</code>. Crucially, all three <b>short-circuit</b> — if the condition fails, the right-hand side isn't even evaluated, and no assignment happens at all.</p>" +
+      "<pre><code>let config = { retries: 0 };\nconfig.retries ||= 3; // 3 — 0 is falsy, so it WAS reassigned (probably not intended!)\n\nlet config2 = { retries: 0 };\nconfig2.retries ??= 3; // 0 — stays 0, since 0 is not null/undefined (correct)</code></pre>" +
+      "<p class='ex-gotcha'>The short-circuiting matters for more than performance — if the right-hand side is a setter with side effects (or an expensive call), <code>??=</code> guarantees that code never runs at all when the left side is already non-nullish, unlike writing out <code>a = a ?? expensiveCall()</code> naively without checking it's actually equivalent.</p>",
+
+    "for...of":
+      "<p><b>Simple definition:</b> A loop that iterates over the <b>values</b> of any iterable — arrays, strings, Maps, Sets, and any custom object implementing the iterator protocol.</p>" +
+      "<pre><code>for (const value of [10, 20, 30]) console.log(value); // 10, 20, 30 — values\nfor (const char of 'hi') console.log(char);            // 'h', 'i'</code></pre>" +
+      "<p><b>The essential contrast — <code>for...of</code> vs <code>for...in</code>:</b> <code>for...of</code> gives you <b>values</b> from an <em>iterable</em>. <code>for...in</code> gives you enumerable <b>keys</b> (as strings) from any object, including inherited ones, and should basically never be used on arrays.</p>" +
+      "<pre><code>const arr = [10, 20, 30];\nfor (const x of arr) console.log(x);      // 10, 20, 30 — the values\nfor (const i in arr) console.log(typeof i, i); // 'string' '0', 'string' '1', 'string' '2' — STRING indices!</code></pre>" +
+      "<p class='ex-gotcha'>Using <code>for...in</code> on an array gives you string indices, not numbers — and it will also pick up any enumerable properties added to <code>Array.prototype</code> by other code. Use <code>for...of</code> (values) or <code>.forEach</code>/<code>.entries()</code> (index+value) for arrays instead.</p>",
+
+    "Symbols":
+      "<p><b>Simple definition:</b> A primitive type whose every value is guaranteed unique — used mainly as \"invisible\", collision-proof object keys.</p>" +
+      "<p><b>Technical definition:</b> <code>Symbol('description')</code> creates a value that is never <code>===</code> to any other symbol, even one with the identical description. Symbol-keyed properties are skipped by <code>Object.keys</code>, <code>for...in</code>, and <code>JSON.stringify</code> — they only show up via <code>Object.getOwnPropertySymbols</code>.</p>" +
+      "<pre><code>const id = Symbol('id');\nconst user = { name: 'Ada', [id]: 123 };\nObject.keys(user);       // ['name'] — the symbol key is invisible here\nJSON.stringify(user);    // '{\"name\":\"Ada\"}' — symbol silently dropped\n\nSymbol('x') === Symbol('x'); // false — always unique, even with the same description</code></pre>" +
+      "<p class='ex-gotcha'><code>Symbol.iterator</code> is a \"well-known symbol\" built into the language — it's the exact key JavaScript looks for to decide whether something is iterable, which is what makes <code>for...of</code>, spread, and destructuring work on arrays, strings, Maps, and Sets (see \"Iterators\").</p>",
+
+    "Iterators":
+      "<p><b>Simple definition:</b> An object with a <code>.next()</code> method that hands out one value at a time, marking when it's done.</p>" +
+      "<p><b>Technical definition:</b> An object is <b>iterable</b> if it has a <code>[Symbol.iterator]()</code> method returning an <b>iterator</b> — an object whose <code>.next()</code> returns <code>{ value, done }</code> each call, until <code>done</code> is <code>true</code>. This shared protocol is what <code>for...of</code>, spread, and destructuring all rely on.</p>" +
+      "<pre><code>const arr = [10, 20];\nconst it = arr[Symbol.iterator]();\nit.next(); // { value: 10, done: false }\nit.next(); // { value: 20, done: false }\nit.next(); // { value: undefined, done: true }</code></pre>" +
+      "<p class='ex-gotcha'>Implementing <code>[Symbol.iterator]()</code> on your own custom object automatically makes it work with <code>for...of</code>, spread, and destructuring — you get native-feeling syntax support for free, without those features knowing anything specifically about your object's structure.</p>",
+
+    "Generators":
+      "<p><b>Simple definition:</b> A <code>function*</code> that can pause with <code>yield</code> and resume later — the easy way to build an iterator without hand-writing a <code>.next()</code> method.</p>" +
+      "<p><b>Technical definition:</b> Calling a generator function returns a generator object (which is itself an iterator) without running the body. Each <code>.next()</code> call runs until the next <code>yield</code>, returns that value, and pauses exactly there until the next <code>.next()</code> call.</p>" +
+      "<pre><code>function* range(start, end) {\n  for (let i = start; i < end; i++) yield i;\n}\nfor (const n of range(1, 4)) console.log(n); // 1, 2, 3\n\nfunction* naturals() { let n = 1; while (true) yield n++; } // infinite, but LAZY —\n// nothing runs until .next() is actually called, so this is perfectly safe to define</code></pre>" +
+      "<p class='ex-gotcha'>Generators are lazy by nature — this is precisely what makes an \"infinite\" generator safe to write: each value is computed only the instant it's requested, never all at once upfront.</p>",
+
+    "Map":
+      "<p><b>Simple definition:</b> A key-value collection like an object, but with real advantages: any type can be a key, insertion order is preserved, and it has a built-in <code>.size</code>.</p>" +
+      "<p><b>Map vs Object — the real comparison:</b> object keys are always coerced to strings/symbols; a <code>Map</code> key can be <em>anything</em> — including an object or a function. Objects don't guarantee iteration order in every edge case; a <code>Map</code> always iterates in insertion order. Checking size means <code>Object.keys(obj).length</code> for an object, versus a direct <code>.size</code> property on a <code>Map</code>.</p>" +
+      "<pre><code>const objKey = { role: 'admin' };\nconst m = new Map();\nm.set(objKey, 'has extra permissions');\nm.set('plain string key', 'ok');\n\nm.get(objKey); // 'has extra permissions' — the OBJECT itself is the key\nm.size;         // 2\n\nfor (const [key, value] of m) console.log(key, value); // directly iterable</code></pre>" +
+      "<p class='ex-gotcha'>An object literal cannot use another object as a genuinely distinct key — <code>{ [objKey]: 'x' }</code> coerces <code>objKey</code> to the useless string <code>'[object Object]'</code>. This is exactly the case a <code>Map</code> was designed to solve.</p>",
+
+    "Set":
+      "<p><b>Simple definition:</b> A collection that only ever holds unique values — adding a duplicate is silently a no-op.</p>" +
+      "<pre><code>const nums = new Set([1, 2, 2, 3]);\nnums.size;        // 3 — the duplicate 2 was never actually added\nnums.has(2);       // true\nnums.add(2);       // no-op, already present\n\nconst unique = [...new Set([1, 2, 2, 3])]; // [1, 2, 3] — the standard dedupe idiom</code></pre>" +
+      "<p class='ex-gotcha'><code>Set</code> uses <code>===</code>-like equality (technically \"SameValueZero\"), so two structurally-identical but separately-created objects are still treated as different members — <code>new Set([{}, {}]).size</code> is <code>2</code>, not <code>1</code>, because they're different references.</p>",
+
+    "WeakMap":
+      "<p><b>Simple definition:</b> Like <code>Map</code>, but its keys must be objects and are held <b>weakly</b> — that reference alone doesn't stop garbage collection.</p>" +
+      "<p><b>Technical definition:</b> <code>WeakMap</code> keys must be objects (never primitives), aren't iterable, and have no <code>.size</code> — you can only interact with a specific object you already have a reference to.</p>" +
+      "<pre><code>let user = { name: 'Ada' };\nconst metadata = new WeakMap();\nmetadata.set(user, { lastSeen: Date.now() });\n\nuser = null; // no other references — the WeakMap entry can now be garbage collected too</code></pre>" +
+      "<p class='ex-gotcha'>The missing iteration/<code>.size</code> is deliberate, not a limitation to work around — see \"WeakMap/WeakSet use cases\" under Advanced JavaScript for why exposing that would be inherently unpredictable given when GC actually runs.</p>",
+
+    "WeakSet":
+      "<p><b>Simple definition:</b> Like <code>Set</code>, but its members must be objects, held weakly — not iterable, no <code>.size</code>.</p>" +
+      "<p><b>Why it is used:</b> tracking \"has this specific object been seen/processed?\" without preventing that object from being garbage collected once nothing else references it.</p>" +
+      "<pre><code>const processed = new WeakSet();\nfunction process(obj) {\n  if (processed.has(obj)) return; // already handled\n  processed.add(obj);\n  // ... do the real work\n}</code></pre>" +
+      "<p class='ex-gotcha'>Because it can't be iterated, a <code>WeakSet</code> is only useful for membership checks (<code>.has()</code>) on objects you already have a direct reference to — you can never ask it \"what's currently in you?\", which is the deliberate trade for allowing garbage collection.</p>",
+  },
+
 };
 
 /* =========================================================================
@@ -763,6 +1713,48 @@ window.QUESTIONS = {
       a: "<p>The plain callback has its own <code>this</code> (not <code>user</code>) → <code>undefined</code>.</p><p><b>Fix 1 — arrow</b> (inherits this):</p><pre><code>setTimeout(() => console.log(this.name), 100);</code></pre><p><b>Fix 2 — bind:</b></p><pre><code>setTimeout(function () {\n  console.log(this.name);\n}.bind(this), 100);</code></pre>" },
   ],
 
+  "Arrays & modern data handling": [
+    { level: "easy", tag: "map return",
+      q: "What does this log, and why?<pre><code>const nums = [1, 2, 3];\nconst doubled = nums.map(n => { n * 2; });\nconsole.log(doubled);</code></pre>",
+      a: "<p><code>[undefined, undefined, undefined]</code>. The callback uses a <code>{}</code> block body but never <code>return</code>s, so every call implicitly returns <code>undefined</code> — and <code>map</code> collects exactly whatever the callback returns. <b>Fix:</b> <code>n => n * 2</code> (implicit return) or add <code>return</code> inside the block.</p>" },
+
+    { level: "easy", tag: "forEach vs map",
+      q: "What does <code>result</code> equal?<pre><code>const result = [1, 2, 3].forEach(n => n * 2);\nconsole.log(result);</code></pre>",
+      a: "<p><code>undefined</code>. <code>forEach</code> always returns <code>undefined</code> — it exists purely for side effects and never builds a new array. Beginners often reach for it expecting <code>map</code>'s behavior; if you need the transformed values back, you need <code>map</code> instead.</p>" },
+
+    { level: "easy", tag: "find vs findIndex",
+      q: "What does each return when nothing matches?<pre><code>const users = [{ id: 1 }, { id: 2 }];\nconsole.log(users.find(u => u.id === 99));\nconsole.log(users.findIndex(u => u.id === 99));</code></pre>",
+      a: "<p><code>undefined</code>, then <code>-1</code>. <code>find</code> returns the missing-value sentinel for \"an item\" (<code>undefined</code>); <code>findIndex</code> returns the missing-value sentinel for \"a position\" (<code>-1</code>, since <code>0</code> is a valid index and can't mean \"not found\"). Always guard before using either result directly.</p>" },
+
+    { level: "medium", tag: "sort default order",
+      q: "What does this log, and why isn't it numeric order?<pre><code>const nums = [40, 1, 5, 200];\nnums.sort();\nconsole.log(nums);</code></pre>",
+      a: "<p><code>[1, 200, 40, 5]</code>.</p><p>With no compare function, <code>sort()</code> converts every element to a <b>string</b> and compares them character by character. <code>\"1\"</code> sorts before <code>\"200\"</code> because <code>'1' &lt; '2'</code>; <code>\"200\"</code> sorts before <code>\"40\"</code> because <code>'2' &lt; '4'</code>. <b>Fix:</b> <code>nums.sort((a, b) => a - b)</code>.</p>" },
+
+    { level: "medium", tag: "slice vs splice",
+      q: "What does <code>arr</code> equal after each line, and which one mutated it?<pre><code>const arr = [1, 2, 3, 4, 5];\nconst a = arr.slice(1, 3);\nconsole.log(arr, a);\n\nconst b = arr.splice(1, 2);\nconsole.log(arr, b);</code></pre>",
+      a: "<p>After <code>slice</code>: <code>arr</code> is still <code>[1,2,3,4,5]</code> (unchanged), <code>a</code> is <code>[2,3]</code> — a copy of the range, original untouched.</p><p>After <code>splice</code>: <code>arr</code> is now <code>[1,4,5]</code> (mutated in place — 2 elements removed starting at index 1), <code>b</code> is <code>[2,3]</code> — the removed items. <code>slice</code> reads and copies; <code>splice</code> cuts and mutates.</p>" },
+
+    { level: "medium", tag: "reduce no initial value",
+      q: "What happens here, and why?<pre><code>const total = [].reduce((acc, n) => acc + n);\nconsole.log(total);</code></pre>",
+      a: "<p>Throws <code>TypeError: Reduce of empty array with no initial value</code>.</p><p>Without a starting value, <code>reduce</code> uses the array's <b>first element</b> as the initial accumulator and starts iterating from the second. On an empty array there is no first element to fall back on, so it has nothing to return and throws instead. <b>Fix:</b> always pass a starting value — <code>[].reduce((acc, n) => acc + n, 0)</code> safely returns <code>0</code>.</p>" },
+
+    { level: "medium", tag: "vacuous truth",
+      q: "What does each log?<pre><code>console.log([].every(n => n > 100));\nconsole.log([].some(n => n > 100));</code></pre>",
+      a: "<p><code>true</code>, then <code>false</code>. On an <b>empty array</b>, <code>every</code> is vacuously <code>true</code> — there's no element to fail the check, so \"all elements pass\" holds trivially. <code>some</code> is the mirror case: with no elements to find a match, it can never find one, so it's <code>false</code>. This is easy to get backwards under interview pressure.</p>" },
+
+    { level: "medium", tag: "shallow copy of array of objects",
+      q: "What does <code>original[0].name</code> log after this?<pre><code>const original = [{ name: \"Ada\" }];\nconst copy = [...original];\ncopy[0].name = \"Grace\";\nconsole.log(original[0].name);</code></pre>",
+      a: "<p><code>\"Grace\"</code>. Spread makes a shallow copy of the outer array — the <em>array itself</em> is new, but each element is still the same object reference as in the original. Mutating <code>copy[0]</code> mutates the one shared object, visible from both arrays. Fix with <code>original.map(o => ({ ...o }))</code> or <code>structuredClone</code>.</p>" },
+
+    { level: "hard", tag: "chaining map/filter/reduce",
+      q: "Given orders, write one chain that returns the total value of all <code>\"shipped\"</code> orders.<pre><code>const orders = [\n  { status: \"shipped\", value: 100 },\n  { status: \"pending\", value: 50 },\n  { status: \"shipped\", value: 75 },\n];</code></pre>",
+      a: "<pre><code>const total = orders\n  .filter(o => o.status === \"shipped\")\n  .reduce((sum, o) => sum + o.value, 0);\n// 175</code></pre><p><code>filter</code> selects the matching subset first (never mutating <code>orders</code>), then <code>reduce</code> combines that subset's values into a single total. Each step returns a new value, keeping the chain readable top-to-bottom.</p>" },
+
+    { level: "hard", tag: "dedupe by key",
+      q: "Given a list with duplicate <code>id</code>s, write a one-liner to keep only the first occurrence of each id.<pre><code>const items = [\n  { id: 1, name: \"a\" }, { id: 2, name: \"b\" }, { id: 1, name: \"c\" },\n];\n// desired: [{id:1,name:'a'}, {id:2,name:'b'}]</code></pre>",
+      a: "<pre><code>const seen = new Set();\nconst unique = items.filter(item => {\n  if (seen.has(item.id)) return false;\n  seen.add(item.id);\n  return true;\n});\n// [{id:1,name:'a'}, {id:2,name:'b'}]</code></pre><p>A <code>Set</code> gives O(1) \"have I seen this id before\" checks — far better than scanning the results array with <code>.find()</code> inside the filter, which would be O(n²) on larger lists.</p>" },
+  ],
+
   "this, objects & prototypes": [
     { level: "easy", tag: "this basics",
       q: "What does each log?<pre><code>const user = {\n  name: \"Ada\",\n  greet() { return this.name; }\n};\n\nconsole.log(user.greet());\n\nconst fn = user.greet;\nconsole.log(fn());</code></pre>",
@@ -815,6 +1807,394 @@ window.QUESTIONS = {
     { level: "hard", tag: "encapsulation",
       q: "Which of these is truly private, and why does the third one leak?<pre><code>// A\nclass A { _balance = 100; }\n\n// B\nclass B { #balance = 100; }\n\n// C\nfunction makeC() {\n  const items = [\"a\"];\n  return { getItems() { return items; } };\n}</code></pre>",
       a: "<p><b>A is not private.</b> The underscore is only a naming convention — <code>new A()._balance = 0</code> works fine. It signals intent, it enforces nothing.</p><p><b>B is truly private.</b> <code>#balance</code> is enforced by the language; touching it from outside the class body is a <b>SyntaxError</b>, not just a runtime failure.</p><p><b>C leaks by reference.</b> <code>items</code> is genuinely unreachable, but <code>getItems()</code> hands out the live array itself:</p><pre><code>const c = makeC();\nc.getItems().push(\"b\");   // mutated the private state!</code></pre><p><b>Fix — return a copy:</b></p><pre><code>getItems() { return [...items]; }</code></pre><p><b>Lesson:</b> hiding a variable is not enough if you then hand out a reference to it. Encapsulation has to cover what you return, not just what you store.</p>" },
+  ],
+
+  "Asynchronous JavaScript": [
+    { level: "easy", tag: "sync vs async",
+      q: "What order do these log?<pre><code>console.log(\"1\");\nsetTimeout(() => console.log(\"3\"), 0);\nconsole.log(\"2\");</code></pre>",
+      a: "<p><code>1, 2, 3</code>. <code>setTimeout(fn, 0)</code> does not run immediately — it hands the callback to the runtime, which queues it to run only after all currently-running synchronous code finishes. So both synchronous logs always happen before the timer's callback, no matter how small the delay.</p>" },
+
+    { level: "easy", tag: "promise states",
+      q: "What logs, and why does the second <code>resolve</code> have no effect?<pre><code>const p = new Promise(resolve => {\n  resolve(\"first\");\n  resolve(\"second\");\n});\np.then(v => console.log(v));</code></pre>",
+      a: "<p><code>\"first\"</code>. A promise can only settle <b>once</b> — pending → fulfilled/rejected is a one-way transition. The first call to <code>resolve</code> settles it; every call after that (even <code>reject</code>) is silently ignored.</p>" },
+
+    { level: "easy", tag: "then chaining",
+      q: "What does the second <code>.then</code> receive, and why?<pre><code>Promise.resolve(5)\n  .then(n => { n * 2; })   // no return!\n  .then(result => console.log(result));</code></pre>",
+      a: "<p><code>undefined</code>. The first <code>.then</code>'s callback has a <code>{}</code> block body but no explicit <code>return</code>, so it returns <code>undefined</code> — and <code>.then</code> always resolves its new promise with whatever the callback returned. This is the async version of the classic \"forgot to return from an arrow block\" bug.</p><p><b>Fix:</b> <code>n => n * 2</code> (implicit return) or <code>n => { return n * 2; }</code>.</p>" },
+
+    { level: "medium", tag: "microtask vs macrotask",
+      q: "Predict the exact order:<pre><code>console.log(\"1\");\nsetTimeout(() => console.log(\"6\"), 0);\nPromise.resolve().then(() => console.log(\"4\"));\nqueueMicrotask(() => console.log(\"5\"));\nconsole.log(\"2\");</code></pre>",
+      a: "<p><code>1, 2, 4, 5, 6</code>.</p><p>All synchronous code runs first (<code>1</code>, <code>2</code>). Then, before anything else, the <b>entire microtask queue is drained</b> — the promise <code>.then</code> and <code>queueMicrotask</code> callbacks both run, in the order they were queued (<code>4</code>, then <code>5</code>). Only after the microtask queue is fully empty does the event loop take one macrotask off the queue — the <code>setTimeout</code> callback (<code>6</code>).</p><p><b>Rule:</b> microtasks (promises, <code>queueMicrotask</code>) always fully drain before the next macrotask (<code>setTimeout</code>, <code>setInterval</code>), regardless of delay values.</p>" },
+
+    { level: "medium", tag: "async/await ordering",
+      q: "Predict the order:<pre><code>async function a() {\n  console.log(\"2\");\n  await null;\n  console.log(\"5\");\n}\n\nconsole.log(\"1\");\na();\nPromise.resolve().then(() => console.log(\"6\"));\nsetTimeout(() => console.log(\"7\"), 0);\nconsole.log(\"3\");</code></pre>",
+      a: "<p><code>1, 2, 3, 5, 6, 7</code>.</p><p><code>a()</code> runs synchronously up to the <code>await</code> — that's why <code>\"2\"</code> logs before <code>\"3\"</code>. At <code>await null</code>, the function pauses and control returns to the caller, so <code>\"3\"</code> logs next. Everything after that <code>await</code> resumes as a <b>microtask</b>, so <code>\"5\"</code> and the already-queued <code>.then</code> (<code>\"6\"</code>) both run before the <code>setTimeout</code> macrotask (<code>\"7\"</code>). <code>await</code> effectively splits a function into a synchronous part before it and a microtask-scheduled part after it.</p>" },
+
+    { level: "medium", tag: "unhandled rejection",
+      q: "Why does the <code>catch</code> block never run?<pre><code>function risky() {\n  return new Promise((res, rej) => rej(new Error(\"boom\")));\n}\n\ntry {\n  risky(); // not awaited!\n  console.log(\"after risky\");\n} catch (err) {\n  console.log(\"caught:\", err.message);\n}</code></pre>",
+      a: "<p>Logs <code>\"after risky\"</code>, then a separate <b>unhandled promise rejection</b> warning — the <code>catch</code> block never runs.</p><p><code>try</code>/<code>catch</code> only catches errors <em>thrown synchronously</em> inside its block, or from an <code>await</code>ed promise. Here <code>risky()</code> is called but never awaited — the rejected promise it returns is simply discarded, and its rejection has nothing to do with the surrounding <code>try</code>/<code>catch</code> at all.</p><p><b>Fix:</b> <code>await risky();</code> inside the <code>try</code> block (inside an <code>async</code> function), or add a <code>.catch()</code> to the returned promise.</p>" },
+
+    { level: "medium", tag: "sequential vs parallel",
+      q: "Roughly how long does each version take, given each fetch takes 1 second?<pre><code>// A\nconst x = await fetchA();\nconst y = await fetchB();\n\n// B\nconst [x, y] = await Promise.all([fetchA(), fetchB()]);</code></pre>",
+      a: "<p><b>A: ~2 seconds.</b> Each <code>await</code> fully waits before starting the next call — the two independent requests are forced to run one after another.</p><p><b>B: ~1 second.</b> Both promises are created and start running <em>before</em> either is awaited, so they run concurrently — the total time is roughly the slowest one, not the sum.</p><p>This is one of the most common real-world async performance bugs: sequential <code>await</code>s on work that doesn't actually depend on each other.</p>" },
+
+    { level: "medium", tag: "finally value",
+      q: "What does this log?<pre><code>Promise.resolve(\"data\")\n  .finally(() => \"ignored\")\n  .then(v => console.log(v));</code></pre>",
+      a: "<p><code>\"data\"</code>.</p><p><code>.finally</code>'s callback receives no arguments and its return value is discarded — the original fulfillment value passes through untouched to the next <code>.then</code>. <code>.finally</code> can only affect the outcome if its own callback <em>throws</em> or returns a rejected promise, in which case that new rejection replaces the original result.</p>" },
+
+    { level: "hard", tag: "Promise.all fail-fast",
+      q: "What does this log, and how would you get the successful results too?<pre><code>Promise.all([\n  Promise.resolve(\"A\"),\n  Promise.reject(new Error(\"B failed\")),\n  Promise.resolve(\"C\"),\n])\n  .then(r => console.log(\"all:\", r))\n  .catch(e => console.log(\"caught:\", e.message));</code></pre>",
+      a: "<p>Logs <code>\"caught: B failed\"</code> — the <code>.then</code> never runs.</p><p><code>Promise.all</code> is <b>fail-fast</b>: the instant any input promise rejects, the whole thing rejects immediately, and the successful results from A and C are simply lost — there's no way to recover them from this call.</p><p><b>To keep every result:</b></p><pre><code>const results = await Promise.allSettled([...]);\nconst succeeded = results\n  .filter(r => r.status === 'fulfilled')\n  .map(r => r.value); // ['A', 'C']</code></pre>" },
+
+    { level: "hard", tag: "race vs any",
+      q: "What does each log, given A rejects fast and B resolves slower?<pre><code>const A = new Promise((_, rej) => setTimeout(() => rej(\"A failed\"), 10));\nconst B = new Promise(res => setTimeout(() => res(\"B ok\"), 50));\n\nPromise.race([A, B]).then(console.log).catch(console.log);\nPromise.any([A, B]).then(console.log).catch(console.log);</code></pre>",
+      a: "<p><code>Promise.race</code> logs <code>\"A failed\"</code> — it settles on whichever promise finishes <em>first</em>, win or lose, and A rejects first at 10ms.</p><p><code>Promise.any</code> logs <code>\"B ok\"</code> — it specifically waits for the first <b>success</b>, so A's rejection is ignored and it resolves with B's result once B succeeds at 50ms.</p><p><code>any</code> only rejects if <em>every</em> input promise rejects, and does so with an <code>AggregateError</code> collecting all the reasons.</p>" },
+
+    { level: "hard", tag: "abortcontroller",
+      q: "What happens, and what should the <code>.catch</code> check for?<pre><code>const controller = new AbortController();\n\nfetch(\"/slow\", { signal: controller.signal })\n  .then(res => res.json())\n  .then(data => console.log(data))\n  .catch(err => console.log(\"error:\", err.message));\n\nsetTimeout(() => controller.abort(), 100);</code></pre>",
+      a: "<p>If the request hasn't finished within 100ms, calling <code>controller.abort()</code> makes the <code>fetch</code> promise reject with an <code>AbortError</code>, and the <code>.catch</code> logs that message.</p><p><b>The important check:</b> a well-written handler should distinguish a deliberate cancellation from a real failure:</p><pre><code>.catch(err => {\n  if (err.name === 'AbortError') {\n    console.log('request was cancelled — not a real error');\n  } else {\n    console.log('actual failure:', err.message);\n  }\n});</code></pre><p>Aborting doesn't \"undo\" the promise — a promise can't be cancelled, only the underlying operation can be, which is exactly what <code>AbortController</code> does; that then surfaces as a rejection you handle like any other.</p>" },
+  ],
+
+  "Event loop": [
+    { level: "easy", tag: "basic ordering",
+      q: "What order do these log?<pre><code>console.log(\"A\");\nsetTimeout(() => console.log(\"B\"), 0);\nconsole.log(\"C\");</code></pre>",
+      a: "<p><code>A, C, B</code>. <code>setTimeout</code> queues its callback as a macrotask no matter how small the delay — it can only run once ALL synchronous code (<code>A</code> then <code>C</code>) has finished and the call stack is empty.</p>" },
+
+    { level: "easy", tag: "call stack",
+      q: "Why does this throw, and what is the error called?<pre><code>function loop() {\n  loop();\n}\nloop();</code></pre>",
+      a: "<p>Throws <code>RangeError: Maximum call stack size exceeded</code>. Each call to <code>loop()</code> pushes a new frame onto the call stack, but no call ever returns (no base case), so frames keep piling up until the stack's fixed size limit is hit.</p>" },
+
+    { level: "easy", tag: "microtask vs macrotask",
+      q: "Which queue does each of these go to — microtask or macrotask?<pre><code>setTimeout(fn, 0);\nPromise.resolve().then(fn);\nqueueMicrotask(fn);\nsetInterval(fn, 100);</code></pre>",
+      a: "<p><b>Macrotask:</b> <code>setTimeout</code>, <code>setInterval</code>. <b>Microtask:</b> <code>Promise.resolve().then</code>, <code>queueMicrotask</code>. Rule of thumb: promise-related scheduling is microtask; timer/I/O-related scheduling is macrotask, and the entire microtask queue drains before the next macrotask runs.</p>" },
+
+    { level: "medium", tag: "drain order",
+      q: "What logs, and in what order?<pre><code>setTimeout(() => console.log(\"D\"), 0);\n\nPromise.resolve().then(() => console.log(\"A\"));\nPromise.resolve().then(() => console.log(\"B\"));\nqueueMicrotask(() => console.log(\"C\"));</code></pre>",
+      a: "<p><code>A, B, C, D</code>. All three microtasks were scheduled during the same synchronous pass, so they run in the order they were <em>queued</em> — not grouped by type. The <code>setTimeout</code> macrotask only runs once every microtask (all three) has finished.</p>" },
+
+    { level: "medium", tag: "nested microtask",
+      q: "What logs, and why does the nested <code>.then</code> beat the timeout?<pre><code>Promise.resolve().then(() => {\n  console.log(\"1\");\n  Promise.resolve().then(() => console.log(\"2\"));\n});\nsetTimeout(() => console.log(\"3\"), 0);</code></pre>",
+      a: "<p><code>1, 2, 3</code>. When the drain step runs the first <code>.then</code> and it schedules <em>another</em> microtask mid-drain, the loop does not move on to macrotasks yet — it keeps draining until the microtask queue is truly empty, including anything added during the drain. Only then does it take the one macrotask.</p>" },
+
+    { level: "medium", tag: "setTimeout(0) myth",
+      q: "True or false, and why: <code>setTimeout(fn, 0)</code> runs <code>fn</code> immediately, with effectively no delay?",
+      a: "<p><b>False.</b> <code>0</code> is a minimum, not a guarantee. The callback still has to wait for (1) the rest of the current synchronous script to finish, and (2) the entire microtask queue to drain, before the event loop even considers taking it off the macrotask queue. In browsers, deeply nested timeouts are also clamped to a minimum of ~4ms regardless of the requested delay.</p>" },
+
+    { level: "medium", tag: "already-resolved promise",
+      q: "Does <code>.then</code> on an already-settled promise run its callback synchronously, right there? What logs?<pre><code>const p = Promise.resolve(\"done\");\nconsole.log(\"1\");\np.then(v => console.log(v));\nconsole.log(\"2\");</code></pre>",
+      a: "<p>No — promise callbacks are <b>always</b> deferred to the microtask queue, even if the promise was already settled before <code>.then</code> was called. Logs: <code>1, 2, done</code>.</p>" },
+
+    { level: "hard", tag: "setInterval overlap",
+      q: "If a <code>setInterval(fn, 100)</code> callback's own work sometimes takes 300ms to run, does <code>fn</code> queue up and fire three times back-to-back once it's free? What actually happens?",
+      a: "<p>No — browsers do not let overlapping ticks pile up. If a tick is still \"due\" while the previous one's work is still blocking the stack, the environment effectively skips the missed tick(s) rather than queuing several to fire in a burst. The practical effect is the interval silently runs slower than requested whenever the callback takes longer than the delay. This is one reason a self-rescheduling <code>setTimeout</code> (schedule the next call only after the current one finishes) is often preferred over <code>setInterval</code> for unpredictable-duration work.</p>" },
+
+    { level: "hard", tag: "starvation",
+      q: "What's wrong with this code, and what specifically stops running because of it?<pre><code>function again() {\n  Promise.resolve().then(again);\n}\nagain();\n\nsetTimeout(() => console.log(\"will this ever run?\"), 0);</code></pre>",
+      a: "<p>This is <b>event-loop starvation via the microtask queue</b>. Each call to <code>again()</code> immediately schedules another microtask before returning, so the microtask queue is never fully empty — the drain step never completes. Since the loop only reaches the macrotask queue (and, in a browser, rendering) after the microtask queue is fully drained, the <code>setTimeout</code> callback — and any UI repaint — never gets a chance to run. The program appears frozen even though technically \"work\" is continuously happening.</p>" },
+
+    { level: "hard", tag: "full trace",
+      q: "Trace the complete order:<pre><code>console.log(\"1\");\n\nsetTimeout(() => console.log(\"2\"), 0);\n\nPromise.resolve()\n  .then(() => console.log(\"3\"))\n  .then(() => console.log(\"4\"));\n\nqueueMicrotask(() => console.log(\"5\"));\n\nconsole.log(\"6\");</code></pre>",
+      a: "<p>Order: <code>1, 6, 3, 5, 4, 2</code>.</p><p><b>Sync pass:</b> <code>1</code>, then <code>6</code> (all synchronous lines run before any queued callback, regardless of source order on the page).</p><p><b>Microtask drain:</b> at the point the sync pass ends, the queue holds, in scheduling order: the first <code>.then</code> callback, then the <code>queueMicrotask</code> callback. Draining runs the first <code>.then</code> → logs <code>3</code>, which schedules the SECOND <code>.then</code> as a new microtask appended to the end of the still-draining queue. Next in line is the already-queued <code>queueMicrotask</code> callback → logs <code>5</code>. Only after that does the newly-appended second <code>.then</code> run → logs <code>4</code>.</p><p><b>Macrotask:</b> queue is now empty, so the loop finally takes the one macrotask → logs <code>2</code>.</p>" },
+  ],
+
+  "Error handling": [
+    { level: "easy", tag: "basic try/catch",
+      q: "What does this log?<pre><code>try {\n  JSON.parse(\"{bad\");\n  console.log(\"after parse\");\n} catch (err) {\n  console.log(\"caught:\", err.message);\n}\nconsole.log(\"program continues\");</code></pre>",
+      a: "<p><code>caught: ...</code> (a JSON parse error message), then <code>program continues</code>.</p><p><code>JSON.parse</code> throws synchronously on invalid input, so control jumps straight to <code>catch</code> — <code>\"after parse\"</code> never logs, because the rest of the <code>try</code> block is skipped the instant the throw happens. Execution then resumes normally after the whole <code>try</code>/<code>catch</code>.</p>" },
+
+    { level: "easy", tag: "throw a string",
+      q: "What's wrong with this, even though it \"works\"?<pre><code>function withdraw(balance, amount) {\n  if (amount > balance) throw \"not enough money\";\n  return balance - amount;\n}</code></pre>",
+      a: "<p>It technically throws and can be caught, but throwing a plain string loses the <code>.stack</code> trace that a real <code>Error</code> object carries — when this fails in production, you'll have a message but no idea which call led here. Always throw <code>new Error(\"not enough money\")</code> instead (or a custom subclass).</p>" },
+
+    { level: "medium", tag: "custom errors",
+      q: "What does <code>err.name</code> log, and why might that surprise you?<pre><code>class ValidationError extends Error {\n  constructor(msg) { super(msg); }\n}\n\ntry {\n  throw new ValidationError(\"bad input\");\n} catch (err) {\n  console.log(err.name);\n  console.log(err instanceof ValidationError);\n}</code></pre>",
+      a: "<p>Logs <code>\"Error\"</code>, then <code>true</code>.</p><p><code>instanceof</code> correctly reports <code>true</code> because the prototype chain is intact. But <code>err.name</code> is inherited from the base <code>Error</code> class as the generic string <code>\"Error\"</code> — nothing here overrides it. <b>Fix:</b> add <code>this.name = \"ValidationError\";</code> in the constructor, after <code>super(msg)</code>.</p>" },
+
+    { level: "medium", tag: "async error not caught",
+      q: "Why doesn't the <code>catch</code> block run here?<pre><code>try {\n  setTimeout(() => {\n    throw new Error(\"delayed failure\");\n  }, 100);\n} catch (err) {\n  console.log(\"caught:\", err.message);\n}</code></pre>",
+      a: "<p>By the time the <code>setTimeout</code> callback actually runs (100ms later), the surrounding <code>try</code>/<code>catch</code> has already finished executing and is no longer on the call stack — there is no active <code>catch</code> to receive the throw. The error instead becomes an uncaught exception at the top level.</p><p><b>Fix:</b> put the <code>try</code>/<code>catch</code> INSIDE the callback:</p><pre><code>setTimeout(() => {\n  try {\n    throw new Error(\"delayed failure\");\n  } catch (err) {\n    console.log(\"caught:\", err.message);\n  }\n}, 100);</code></pre>" },
+
+    { level: "medium", tag: "unhandled rejection",
+      q: "Why does this log nothing from the <code>catch</code>, and what does it produce instead?<pre><code>async function risky() {\n  throw new Error(\"async boom\");\n}\n\ntry {\n  risky(); // missing await!\n  console.log(\"after risky\");\n} catch (err) {\n  console.log(\"caught:\", err.message);\n}</code></pre>",
+      a: "<p>Logs <code>\"after risky\"</code>, and the <code>catch</code> block never runs — instead an <b>unhandled promise rejection</b> is reported separately. <code>risky()</code> returns a rejected promise (async functions convert throws into rejections), but since it's never <code>await</code>ed, that rejection has nothing to do with the surrounding <code>try</code>/<code>catch</code>, which only reacts to synchronous throws.</p><p><b>Fix:</b> <code>await risky();</code> inside the <code>try</code> block.</p>" },
+
+    { level: "medium", tag: "finally overrides return",
+      q: "What does this function return, and why?<pre><code>function test() {\n  try {\n    return \"from try\";\n  } finally {\n    return \"from finally\";\n  }\n}\nconsole.log(test());</code></pre>",
+      a: "<p>Logs <code>\"from finally\"</code>. <code>finally</code> <b>always</b> runs, even after a <code>return</code> in <code>try</code> — and critically, if <code>finally</code> itself contains a <code>return</code>, it <b>overrides</b> the pending return value from <code>try</code>. This is a real trap: silently swallowing the intended result. Avoid <code>return</code> (and <code>throw</code>) inside <code>finally</code> unless that override is exactly what you want.</p>" },
+
+    { level: "hard", tag: "error propagation",
+      q: "Trace what happens and what logs:<pre><code>function c() { throw new Error(\"deep\"); }\nfunction b() {\n  c();\n  console.log(\"b continues\"); // does this run?\n}\nfunction a() {\n  try {\n    b();\n  } catch (err) {\n    console.log(\"a caught:\", err.message);\n  }\n  console.log(\"a continues\");\n}\na();</code></pre>",
+      a: "<p>Logs <code>\"a caught: deep\"</code>, then <code>\"a continues\"</code>. <code>\"b continues\"</code> never logs.</p><p>The throw in <code>c()</code> immediately unwinds the stack — <code>b()</code> never resumes after its call to <code>c()</code>, it just stops and propagates up. The error keeps bubbling until it reaches the nearest <code>try</code>/<code>catch</code>, which is in <code>a()</code>. Once caught there, <code>a()</code> continues normally past the <code>try</code>/<code>catch</code> block.</p>" },
+
+    { level: "hard", tag: "global handler is not recovery",
+      q: "A team adds this and calls the bug \"fixed\":<pre><code>window.addEventListener('unhandledrejection', (e) => {\n  console.log('logged:', e.reason.message);\n});</code></pre><p>What's the flaw in that reasoning?</p>",
+      a: "<p>This handler is purely for <b>observability</b> — logging that a failure happened — not for recovery. By the time it fires, the specific async operation has already failed uncontrolled: whatever UI update, data save, or user flow depended on that promise never got its intended result, and nothing here fixes that. A global handler should be a safety net for visibility (e.g. reporting to a monitoring service), never a substitute for handling the rejection where it actually matters — close to the operation, with a real <code>.catch()</code> or <code>try</code>/<code>catch</code> around the <code>await</code>.</p>" },
+  ],
+
+  "Objects & immutability": [
+    { level: "easy", tag: "object spread merge",
+      q: "What does <code>merged</code> equal?<pre><code>const defaults = { theme: \"light\", size: \"md\" };\nconst overrides = { theme: \"dark\" };\nconst merged = { ...defaults, ...overrides };\nconsole.log(merged);</code></pre>",
+      a: "<p><code>{ theme: \"dark\", size: \"md\" }</code>. Later spreads override earlier ones for the same key — <code>overrides.theme</code> wins over <code>defaults.theme</code>, while <code>size</code> (only in <code>defaults</code>) passes through untouched.</p>" },
+
+    { level: "easy", tag: "referential equality",
+      q: "Predict each:<pre><code>console.log({} === {});\nconst a = { x: 1 };\nconst b = a;\nconsole.log(a === b);</code></pre>",
+      a: "<p><code>false</code>, then <code>true</code>. <code>===</code> on objects compares <b>references</b>, not contents — two separately created objects are never equal even with identical properties. <code>b</code> points at the exact same object as <code>a</code>, so that comparison is <code>true</code>.</p>" },
+
+    { level: "medium", tag: "shallow copy trap",
+      q: "What does <code>original.address.city</code> log after this?<pre><code>const original = { name: \"Ada\", address: { city: \"London\" } };\nconst copy = { ...original };\n\ncopy.name = \"Sam\";\ncopy.address.city = \"Paris\";\n\nconsole.log(original.name);\nconsole.log(original.address.city);</code></pre>",
+      a: "<p><code>\"Ada\"</code>, then <code>\"Paris\"</code>.</p><p>Spread only copies the <b>top level</b>. <code>name</code> is a primitive, so <code>copy.name</code> is genuinely separate. But <code>address</code> is an object — both <code>original</code> and <code>copy</code> point at the <em>same</em> nested object, so mutating it through either variable is visible from both. Fix with a nested spread (<code>{ ...original, address: { ...original.address } }</code>) or <code>structuredClone</code>.</p>" },
+
+    { level: "medium", tag: "Object.assign mutation",
+      q: "What's the bug here?<pre><code>const defaults = { theme: \"light\" };\nfunction applyUserPrefs(prefs) {\n  return Object.assign(defaults, prefs);\n}\napplyUserPrefs({ theme: \"dark\" });\nconsole.log(defaults.theme);</code></pre>",
+      a: "<p>Logs <code>\"dark\"</code> — <code>defaults</code> itself got mutated, which is almost certainly not intended. <code>Object.assign(target, ...sources)</code> writes onto its <b>first argument</b> and returns that same mutated object. Every future call to <code>applyUserPrefs</code> now starts from a corrupted \"defaults\".</p><p><b>Fix:</b> merge into a fresh object: <code>Object.assign({}, defaults, prefs)</code> or <code>{ ...defaults, ...prefs }</code>.</p>" },
+
+    { level: "medium", tag: "Object.freeze is shallow",
+      q: "Which assignment is silently ignored, and which one actually works?<pre><code>const config = Object.freeze({\n  name: \"app\",\n  limits: { maxUsers: 10 }\n});\n\nconfig.name = \"changed\";\nconfig.limits.maxUsers = 999;\n\nconsole.log(config.name, config.limits.maxUsers);</code></pre>",
+      a: "<p>Logs <code>\"app\" 999</code>.</p><p><code>Object.freeze</code> only locks the object's own <b>top-level</b> properties — <code>config.name = \"changed\"</code> is silently ignored (or throws in strict mode). But <code>config.limits</code> is itself just a regular, unfrozen object — freezing <code>config</code> did nothing to protect <em>it</em>, so <code>config.limits.maxUsers = 999</code> succeeds normally.</p>" },
+
+    { level: "medium", tag: "Object.keys enumerable only",
+      q: "What does <code>Object.keys(dog)</code> log, and why doesn't it include <code>speak</code>?<pre><code>const animal = { speak() { return \"sound\"; } };\nconst dog = Object.create(animal);\ndog.name = \"Rex\";\n\nconsole.log(Object.keys(dog));</code></pre>",
+      a: "<p><code>['name']</code>.</p><p><code>Object.keys</code> only lists an object's <b>own</b> enumerable properties. <code>speak</code> lives on <code>animal</code>, which is <code>dog</code>'s prototype, not a property <code>dog</code> owns directly — so it's invisible to <code>Object.keys</code> even though <code>dog.speak()</code> works fine via the prototype chain.</p>" },
+
+    { level: "hard", tag: "structuredClone vs JSON hack",
+      q: "Why does the JSON approach throw, and what does <code>structuredClone</code> do differently?<pre><code>const original = { tags: [\"a\"], self: null };\noriginal.self = original;\n\nJSON.parse(JSON.stringify(original)); // ???\nstructuredClone(original);            // ???</code></pre>",
+      a: "<p><code>JSON.parse(JSON.stringify(original))</code> throws <code>TypeError: Converting circular structure to JSON</code> — JSON has no way to represent a self-reference, since serializing <code>self</code> would try to serialize <code>original</code> again, forever.</p><p><code>structuredClone(original)</code> works correctly — it implements the structured clone algorithm, which explicitly supports circular references (and also correctly clones <code>Date</code>, <code>Map</code>, and <code>Set</code>, which the JSON hack silently mangles or drops).</p>" },
+
+    { level: "hard", tag: "referential equality & re-render",
+      q: "Why does this \"increment\" function fail to trigger a re-render in a framework like React that checks references?<pre><code>function increment(state) {\n  state.count += 1; // mutate in place\n  return state;      // SAME reference returned\n}\n\nconst state = { count: 0 };\nconst next = increment(state);\nconsole.log(next === state);</code></pre>",
+      a: "<p>Logs <code>true</code> — and that's exactly the bug. <code>increment</code> mutated <code>state</code> directly and returned the very same object. Frameworks that optimize re-renders with a fast <code>===</code> check on the previous vs. next state see <code>next === state</code> is <code>true</code> and conclude \"nothing changed\", so they skip re-rendering — even though <code>count</code> really did change.</p><p><b>Fix — immutable update, a genuinely new reference:</b></p><pre><code>function increment(state) {\n  return { ...state, count: state.count + 1 };\n}</code></pre>" },
+
+    { level: "hard", tag: "entries transform",
+      q: "Using <code>Object.entries</code> and <code>Object.fromEntries</code>, write a one-liner that adds 10% to every value in <code>prices</code>.<pre><code>const prices = { apple: 100, banana: 50 };\n// desired: { apple: 110, banana: 55 }</code></pre>",
+      a: "<pre><code>const withTax = Object.fromEntries(\n  Object.entries(prices).map(([item, price]) => [item, price * 1.1])\n);\n// { apple: 110, banana: 55 }</code></pre><p><code>Object.entries</code> turns the object into an array of <code>[key, value]</code> pairs so array methods like <code>map</code> can transform it; <code>Object.fromEntries</code> converts the transformed pairs back into a plain object — the standard round-trip for applying array-style operations to object data.</p>" },
+  ],
+
+  "Modules & runtime": [
+    { level: "easy", tag: "require vs import basics",
+      q: "Which module system is each of these, CommonJS or ES Modules?<pre><code>const fs = require(\"fs\");\nmodule.exports = { add };\n\nimport fs from \"fs\";\nexport { add };</code></pre>",
+      a: "<p>The first pair — <code>require</code> / <code>module.exports</code> — is <b>CommonJS</b>. The second pair — <code>import</code> / <code>export</code> — is <b>ES Modules</b>. Node defaults to CommonJS for plain <code>.js</code> files unless <code>package.json</code> has <code>\"type\": \"module\"</code> or the file uses a <code>.mjs</code> extension.</p>" },
+
+    { level: "easy", tag: "module caching",
+      q: "What does the second log show, and why is it not <code>1</code> again?<pre><code>// counter.js\nlet count = 0;\nmodule.exports = { increment: () => ++count };\n\n// main.js\nconst a = require(\"./counter\");\nconst b = require(\"./counter\");\na.increment();\nconsole.log(b.increment());</code></pre>",
+      a: "<p>Logs <code>2</code>. A module's code only runs <b>once</b> — the second <code>require(\"./counter\")</code> doesn't re-run <code>counter.js</code>, it returns the exact same cached exports object. <code>a</code> and <code>b</code> are the same object, so <code>a.increment()</code> and <code>b.increment()</code> share the same <code>count</code>.</p>" },
+
+    { level: "medium", tag: "exports vs module.exports",
+      q: "Why does this fail to export <code>add</code>?<pre><code>// math.js\nfunction add(a, b) { return a + b; }\nexports = { add }; // note: 'exports', not 'module.exports'\n\n// main.js\nconst math = require(\"./math\");\nconsole.log(math.add); // ???</code></pre>",
+      a: "<p>Logs <code>undefined</code>. <code>exports</code> starts out as just a local variable that happens to point at the same object as <code>module.exports</code>. Writing <code>exports = { add }</code> reassigns the local <code>exports</code> variable to a brand new object — it does <b>not</b> change what <code>module.exports</code> points to, which is what <code>require</code> actually returns. <b>Fix:</b> either <code>module.exports = { add };</code>, or mutate the existing object with <code>exports.add = add;</code>.</p>" },
+
+    { level: "medium", tag: "sync vs async loading",
+      q: "What's the fundamental timing difference between <code>require</code> and <code>import</code>?",
+      a: "<p><code>require</code> is <b>synchronous</b> — it's a normal function call that blocks until the target module has fully loaded and run, and it's evaluated at whatever point in the code it's reached (so it can be conditional).</p><p>Static <code>import</code> is <b>asynchronous and hoisted</b> — it's resolved before any of the module's own top-level code runs, based on statically analyzing the whole file up front, which is exactly why it must appear at the top level and can't be put inside an <code>if</code>.</p>" },
+
+    { level: "medium", tag: "live bindings",
+      q: "In ESM, if module <code>counter.js</code> exports a <code>let</code> that changes over time, what does an importer see?<pre><code>// counter.js\nexport let count = 0;\nexport function increment() { count++; }\n\n// main.js\nimport { count, increment } from \"./counter.js\";\nconsole.log(count); // 0\nincrement();\nconsole.log(count); // ???</code></pre>",
+      a: "<p>Logs <code>1</code>. ESM imports are <b>live, read-only bindings</b> to the exporting module's actual value — not a one-time copy. When <code>counter.js</code> changes <code>count</code> internally, every importer automatically sees the updated value. This is a real behavioral difference from CommonJS, where <code>require</code> hands back a snapshot taken at the moment of the require call, which does not update afterward.</p>" },
+
+    { level: "medium", tag: "dynamic import for code splitting",
+      q: "Rewrite this to only load the heavy charting library when the user actually clicks \"Show Chart\":<pre><code>import { renderChart } from \"./chart-library.js\"; // loaded upfront, always\n\nbutton.addEventListener(\"click\", () => {\n  renderChart(data);\n});</code></pre>",
+      a: "<pre><code>button.addEventListener(\"click\", async () => {\n  const { renderChart } = await import(\"./chart-library.js\");\n  renderChart(data);\n});</code></pre><p>Static <code>import</code> always loads and evaluates the module up front, as part of the initial bundle, whether the button is ever clicked or not. Dynamic <code>import()</code> returns a promise and only fetches/runs the module when that line actually executes — a classic code-splitting technique for a heavy, optional dependency.</p>" },
+
+    { level: "hard", tag: "circular dependency",
+      q: "<code>main.js</code> requires <code>a.js</code>, which requires <code>b.js</code>, which requires <code>a.js</code> right back. What does each log show?<pre><code>// a.js\nconst b = require(\"./b\");\nconsole.log(\"in a.js, b.value:\", b.value);\nmodule.exports = { name: \"a\" };\n\n// b.js\nconst a = require(\"./a\"); // circular — a.js is still mid-execution here\nconsole.log(\"in b.js, a.name:\", a.name);\nmodule.exports = { value: 42 };\n\n// main.js\nrequire(\"./a\");</code></pre>",
+      a: "<p>Logs, in this order: <code>\"in b.js, a.name: undefined\"</code>, then <code>\"in a.js, b.value: 42\"</code>.</p><p>Trace it: <code>main.js</code> requires <code>a.js</code>, which starts running and immediately requires <code>b.js</code>. <code>b.js</code> then requires <code>a.js</code> right back — but <code>a.js</code> hasn't finished yet; it's paused on the very line that required <code>b.js</code>, so it hasn't reached its own <code>module.exports = { name: \"a\" }</code> line. Node hands <code>b.js</code> whatever <code>a.js</code>'s <code>module.exports</code> currently is: still the default empty <code>{}</code> — so <code>a.name</code> is <code>undefined</code> inside <code>b.js</code>. <code>b.js</code> then finishes normally and sets its own exports to <code>{ value: 42 }</code>. Control returns to <code>a.js</code>, which now sees the fully-formed <code>b.value: 42</code>.</p><p>The lesson: whichever module happens to be required <em>first</em> in the cycle sees an incomplete version of the other, because that other module hasn't reached its own export statement yet. <b>Best fix</b> in general: restructure so the shared logic lives in a third module both depend on, removing the cycle entirely.</p>" },
+
+    { level: "hard", tag: "tree-shaking requires static structure",
+      q: "Why does converting this file from <code>require</code> to <code>import</code>/<code>export</code> make it tree-shakeable, when it wasn't before?<pre><code>// CJS — before\nif (someCondition) {\n  module.exports = require(\"./featureA\");\n} else {\n  module.exports = require(\"./featureB\");\n}\n\n// ESM — after\nexport { helperA, helperB } from \"./utils.js\";</code></pre>",
+      a: "<p>Tree-shaking depends on a bundler being able to determine, purely by <b>statically reading the code</b> at build time, exactly which exports are actually used — no running the program required. The CJS version chooses which module to export based on a <em>runtime</em> condition (<code>someCondition</code>), which a bundler cannot evaluate ahead of time — it has to conservatively assume either branch could run and keep both. The ESM version has a fixed, unconditional export list that's identical every time the file is parsed, so the bundler can safely see \"only <code>helperA</code> is imported elsewhere\" and drop <code>helperB</code> entirely from the final bundle.</p>" },
+  ],
+
+  "Performance": [
+    { level: "easy", tag: "debounce vs throttle",
+      q: "Which technique fits each scenario, debounce or throttle?<ul><li>A search box that should only fetch once the user stops typing.</li><li>A scroll handler that must update a progress bar smoothly the whole time you scroll.</li></ul>",
+      a: "<p><b>Search box → debounce.</b> You want it to wait for a pause in typing and fire once, not on every keystroke.</p><p><b>Scroll progress bar → throttle.</b> You want it to keep updating at a steady, capped rate <em>during</em> continuous scrolling, not just once at the end.</p>" },
+
+    { level: "easy", tag: "memoization requires purity",
+      q: "Why would memoizing this function be a bug?<pre><code>function getGreeting(name) {\n  return name + \", it is now \" + new Date().toLocaleTimeString();\n}\nconst memoized = memoize(getGreeting);</code></pre>",
+      a: "<p><code>getGreeting</code> is not pure — it depends on the current time, which changes every call even for the same <code>name</code>. A memoized version would cache the FIRST result for a given <code>name</code> and keep returning that same stale timestamp forever after, which is exactly wrong. Memoization is only safe for pure functions: same input → same output, always.</p>" },
+
+    { level: "medium", tag: "debounce implementation",
+      q: "What's the bug in this debounce, and what does it break?<pre><code>function debounce(fn, delay) {\n  return (...args) => {\n    setTimeout(() => fn(...args), delay); // no clearTimeout!\n  };\n}</code></pre>",
+      a: "<p>It never cancels the previous pending timer, so every call schedules its OWN independent timeout — instead of one call running after a pause, <b>every</b> call eventually runs. This defeats the entire point of debouncing (collapsing a burst into one call). <b>Fix:</b> store the timer id in a closure and <code>clearTimeout</code> it at the start of every call, before scheduling a new one.</p>" },
+
+    { level: "medium", tag: "O(n²) to O(n)",
+      q: "Why is this slow on a large <code>blockedIds</code> array, and how do you fix it?<pre><code>function filterBlocked(users, blockedIds) {\n  return users.filter(u => blockedIds.includes(u.id));\n}</code></pre>",
+      a: "<p><code>.includes()</code> does a linear scan of <code>blockedIds</code> for every single user — with <code>users.length = n</code> and <code>blockedIds.length = m</code>, that's O(n × m) total work. With both lists large, this gets slow fast.</p><pre><code>function filterBlocked(users, blockedIds) {\n  const blocked = new Set(blockedIds); // build once, O(m)\n  return users.filter(u => blocked.has(u.id)); // O(1) per check → O(n) total\n}</code></pre>" },
+
+    { level: "medium", tag: "sequential vs parallel async",
+      q: "Roughly how long does each take if each call takes 1 second, and why?<pre><code>// A\nconst a = await fetchA();\nconst b = await fetchB();\nconst c = await fetchC();\n\n// B\nconst [a, b, c] = await Promise.all([fetchA(), fetchB(), fetchC()]);</code></pre>",
+      a: "<p><b>A: ~3 seconds.</b> Each <code>await</code> fully completes before the next call even starts — three independent 1-second calls run back-to-back.</p><p><b>B: ~1 second.</b> All three start together and run concurrently; the total time is bounded by the slowest one, not the sum. This only works because the calls are genuinely independent — if <code>fetchB</code> needed <code>a</code>'s result, they couldn't run in parallel.</p>" },
+
+    { level: "medium", tag: "event-loop blocking",
+      q: "Why does wrapping this in an <code>async</code> function NOT fix the frozen UI?<pre><code>async function processData(items) {\n  for (const item of items) {\n    heavyComputation(item); // takes 3 seconds total, purely synchronous\n  }\n}\nprocessData(hugeArray);</code></pre>",
+      a: "<p>Marking a function <code>async</code> only changes <b>how its result is delivered</b> (wrapped in a promise) — it does not make the function's own synchronous body non-blocking. There's no <code>await</code> anywhere inside the loop, so <code>heavyComputation</code> still runs entirely on the main thread, occupying the call stack for the full 3 seconds and freezing everything else (clicks, rendering, timers) exactly as it would without <code>async</code>.</p><p><b>Real fix:</b> break the loop into chunks and yield control between them with <code>setTimeout</code>, or move the computation to a Web Worker.</p>" },
+
+    { level: "hard", tag: "throttle implementation",
+      q: "Implement <code>throttle(fn, interval)</code> so <code>fn</code> runs immediately on the first call, then at most once per <code>interval</code> ms no matter how often it's invoked.",
+      a: "<pre><code>function throttle(fn, interval) {\n  let ready = true;\n  return (...args) => {\n    if (!ready) return;       // ignore calls during the cooldown\n    fn(...args);               // run immediately on the first call\n    ready = false;\n    setTimeout(() => { ready = true; }, interval);\n  };\n}</code></pre><p>The key difference from debounce: throttle guarantees execution happens at a regular cadence even during continuous activity, rather than waiting for silence — the first call always fires right away, then a cooldown window blocks further calls until it expires.</p>" },
+
+    { level: "hard", tag: "memoize with object args",
+      q: "Why does this memoized function fail to hit the cache for what look like \"the same\" arguments?<pre><code>const memoized = memoize(config => expensiveCompute(config));\nmemoized({ mode: \"fast\" }); // cache miss — computes\nmemoized({ mode: \"fast\" }); // cache miss AGAIN — why?</code></pre>",
+      a: "<p>A <code>Map</code>-based cache keys entries by <b>reference</b> for object arguments, not by structural equality. <code>{ mode: \"fast\" }</code> and a second, separately-created <code>{ mode: \"fast\" }</code> are two different objects — <code>obj1 === obj2</code> is <code>false</code> — so the cache never recognizes them as \"the same\" key, even though their contents match.</p><p><b>Fix:</b> derive a stable string key from the relevant fields, e.g. <code>JSON.stringify(config)</code> (works for simple, serializable configs) or a custom key-building function, and use that string as the cache key instead of the raw object.</p>" },
+
+    { level: "hard", tag: "chunked processing",
+      q: "This freezes the page for large arrays. Rewrite it to keep the UI responsive using chunking.<pre><code>function processAll(items) {\n  items.forEach(item => heavyWork(item));\n}</code></pre>",
+      a: "<pre><code>function processInChunks(items, chunkSize, onDone) {\n  let i = 0;\n  function step() {\n    const end = Math.min(i + chunkSize, items.length);\n    for (; i < end; i++) heavyWork(items[i]);\n    if (i < items.length) {\n      setTimeout(step, 0); // yield back to the event loop between chunks\n    } else {\n      onDone();\n    }\n  }\n  step();\n}</code></pre><p>Instead of one long synchronous pass that occupies the call stack until it fully finishes, this processes a small batch, then schedules the next batch as a fresh macrotask via <code>setTimeout(step, 0)</code> — letting the event loop reach rendering, clicks, and other pending work in between chunks.</p>" },
+  ],
+
+  "JavaScript patterns & engineering": [
+    { level: "easy", tag: "pure vs impure",
+      q: "Which function is pure, and why is the other one not?<pre><code>// A\nlet total = 0;\nfunction addToTotal(n) { total += n; return total; }\n\n// B\nfunction add(a, b) { return a + b; }</code></pre>",
+      a: "<p><b>B is pure</b> — given the same <code>a</code> and <code>b</code>, it always returns the same result, and touches nothing outside itself.</p><p><b>A is impure</b> — it mutates the outside variable <code>total</code>, so calling it twice with the same argument gives two different results, and its behavior depends on how many times it's been called before.</p>" },
+
+    { level: "easy", tag: "separation of concerns",
+      q: "What's the concrete testing benefit of splitting this into three functions instead of one?<pre><code>async function showUserCard(id) {\n  const res = await fetch('/api/users/' + id);\n  const data = await res.json();\n  document.querySelector('#card').innerHTML = data.name.toUpperCase();\n}</code></pre>",
+      a: "<p>As written, testing the formatting logic (<code>.toUpperCase()</code>) requires a real network call and a real DOM. Splitting into <code>fetchUser(id)</code>, <code>formatUserName(user)</code>, and <code>renderCard(name)</code> lets you unit-test <code>formatUserName</code> with a plain object — no fetch, no DOM — because it's now a pure function with no side effects of its own.</p>" },
+
+    { level: "medium", tag: "immutability & re-render",
+      q: "Why might this state update fail to trigger a re-render in React?<pre><code>function addItem(state, item) {\n  state.items.push(item);\n  return state;\n}</code></pre>",
+      a: "<p>React (and similar libraries) detect state changes with a fast <code>===</code> reference check, not a deep comparison. <code>state.items.push(item)</code> mutates the array in place and <code>return state</code> returns the exact same object reference — so <code>oldState === newState</code> is <code>true</code>, and React concludes nothing changed, even though the array's contents did.</p><pre><code>function addItem(state, item) {\n  return { ...state, items: [...state.items, item] }; // new references\n}</code></pre>" },
+
+    { level: "medium", tag: "dependency injection & testing",
+      q: "Rewrite this so it can be unit-tested without hitting a real database.<pre><code>const db = require('./realDatabase');\nfunction getUser(id) {\n  return db.query('SELECT * FROM users WHERE id = ?', id);\n}</code></pre>",
+      a: "<pre><code>function getUser(db, id) {\n  return db.query('SELECT * FROM users WHERE id = ?', id);\n}\n\n// in a test:\nconst fakeDb = { query: () => ({ id: 1, name: 'Test User' }) };\ngetUser(fakeDb, 1); // no real database needed</code></pre><p>Instead of importing the real dependency internally, the function receives it as a parameter — dependency injection. This is the core reason DI matters in practice: it makes code testable in isolation, by swapping in a fake collaborator without touching the function's implementation.</p>" },
+
+    { level: "medium", tag: "strategy pattern refactor",
+      q: "Refactor this so adding a new validation type doesn't require editing the function itself.<pre><code>function validate(type, value) {\n  if (type === 'email') return value.includes('@');\n  if (type === 'phone') return /^\\d{10}$/.test(value);\n  if (type === 'zip') return /^\\d{5}$/.test(value);\n}</code></pre>",
+      a: "<pre><code>const validators = {\n  email: v => v.includes('@'),\n  phone: v => /^\\d{10}$/.test(v),\n  zip: v => /^\\d{5}$/.test(v),\n};\nfunction validate(type, value) { return validators[type](value); }\n\n// adding a new type is now just one new entry — validate() itself never changes:\nvalidators.creditCard = v => /^\\d{16}$/.test(v);</code></pre><p>This is the Strategy pattern: swappable, independently-defined behaviors selected by a key, instead of a growing <code>if</code>/<code>switch</code> chain that has to be edited every time a new case appears.</p>" },
+
+    { level: "medium", tag: "module pattern privacy",
+      q: "Can code outside this IIFE read or change <code>count</code> directly? What does <code>Counter.count</code> log?<pre><code>const Counter = (function () {\n  let count = 0;\n  return {\n    increment() { return ++count; }\n  };\n})();\nconsole.log(Counter.count);</code></pre>",
+      a: "<p>Logs <code>undefined</code>. <code>count</code> only exists inside the IIFE's closure — it was never attached to the returned object, so there is no <code>Counter.count</code> property at all, and no way to reach the real <code>count</code> variable from outside except through <code>increment()</code>. This is the module pattern's core mechanism: privacy through closure, not through any special syntax.</p>" },
+
+    { level: "hard", tag: "over-defensive code hides bugs",
+      q: "What's actually wrong with this \"safe\" code?<pre><code>function getDiscount(user) {\n  try {\n    return user.membership.discountRate;\n  } catch (e) {\n    return 0; // just default to no discount if anything goes wrong\n  }\n}</code></pre>",
+      a: "<p>This isn't defensive programming, it's <b>bug-hiding</b>. If <code>user.membership</code> is unexpectedly missing due to a real upstream bug (a failed join, a data migration issue), this function silently swallows the failure and returns <code>0</code> as if that's a perfectly normal case — the actual defect goes completely unnoticed, possibly costing real customers a discount they're entitled to, with zero error logged anywhere.</p><p><b>Better:</b> validate explicitly at the boundary with a clear, specific error (or log the anomaly) rather than catching everything and pretending it's fine: <code>if (!user.membership) throw new Error('getDiscount: user has no membership')</code>, or intentionally handle the one specific case you expect (e.g. \"no membership = not a paying user, 0 is correct\") rather than a blanket catch-all.</p>" },
+
+    { level: "hard", tag: "error boundary vs try/catch everywhere",
+      q: "A team wraps every single React component in its own try/catch-equivalent error boundary AND wraps every Express route handler in its own try/catch AND adds an app-level Express error middleware. What's the redundancy here, and what's the better structure?",
+      a: "<p>The whole point of an error boundary is to catch at a <b>deliberate boundary</b> — a feature area, or the top of a route chain — not to wrap every single unit individually. One React error boundary around a page/feature already catches rendering errors from every component beneath it in that tree; a per-component boundary is usually unnecessary duplication.</p><p>For Express, the idiomatic pattern is: route handlers call <code>next(err)</code> on failure (or just let an async error propagate with the right setup) rather than each handler needing its own repeated try/catch <em>and</em> its own custom error response — the single app-level error-handling middleware <code>(err, req, res, next)</code> is the one place that formats and sends the error response, keeping that logic in exactly one place instead of copy-pasted across every route.</p>" },
+  ],
+
+  "Advanced JavaScript": [
+    { level: "easy", tag: "closure basics",
+      q: "What logs, and why are the two counters independent?<pre><code>function makeCounter() {\n  let count = 0;\n  return () => ++count;\n}\nconst a = makeCounter();\nconst b = makeCounter();\na(); a();\nconsole.log(b());</code></pre>",
+      a: "<p><code>1</code>. Each call to <code>makeCounter()</code> creates a brand-new lexical environment with its own <code>count</code>. <code>a</code> and <code>b</code> close over two completely separate environments — advancing <code>a</code>'s counter has no effect on <code>b</code>'s, which starts fresh at <code>0</code>.</p>" },
+
+    { level: "easy", tag: "recursion base case",
+      q: "What happens when this runs, and why?<pre><code>function countdown(n) {\n  console.log(n);\n  countdown(n - 1);\n}\ncountdown(5);</code></pre>",
+      a: "<p>It logs <code>5, 4, 3, 2, 1, 0, -1, -2, ...</code> and eventually throws <code>RangeError: Maximum call stack size exceeded</code>. There's no base case to stop the recursion — <code>n</code> just keeps decreasing forever, and each call adds another frame to the call stack until it overflows. <b>Fix:</b> add <code>if (n &lt;= 0) return;</code> before the recursive call.</p>" },
+
+    { level: "medium", tag: "loop closure bug",
+      q: "Why do these two loops produce different output?<pre><code>for (var i = 0; i < 3; i++) {\n  setTimeout(() => console.log(i), 0);\n}\nfor (let j = 0; j < 3; j++) {\n  setTimeout(() => console.log(j), 0);\n}</code></pre>",
+      a: "<p>First loop logs <code>3, 3, 3</code>. Second logs <code>0, 1, 2</code>.</p><p><code>var</code> is function-scoped — all three callbacks close over the exact same <code>i</code>, whose value is <code>3</code> by the time any of them actually runs (after the loop has fully finished). <code>let</code> is block-scoped and creates a <b>new binding for each iteration</b>, so each callback closes over its own separate <code>j</code>, capturing that iteration's value.</p>" },
+
+    { level: "medium", tag: "lexical vs dynamic",
+      q: "Fill in the blank, and explain the general rule it demonstrates: is a function's outer scope determined by where it's ___, or by how it's later called?",
+      a: "<p>By where it's <b>written (defined)</b> — that's what \"lexical\" scoping means. A function's scope chain is fixed permanently at the moment it's created in the source code, based on its nesting, and never changes no matter how or from where it's later invoked.</p><p>This is the direct contrast with <code>this</code>, which works the opposite way — resolved dynamically, fresh, based on the call site every single time the function runs.</p>" },
+
+    { level: "medium", tag: "memory leak spotting",
+      q: "Find the memory leak in this component-like code.<pre><code>function setupWidget(el) {\n  const bigData = new Array(1000000).fill('x');\n  el.addEventListener('click', () => {\n    console.log(bigData.length);\n  });\n}\n// widget is later removed from the DOM: el.remove();</code></pre>",
+      a: "<p>Even after <code>el.remove()</code> takes it off the visible page, <code>el</code> is not garbage collected — the click listener's closure still holds a live reference to <code>bigData</code> (and implicitly to <code>el</code> itself, since the listener is attached to it), keeping both reachable from the DOM API's internal references. If many widgets are created and removed this way without ever calling <code>el.removeEventListener(...)</code>, memory usage grows steadily. <b>Fix:</b> explicitly remove the listener before discarding the element.</p>" },
+
+    { level: "medium", tag: "generator laziness",
+      q: "Does this infinite generator ever hang the program? Why or why not?<pre><code>function* naturals() {\n  let n = 1;\n  while (true) yield n++;\n}\n\nconst gen = naturals();\nconsole.log(gen.next().value);\nconsole.log(gen.next().value);</code></pre>",
+      a: "<p>No — it logs <code>1</code>, then <code>2</code>, and never hangs. Generators are <b>lazy</b>: calling <code>naturals()</code> doesn't run the body at all, it just returns a generator object. Each <code>.next()</code> call runs the body only up to the next <code>yield</code>, then pauses — the <code>while (true)</code> never actually spins forever because nothing is forcing it to run to completion; it only ever advances one step at a time, on demand.</p>" },
+
+    { level: "hard", tag: "WeakMap vs Map for caching",
+      q: "Why is a <code>WeakMap</code> the better choice than a regular <code>Map</code> for this per-object metadata cache?<pre><code>const cache = new Map(); // or WeakMap?\nfunction getMetadata(obj) {\n  if (!cache.has(obj)) cache.set(obj, computeExpensiveMetadata(obj));\n  return cache.get(obj);\n}</code></pre>",
+      a: "<p>A regular <code>Map</code> holds its keys with a <b>strong</b> reference — as long as any entry stays in the <code>Map</code>, the object used as its key can never be garbage collected, even if nothing else in the program still references it. That means every object ever passed to <code>getMetadata</code> is kept alive <em>forever</em>, purely because it's a cache key — a slow, silent memory leak.</p><p>A <code>WeakMap</code> holds keys <b>weakly</b> — once nothing else references a given object, it (and its cache entry) becomes eligible for garbage collection normally, exactly as if the cache didn't exist. The tradeoff: you lose iteration and <code>.size</code>, but for a pure \"attach data to an object without keeping it alive\" use case, that's the correct choice.</p>" },
+
+    { level: "hard", tag: "execution context & hoisting",
+      q: "Explain exactly why this doesn't throw a ReferenceError, and what the two logs are.<pre><code>console.log(typeof sayHi);\nconsole.log(a);\nvar a = 1;\nfunction sayHi() { return 'hi'; }</code></pre>",
+      a: "<p>Logs <code>\"function\"</code>, then <code>undefined</code> — no error.</p><p>During the <b>creation phase</b> of this execution context, JavaScript hoists both declarations before running any code: <code>function sayHi() {}</code> is hoisted completely — the whole function, ready to call. <code>var a</code> is hoisted too, but only its <em>declaration</em>, initialized to <code>undefined</code> — the assignment <code>a = 1</code> doesn't happen until the execution phase reaches that line. So by the time both <code>console.log</code>s run, <code>sayHi</code> is already a fully usable function, but <code>a</code> exists yet still holds its hoisted default of <code>undefined</code>.</p>" },
+
+    { level: "hard", tag: "TCO reality check",
+      q: "A candidate says: \"I wrote this in tail-recursive form, so it's safe from stack overflow on any array size.\" Is that true in Node/Chrome?<pre><code>function sum(arr, i = 0, acc = 0) {\n  if (i >= arr.length) return acc;\n  return sum(arr, i + 1, acc + arr[i]); // tail position\n}</code></pre>",
+      a: "<p><b>No, not in practice.</b> The function is correctly written in tail-call form — the recursive call really is the last thing that happens, with nothing left to compute afterward. Proper Tail Call Optimization (which would let the engine reuse the current stack frame instead of pushing a new one) is part of the ES2015 spec, but <b>V8</b> (which powers both Chrome and Node.js) has never implemented it. So on a large enough array, this will still overflow the stack in Node/Chrome, even though the exact same code would be safe on Safari/JavaScriptCore, which does implement TCO. For genuinely large inputs in Node, an iterative loop (or manual chunking) is the reliable choice, not tail recursion.</p>" },
+  ],
+
+  "Browser JavaScript": [
+    { level: "easy", tag: "fetch does not reject on 404",
+      q: "What does this log for a 404 response — does the <code>.catch</code> run?<pre><code>fetch('/api/missing-endpoint')\n  .then(res => console.log('status:', res.status))\n  .catch(err => console.log('caught:', err.message));</code></pre>",
+      a: "<p>Logs <code>\"status: 404\"</code> — the <code>.catch</code> never runs.</p><p><code>fetch</code>'s promise only rejects on a genuine network failure (no connection, DNS error, CORS block) — an HTTP error status like 404 or 500 is still a completed, valid response as far as <code>fetch</code> is concerned. You must check <code>response.ok</code> or <code>response.status</code> yourself; nothing does it for you automatically.</p>" },
+
+    { level: "easy", tag: "preventDefault vs stopPropagation",
+      q: "Which one stops a form from actually submitting, and which one stops the click from reaching a parent listener?<pre><code>e.preventDefault();\ne.stopPropagation();</code></pre>",
+      a: "<p><code>preventDefault()</code> stops the browser's default action — a form submission, a link navigation — but the event STILL bubbles up normally.</p><p><code>stopPropagation()</code> stops the event from reaching ancestor listeners, but the browser's default action STILL happens (the form would still submit, a link would still navigate) unless you also call <code>preventDefault()</code>. They are independent — neither implies the other.</p>" },
+
+    { level: "easy", tag: "storage lifetime",
+      q: "Which storage mechanism survives a browser restart, and which one is gone once you close the tab?",
+      a: "<p><code>localStorage</code> survives closing the tab, the browser, even restarting the computer — it persists until explicitly cleared. <code>sessionStorage</code> is scoped to that one tab's session and disappears as soon as that tab is closed (and isn't even shared with a duplicate tab on the same site).</p>" },
+
+    { level: "medium", tag: "event bubbling order",
+      q: "In what order do these log when the inner <code>&lt;button&gt;</code> is clicked?<pre><code>outer.addEventListener('click', () => console.log('outer'));\ninner.addEventListener('click', () => console.log('inner'));\n// HTML: &lt;div id=\"outer\"&gt;&lt;button id=\"inner\"&gt;Click&lt;/button&gt;&lt;/div&gt;</code></pre>",
+      a: "<p><code>\"inner\"</code>, then <code>\"outer\"</code>. Both listeners are registered for the default bubble phase. The click first reaches its target (<code>inner</code>) and fires that listener, then continues bubbling upward through the DOM tree, triggering <code>outer</code>'s listener next.</p>" },
+
+    { level: "medium", tag: "event delegation with closest",
+      q: "Write a single delegated listener on <code>#list</code> that logs the <code>data-id</code> of whichever <code>.item</code> was clicked, including items added to the list later.",
+      a: "<pre><code>document.querySelector('#list').addEventListener('click', (e) => {\n  const item = e.target.closest('.item');\n  if (!item) return; // click landed on the list but not on an item\n  console.log(item.dataset.id);\n});</code></pre><p>Because the click bubbles up from whatever was actually clicked to <code>#list</code>, one listener here covers every current and future <code>.item</code> — no need to attach a new listener each time an item is added to the DOM.</p>" },
+
+    { level: "medium", tag: "response.json is a promise",
+      q: "What's wrong with this code?<pre><code>fetch('/api/users/1')\n  .then(res => console.log(res.json()));</code></pre>",
+      a: "<p>It logs a pending <code>Promise</code> object, not the actual data. <code>res.json()</code> itself returns a <b>promise</b> — parsing the response body is a separate asynchronous step from getting the response headers. <b>Fix:</b> chain another <code>.then</code>, or <code>await</code> it: <code>fetch(url).then(res =&gt; res.json()).then(data =&gt; console.log(data))</code>.</p>" },
+
+    { level: "medium", tag: "localStorage type coercion",
+      q: "What does <code>typeof saved</code> log, and why is this a common bug source?<pre><code>localStorage.setItem('count', 5);\nconst saved = localStorage.getItem('count');\nconsole.log(typeof saved);\nconsole.log(saved + 1);</code></pre>",
+      a: "<p>Logs <code>\"string\"</code>, then <code>\"51\"</code> (string concatenation, not addition).</p><p><code>localStorage</code> only stores strings — the number <code>5</code> is silently coerced to the string <code>\"5\"</code> when stored, and <code>getItem</code> always returns a string, never the original type. Forgetting this and doing math directly on a retrieved value is a classic bug. <b>Fix:</b> convert explicitly, e.g. <code>Number(saved) + 1</code>, or store/retrieve via <code>JSON.stringify</code>/<code>JSON.parse</code> for non-string data.</p>" },
+
+    { level: "hard", tag: "capture vs bubble order",
+      q: "Given this setup, in what order do the three listeners fire when the child is clicked?<pre><code>parent.addEventListener('click', () => console.log('parent capture'), true);\nchild.addEventListener('click', () => console.log('child'));\nparent.addEventListener('click', () => console.log('parent bubble'), false);</code></pre>",
+      a: "<p><code>\"parent capture\"</code>, then <code>\"child\"</code>, then <code>\"parent bubble\"</code>.</p><p>Propagation always follows: capture phase (root → target) first, then the target phase itself, then bubble phase (target → root) last — regardless of the order the listeners were <em>registered</em> in the code. The capture-phase listener on <code>parent</code> fires on the way down, before the click even reaches <code>child</code>; the bubble-phase listener on the same <code>parent</code> fires afterward, on the way back up.</p>" },
+
+    { level: "hard", tag: "CORS is browser-enforced",
+      q: "A developer says: \"I'll just add a header in my frontend JavaScript to fix this CORS error.\" What's wrong with that plan?",
+      a: "<p>CORS is enforced entirely by the <b>browser</b>, checking headers that the <b>server's response</b> includes — nothing the requesting page's own JavaScript sends or sets can grant itself permission to read a cross-origin response. The fix has to happen on the server being called: it must return an <code>Access-Control-Allow-Origin</code> header explicitly permitting the calling origin. No client-side header, config, or workaround in the frontend code can bypass this restriction — it exists specifically to protect the user from a page silently reading data it wasn't authorized to see.</p>" },
+
+    { level: "hard", tag: "layout thrashing",
+      q: "Why is this loop unusually slow, and how would you fix it?<pre><code>const boxes = document.querySelectorAll('.box');\nboxes.forEach(box => {\n  const height = box.offsetHeight; // READ\n  box.style.height = (height + 10) + 'px'; // WRITE\n});</code></pre>",
+      a: "<p>This is <b>layout thrashing</b>. Reading <code>offsetHeight</code> forces the browser to make sure layout is fully up to date before returning a value — normally the browser would batch layout work, but interleaving a read immediately after a write (from the previous iteration) forces a synchronous recalculation on <em>every single iteration</em> instead of once.</p><pre><code>const boxes = [...document.querySelectorAll('.box')];\nconst heights = boxes.map(box => box.offsetHeight); // all READS first\nboxes.forEach((box, i) => {\n  box.style.height = (heights[i] + 10) + 'px'; // all WRITES after\n});</code></pre><p>Separating all the reads from all the writes lets the browser batch the layout calculation once, instead of thrashing between recalculating and re-invalidating on every loop iteration.</p>" },
+  ],
+
+  "ES6+ language features": [
+    { level: "easy", tag: "template literals",
+      q: "Rewrite this using a template literal:<pre><code>const msg = 'Hello, ' + name + '! You have ' + count + ' items.';</code></pre>",
+      a: "<pre><code>const msg = `Hello, ${name}! You have ${count} items.`;</code></pre><p>Any valid expression can go inside <code>${...}</code> — not just plain variables, e.g. <code>${count + 1}</code> or <code>${user.name.toUpperCase()}</code> both work directly.</p>" },
+
+    { level: "easy", tag: "for...of vs for...in",
+      q: "What does each loop log, and why are they different?<pre><code>const arr = [10, 20, 30];\nfor (const x of arr) console.log(x);\nfor (const i in arr) console.log(i);</code></pre>",
+      a: "<p>First loop logs <code>10, 20, 30</code> — the actual <b>values</b>. Second loop logs <code>\"0\", \"1\", \"2\"</code> — the <b>keys</b>, as strings. <code>for...of</code> iterates values from an iterable; <code>for...in</code> iterates enumerable keys from any object, and on an array that means its string indices, not its values — a common source of confusion.</p>" },
+
+    { level: "easy", tag: "Set dedupe",
+      q: "Write a one-liner that removes duplicates from <code>[1, 2, 2, 3, 3, 3]</code>.",
+      a: "<pre><code>const unique = [...new Set([1, 2, 2, 3, 3, 3])];\n// [1, 2, 3]</code></pre><p>A <code>Set</code> can only ever hold unique values — constructing one from the array automatically drops duplicates, then spreading it back into <code>[...]</code> gives you a plain array again.</p>" },
+
+    { level: "medium", tag: "named vs default export",
+      q: "What's wrong with this import, given how <code>math.js</code> exports things?<pre><code>// math.js\nexport const add = (a, b) => a + b;\n\n// app.js\nimport add from './math.js';\nconsole.log(add(2, 3));</code></pre>",
+      a: "<p><code>add</code> logs as <code>undefined</code>, and calling it throws a <code>TypeError</code>. <code>math.js</code> exports <code>add</code> as a <b>named</b> export, but <code>app.js</code> is trying to import it as the <b>default</b> export (no curly braces means \"give me the default\"). Since there is no default export in <code>math.js</code>, the import silently resolves to <code>undefined</code>. <b>Fix:</b> <code>import { add } from './math.js';</code></p>" },
+
+    { level: "medium", tag: "logical assignment falsy trap",
+      q: "What's the bug in this config-defaulting code?<pre><code>function setRetries(config) {\n  config.retries ||= 3; // default to 3 if not set\n  return config;\n}\nconsole.log(setRetries({ retries: 0 }).retries);</code></pre>",
+      a: "<p>Logs <code>3</code>, but the caller explicitly set <code>retries: 0</code> — meaning \"don't retry at all\", a perfectly valid value — and it got silently overwritten. <code>||=</code> assigns whenever the current value is falsy, and <code>0</code> is falsy. <b>Fix:</b> use <code>??=</code> instead, which only assigns on <code>null</code>/<code>undefined</code>, correctly leaving a deliberate <code>0</code> alone: <code>config.retries ??= 3;</code></p>" },
+
+    { level: "medium", tag: "Map with object keys",
+      q: "Why does this Object-based approach fail, and how does a Map fix it?<pre><code>const key1 = { id: 1 };\nconst key2 = { id: 2 };\nconst store = {};\nstore[key1] = 'first';\nstore[key2] = 'second';\nconsole.log(Object.keys(store));</code></pre>",
+      a: "<p>Logs <code>['[object Object]']</code> — just one key. Object keys are always coerced to strings, and both <code>key1</code> and <code>key2</code> coerce to the exact same string, <code>'[object Object]'</code>, so the second assignment overwrites the first.</p><pre><code>const store = new Map();\nstore.set(key1, 'first');\nstore.set(key2, 'second');\nstore.get(key1); // 'first' — the actual object reference is the key, no coercion</code></pre>" },
+
+    { level: "medium", tag: "generator laziness",
+      q: "Is it safe to define this generator? What does the loop actually log?<pre><code>function* naturals() {\n  let n = 1;\n  while (true) yield n++;\n}\n\nfor (const n of naturals()) {\n  if (n > 3) break;\n  console.log(n);\n}</code></pre>",
+      a: "<p>Perfectly safe — logs <code>1, 2, 3</code>, then stops. Generators are lazy: <code>while (true)</code> never actually runs an infinite loop all at once. Each iteration of the <code>for...of</code> calls <code>.next()</code> exactly once, advancing the generator by a single <code>yield</code>, and <code>break</code> simply stops requesting more.</p>" },
+
+    { level: "hard", tag: "WeakMap prevents leak",
+      q: "Rewrite this cache using <code>WeakMap</code> so that objects can still be garbage collected once nothing else references them.<pre><code>const cache = new Map();\nfunction getMetadata(obj) {\n  if (!cache.has(obj)) cache.set(obj, computeMetadata(obj));\n  return cache.get(obj);\n}</code></pre>",
+      a: "<pre><code>const cache = new WeakMap(); // only this line changes\nfunction getMetadata(obj) {\n  if (!cache.has(obj)) cache.set(obj, computeMetadata(obj));\n  return cache.get(obj);\n}</code></pre><p>A regular <code>Map</code> holds its keys with a strong reference, so every object ever passed to <code>getMetadata</code> stays alive forever purely because it's a cache key — a silent memory leak. <code>WeakMap</code> holds keys weakly, so once nothing else in the program references a given object, it (and its cache entry) becomes eligible for garbage collection normally, exactly as if it had never been cached.</p>" },
+
+    { level: "hard", tag: "custom iterable",
+      q: "Make this <code>range</code> object work with <code>for...of</code> and spread, by implementing the iterator protocol.<pre><code>const range = { start: 1, end: 4 };\n// desired: for (const n of range) ... logs 1, 2, 3\n// desired: [...range] === [1, 2, 3]</code></pre>",
+      a: "<pre><code>const range = {\n  start: 1,\n  end: 4,\n  [Symbol.iterator]() {\n    let current = this.start;\n    const end = this.end;\n    return {\n      next() {\n        if (current < end) return { value: current++, done: false };\n        return { value: undefined, done: true };\n      }\n    };\n  }\n};\n\nfor (const n of range) console.log(n); // 1, 2, 3\n[...range]; // [1, 2, 3]</code></pre><p>Implementing <code>[Symbol.iterator]()</code> — returning an object with a <code>.next()</code> that yields <code>{ value, done }</code> — is exactly the protocol <code>for...of</code> and spread both rely on. Once it's there, any built-in syntax that consumes iterables works on this custom object automatically, for free.</p>" },
+
+    { level: "hard", tag: "optional chaining does not guard everything",
+      q: "Does <code>?.</code> prevent an error here? Why or why not?<pre><code>function getCity(user) {\n  return user?.address.city; // note: only ONE ?. \n}\ngetCity({ address: null });</code></pre>",
+      a: "<p><b>No</b> — this still throws a <code>TypeError</code>. <code>user?.address</code> is safely guarded (returns <code>undefined</code> if <code>user</code> is nullish), but the result of that (<code>null</code>, since <code>address</code> genuinely IS <code>null</code> here) is then accessed with a plain <code>.city</code>, which is NOT optional-chained. <code>?.</code> only guards the specific link it's placed on — every step in a chain that might be nullish needs its own <code>?.</code>: <code>user?.address?.city</code>.</p>" },
   ],
 
 };

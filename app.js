@@ -1493,6 +1493,7 @@ const TIERS = [
     name: "Arrays & modern data handling",
     tag: "red",
     items: [
+      "Arrays & modern data handling overview",
       "map",
       "filter",
       "reduce",

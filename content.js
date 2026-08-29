@@ -11,175 +11,309 @@ window.EXPLANATIONS = {
   "JavaScript fundamentals": {
     "JavaScript fundamentals overview":
       "<p><b>Simple definition:</b> JavaScript fundamentals are the core building blocks: variables, values, types, operators, scope, and control flow.</p>" +
-      "<p><b>Technical definition:</b> These concepts define how JavaScript stores data, evaluates expressions, manages scope and hoisting, and controls program execution.</p>" +
-      "<p><b>Why it is used:</b> Without these basics, every later topic (functions, arrays, objects, async code, React, Node, etc.) becomes harder to reason about because the language behavior is unclear.</p>" +
-      "<p><b>When to use:</b> Use these concepts whenever reading or writing JavaScript code, especially to decide which declaration to use, how values compare, and how data flows through the app.</p>" +
-      "<p><b>When not to use:</b> Do not rely on loose equality or <code>var</code> when you can avoid it; do not treat every value as the same because JavaScript has many implicit conversions.</p>" +
-      "<p><b>How it works internally:</b> JavaScript creates execution contexts, stores variables in scope chains, resolves hoisting, and evaluates expressions left-to-right with coercion rules when needed.</p>" +
+      "<p><b>Technical definition:</b> These concepts define how JavaScript stores data, evaluates expressions, manages scope and hoisting, and controls execution.</p>" +
+      "<p><b>Why it is used:</b> Without these basics, later topics such as functions, arrays, objects, async code, and React become much harder to reason about.</p>" +
+      "<p><b>When to use:</b> Use these concepts whenever you read or write JavaScript, especially when choosing declarations, comparing values, or debugging logic.</p>" +
+      "<p><b>When not to use:</b> Do not rely on loose equality or <code>var</code> when a safer pattern exists. Do not assume every value behaves the same under coercion.</p>" +
+      "<p><b>How it works internally:</b> JavaScript creates execution contexts, resolves variable names through scope chains, and evaluates expressions using coercion rules when needed.</p>" +
       "<pre><code>let count = 0;\nif (count === 0) {\n  console.log('start');\n}</code></pre>" +
-      "<p class='ex-gotcha'>These basics are the difference between 'code that works by accident' and 'code you can debug confidently'.</p>",
+      "<p class='ex-gotcha'>These basics are the difference between code that works by accident and code you can debug with confidence.</p>",
 
     "var, let, const":
-      "<p>Three ways to declare a variable, differing in <b>scope</b> and reassignment.</p>" +
+      "<p><b>Simple definition:</b> These are three ways to declare variables. They differ in scope and whether they can be reassigned.</p>" +
+      "<p><b>Technical definition:</b> <code>var</code> is function-scoped, <code>let</code> is block-scoped and reassignable, and <code>const</code> is block-scoped and immutable by reassignment.</p>" +
+      "<p><b>Why it is used:</b> They control lifetime and visibility of values. Modern JavaScript prefers <code>const</code> by default and <code>let</code> when reassignment is required.</p>" +
+      "<p><b>When to use:</b> Use <code>const</code> for stable values, <code>let</code> for counters and toggles, and avoid <code>var</code> in modern code.</p>" +
+      "<p><b>When not to use:</b> Do not use <code>var</code> for new code because it ignores block boundaries and creates confusing bugs.</p>" +
       "<pre><code>var a = 1;   // function-scoped, old style\nlet b = 2;   // block-scoped, reassignable\nconst c = 3; // block-scoped, no reassign</code></pre>" +
-      "<p class='ex-gotcha'>Use <code>const</code> by default. <code>const arr=[1]; arr.push(2)</code> works — you mutated, didn't reassign.</p>",
+      "<p class='ex-gotcha'>Using <code>const</code> does not mean the value is frozen. <code>const arr = [1]; arr.push(2)</code> works because the array is mutated, not reassigned.</p>",
 
     "Primitive vs reference types":
-      "<p><b>Primitives</b> (string, number, boolean, null, undefined, bigint, symbol) are copied <em>by value</em>. <b>Objects/arrays/functions</b> are copied <em>by reference</em> — the variable holds a pointer.</p>" +
-      "<pre><code>let a = {x:1}; let b = a;\nb.x = 9;  // a.x is now 9 too — same object</code></pre>" +
-      "<p class='ex-gotcha'>Comparing objects checks identity, not contents: <code>{}==={}</code> is <code>false</code>.</p>",
+      "<p><b>Simple definition:</b> Primitive values are copied by value, while objects and arrays are shared by reference.</p>" +
+      "<p><b>Technical definition:</b> Primitives are stored directly in memory; objects, arrays, and functions store references to shared memory locations.</p>" +
+      "<p><b>Why it is used:</b> This matters when you copy variables and mutate state, because two variables may refer to the same object.</p>" +
+      "<p><b>When to use:</b> Use this knowledge when updating arrays, copying objects, and tracking source-of-truth state in React or Node applications.</p>" +
+      "<p><b>When not to use:</b> Do not assume <code>const</code> protects nested object data from mutation; it only protects the binding, not the contents.</p>" +
+      "<pre><code>let a = { x: 1 };\nlet b = a;\nb.x = 9;\nconsole.log(a.x); // 9</code></pre>" +
+      "<p class='ex-gotcha'>Comparing objects checks identity, not contents, so <code>{} === {}</code> is <code>false</code>.</p>",
 
     "Type coercion":
-      "<p>JS auto-converts types when you mix them.</p>" +
-      "<pre><code>\"5\" + 1  // \"51\"  (number → string)\n\"5\" - 1  // 4     (string → number)\ntrue + 1 // 2</code></pre>" +
-      "<p class='ex-gotcha'><code>+</code> concatenates if <em>either</em> side is a string; every other math operator forces numbers.</p>",
+      "<p><b>Simple definition:</b> Type coercion is JavaScript converting values into a different type during evaluation.</p>" +
+      "<p><b>Technical definition:</b> JavaScript performs implicit conversion to satisfy operators like <code>+</code>, <code>-</code>, and comparison logic.</p>" +
+      "<p><b>Why it is used:</b> It lets code be flexible, but it is one of the biggest causes of confusing bugs.</p>" +
+      "<p><b>When to use:</b> You need to understand it when mixing strings, numbers, booleans, and objects in calculations or conditions.</p>" +
+      "<p><b>When not to use:</b> Avoid relying on coercion in production code. Prefer explicit conversion with <code>Number()</code>, <code>String()</code>, or comparison operators you control.</p>" +
+      "<pre><code>\"5\" + 1  // \"51\"\n\"5\" - 1  // 4\ntrue + 1 // 2</code></pre>" +
+      "<p class='ex-gotcha'>The <code>+</code> operator concatenates when either side is a string, while other math operators usually force numeric conversion.</p>",
 
     "== vs ===":
-      "<p><code>==</code> compares after coercing types; <code>===</code> requires same value <em>and</em> type.</p>" +
-      "<pre><code>0 == \"\"   // true\n0 === \"\"  // false\n1 == \"1\"  // true</code></pre>" +
-      "<p class='ex-gotcha'>Always use <code>===</code>. Exception: <code>x == null</code> conveniently checks null AND undefined.</p>",
+      "<p><b>Simple definition:</b> <code>==</code> may convert types first; <code>===</code> compares both value and type without conversion.</p>" +
+      "<p><b>Technical definition:</b> Loose equality uses coercion; strict equality compares both type and value and is usually the safer default in production code.</p>" +
+      "<p><b>Why it is used:</b> It avoids accidental bugs from implicit conversions when comparing values.</p>" +
+      "<p><b>When to use:</b> Use <code>===</code> most of the time. Use <code>== null</code> only for the common null/undefined check.</p>" +
+      "<p><b>When not to use:</b> Do not use <code>==</code> for numeric, string, or boolean comparisons unless you deliberately want coercion.</p>" +
+      "<pre><code>0 == \"\"    // true\n0 === \"\"   // false\n1 == \"1\"   // true\n1 === \"1\"  // false</code></pre>" +
+      "<p class='ex-gotcha'>Loose comparison is convenient but risky. In JavaScript interviews, strict equality is usually the expected answer.</p>",
 
     "Truthy and falsy values":
-      "<p>Every value is truthy or falsy in a condition. Memorize the falsy list; everything else is truthy.</p>" +
-      "<pre><code>// 8 falsy values:\nfalse, 0, -0, 0n, \"\", null, undefined, NaN</code></pre>" +
-      "<p class='ex-gotcha'>Empty array <code>[]</code> and empty object <code>{}</code> are <b>truthy</b>.</p>",
+      "<p><b>Simple definition:</b> Every value is either truthy or falsy when used in a condition.</p>" +
+      "<p><b>Technical definition:</b> JavaScript converts a value to a Boolean as part of condition evaluation. The falsy set is fixed and everything else is truthy.</p>" +
+      "<p><b>Why it is used:</b> If conditions, short-circuiting, and checks depend on this behavior.</p>" +
+      "<p><b>When to use:</b> Understand it when writing conditionals, validation, and guards in API and UI logic.</p>" +
+      "<p><b>When not to use:</b> Do not rely on truthiness for values where <code>0</code>, <code>\"\"</code>, or <code>false</code> have meaningful differences.</p>" +
+      "<pre><code>// falsy values\nfalse, 0, -0, 0n, \"\", null, undefined, NaN\nif ([]) console.log('runs'); // true</code></pre>" +
+      "<p class='ex-gotcha'>Empty arrays and objects are truthy, even though they may look empty. This often surprises beginners.</p>",
 
     "null vs undefined":
-      "<p><code>undefined</code> = declared but not assigned (JS gives it). <code>null</code> = intentional empty value (you assign it).</p>" +
-      "<pre><code>let x;         // undefined\nlet y = null;  // deliberately empty</code></pre>" +
+      "<p><b>Simple definition:</b> <code>null</code> means 'there is intentionally no value'; <code>undefined</code> means 'there is no value yet'.</p>" +
+      "<p><b>Technical definition:</b> <code>undefined</code> is the default value for uninitialized variables and missing object properties; <code>null</code> is an explicit empty reference.</p>" +
+      "<p><b>Why it is used:</b> Distinguishing them helps you understand missing data versus intentionally empty data.</p>" +
+      "<p><b>When to use:</b> Use <code>null</code> when you want to say 'empty on purpose'; use <code>undefined</code> for uninitialized or missing values unless your API contract says otherwise.</p>" +
+      "<p><b>When not to use:</b> Do not treat them as the same in strict comparisons. They are only loosely equal to each other.</p>" +
+      "<pre><code>let x;\nlet y = null;\nconsole.log(x); // undefined\nconsole.log(y); // null</code></pre>" +
       "<p class='ex-gotcha'><code>null == undefined</code> is true, but <code>null === undefined</code> is false.</p>",
 
     "typeof":
-      "<p>Operator returning a type string.</p>" +
-      "<pre><code>typeof \"hi\"  // \"string\"\ntypeof 42    // \"number\"\ntypeof []    // \"object\"\ntypeof null  // \"object\" ← historic bug</code></pre>" +
-      "<p class='ex-gotcha'><code>typeof function(){}</code> is <code>\"function\"</code>, but <code>typeof []</code> is <code>\"object\"</code> — use <code>Array.isArray()</code> for arrays.</p>",
+      "<p><b>Simple definition:</b> <code>typeof</code> tells you the runtime type of a value as a string.</p>" +
+      "<p><b>Technical definition:</b> It is an operator that returns a type label such as <code>'string'</code>, <code>'number'</code>, or <code>'object'</code>.</p>" +
+      "<p><b>Why it is used:</b> It is helpful during debugging, validation, and type checks.</p>" +
+      "<p><b>When to use:</b> Use it for quick debugging or dynamic code paths, but not as a full type-safe replacement for runtime validation.</p>" +
+      "<p><b>When not to use:</b> Do not depend on it for array detection; arrays are objects, so <code>typeof []</code> is <code>'object'</code>.</p>" +
+      "<pre><code>typeof 'hi'    // 'string'\ntypeof 42     // 'number'\ntypeof []     // 'object'\ntypeof null   // 'object'</code></pre>" +
+      "<p class='ex-gotcha'>JavaScript's <code>typeof null</code> result is a historic bug that still exists for compatibility.</p>",
 
     "Scope":
-      "<p>Scope = where a variable is accessible. JS has global, function, and block scope.</p>" +
-      "<pre><code>function f() {\n  let inside = 1; // only visible in f\n}</code></pre>",
+      "<p><b>Simple definition:</b> Scope is where a variable is accessible in code.</p>" +
+      "<p><b>Technical definition:</b> Scope determines the visibility and lifetime of bindings. JavaScript has global, function, and block scopes.</p>" +
+      "<p><b>Why it is used:</b> It prevents naming collisions and controls which parts of code can read or modify a variable.</p>" +
+      "<p><b>When to use:</b> Use it to understand why variables are visible in some places and not others.</p>" +
+      "<p><b>When not to use:</b> Avoid unnecessarily creating global variables because they can leak across files and modules.</p>" +
+      "<pre><code>function f() {\n  let inside = 1;\n  return inside;\n}\nconsole.log(f()); // 1</code></pre>" +
+      "<p class='ex-gotcha'>Scope rules are the reason closures and callback bugs behave the way they do.</p>",
 
     "Global scope":
-      "<p>Variables declared outside any function/block. Accessible everywhere; overusing globals causes name clashes and bugs.</p>" +
-      "<p class='ex-gotcha'>In browsers, <code>var</code> globals attach to <code>window</code>; <code>let</code>/<code>const</code> do not.</p>",
+      "<p><b>Simple definition:</b> A global variable is one declared outside functions or blocks.</p>" +
+      "<p><b>Technical definition:</b> It is accessible from the entire program or runtime environment, which makes it easy to reach but also risky to overwrite.</p>" +
+      "<p><b>Why it is used:</b> Global state is sometimes necessary for configuration, but it should be used sparingly.</p>" +
+      "<p><b>When to use:</b> Use it only for truly app-wide settings or constants. Avoid it for local logic or temporary state.</p>" +
+      "<p><b>When not to use:</b> Do not bury business logic in global variables because they can be modified from anywhere and produce hard-to-debug bugs.</p>" +
+      "<pre><code>const API_URL = 'https://api.example.com';\nconsole.log(API_URL);</code></pre>" +
+      "<p class='ex-gotcha'>In browsers, <code>var</code> at the top level creates a property on <code>window</code>, while <code>let</code> and <code>const</code> do not.</p>",
 
     "Function scope":
-      "<p><code>var</code> is limited to the function it's declared in — it ignores blocks like <code>if</code>/<code>for</code>.</p>" +
-      "<pre><code>function f() {\n  if (true) { var x = 1; }\n  return x; // 1 — var leaked out of the block\n}</code></pre>",
+      "<p><b>Simple definition:</b> Function scope means a variable is visible inside the function where it is declared.</p>" +
+      "<p><b>Technical definition:</b> Variables declared with <code>var</code> are scoped to the nearest function body and ignore block boundaries.</p>" +
+      "<p><b>Why it is used:</b> This is why older JavaScript code often has surprising bugs when variables bleed out of <code>if</code> or loop blocks.</p>" +
+      "<p><b>When to use:</b> Recognize it when debugging legacy code and when working with older codebases.</p>" +
+      "<p><b>When not to use:</b> Do not rely on it in modern code; prefer <code>let</code> or <code>const</code> for better block behavior.</p>" +
+      "<pre><code>function f() {\n  if (true) {\n    var x = 1;\n  }\n  return x; // 1\n}</code></pre>" +
+      "<p class='ex-gotcha'>This is the classic <code>var</code> trap: block scope is ignored, so a value can leak outside the block.</p>",
 
     "Block scope":
-      "<p><code>let</code>/<code>const</code> are confined to the nearest <code>{ }</code> block.</p>" +
-      "<pre><code>{ let a = 1; }\nconsole.log(a); // ReferenceError</code></pre>" +
-      "<p class='ex-gotcha'>This is why <code>let</code>/<code>const</code> are safer than <code>var</code>.</p>",
+      "<p><b>Simple definition:</b> A block-scoped variable is only visible inside the surrounding braces.</p>" +
+      "<p><b>Technical definition:</b> <code>let</code> and <code>const</code> are scoped to the nearest block, statement, or control structure.</p>" +
+      "<p><b>Why it is used:</b> It reduces accidental variable reuse and makes code easier to reason about.</p>" +
+      "<p><b>When to use:</b> Prefer block scope for variables that should not escape a loop or conditional.</p>" +
+      "<p><b>When not to use:</b> Do not try to access a block-scoped variable outside its block; it will throw a ReferenceError.</p>" +
+      "<pre><code>{\n  let a = 1;\n}\nconsole.log(a); // ReferenceError</code></pre>" +
+      "<p class='ex-gotcha'>This is one of the main reasons modern JavaScript uses <code>let</code> and <code>const</code> instead of <code>var</code>.</p>",
 
     "Lexical scope":
-      "<p>Inner functions can access variables from the scope where they were <em>written</em> (not where they're called). This is the basis of closures.</p>" +
-      "<pre><code>function outer() {\n  const msg = \"hi\";\n  return () => msg; // sees msg lexically\n}</code></pre>",
+      "<p><b>Simple definition:</b> Lexical scope means inner functions can access variables from the place where they were written.</p>" +
+      "<p><b>Technical definition:</b> Scope is determined statically by the source structure, not dynamically by where a function is called.</p>" +
+      "<p><b>Why it is used:</b> It is the foundation of closures and higher-order functions.</p>" +
+      "<p><b>When to use:</b> Understand it when working with closures, callbacks, and factory functions in JavaScript.</p>" +
+      "<p><b>When not to use:</b> Do not confuse lexical scope with dynamic execution order; they are related but not the same concept.</p>" +
+      "<pre><code>function outer() {\n  const msg = 'hi';\n  return () => msg;\n}\nconsole.log(outer()()); // hi</code></pre>" +
+      "<p class='ex-gotcha'>Lexical scope is why a nested function can still access outer variables even after the outer function returns.</p>",
 
     "Hoisting":
-      "<p>Declarations are processed before code runs. <code>function</code> declarations are fully hoisted; <code>var</code> is hoisted as <code>undefined</code>; <code>let</code>/<code>const</code> are hoisted but uninitialized (TDZ).</p>" +
-      "<pre><code>console.log(a); // undefined\nvar a = 5;</code></pre>",
+      "<p><b>Simple definition:</b> Hoisting is JavaScript moving declarations to the top of their scope before execution.</p>" +
+      "<p><b>Technical definition:</b> The engine processes declarations before running the code, but initialization still happens in place.</p>" +
+      "<p><b>Why it is used:</b> It explains why function declarations are callable before they appear in code and why <code>var</code> feels weird.</p>" +
+      "<p><b>When to use:</b> Use this knowledge to explain confusing runtime behavior in interviews and debugging sessions.</p>" +
+      "<p><b>When not to use:</b> Do not assume all declarations behave the same. <code>var</code>, function declarations, and <code>let</code>/<code>const</code> each hoist differently.</p>" +
+      "<pre><code>console.log(a); // undefined\nvar a = 5;\nconsole.log(greet());\nfunction greet() { return 'hi'; }</code></pre>" +
+      "<p class='ex-gotcha'>The declaration is hoisted, but the value is not initialized until assignment time. This is why <code>var</code> starts as <code>undefined</code>.</p>",
 
     "Temporal Dead Zone":
-      "<p>The gap between a <code>let</code>/<code>const</code> being hoisted and its declaration line. Accessing it there throws.</p>" +
-      "<pre><code>console.log(b); // ReferenceError (TDZ)\nlet b = 5;</code></pre>" +
-      "<p class='ex-gotcha'>Unlike <code>var</code> (undefined), touching a <code>let</code> early is an error, not undefined.</p>",
+      "<p><b>Simple definition:</b> TDZ is the period before a <code>let</code> or <code>const</code> variable is initialized where it cannot be read.</p>" +
+      "<p><b>Technical definition:</b> The variable exists in the scope but cannot be accessed until execution reaches its declaration line.</p>" +
+      "<p><b>Why it is used:</b> It prevents accidental early access and catches bugs earlier than <code>var</code> does.</p>" +
+      "<p><b>When to use:</b> It matters when you encounter ReferenceErrors for variables before their declarations.</p>" +
+      "<p><b>When not to use:</b> Do not confuse TDZ with ordinary <code>undefined</code>. TDZ is an access error before initialization.</p>" +
+      "<pre><code>console.log(b); // ReferenceError\nlet b = 5;</code></pre>" +
+      "<p class='ex-gotcha'>TDZ is a key reason <code>let</code> and <code>const</code> are safer than <code>var</code>.</p>",
 
     "Execution context":
-      "<p>The environment a piece of code runs in — it holds the variable scope, the value of <code>this</code>, and a reference to the outer scope. A new one is created for every function call.</p>",
+      "<p><b>Simple definition:</b> Execution context is the environment in which code runs, including its scope and <code>this</code> value.</p>" +
+      "<p><b>Technical definition:</b> Each function call creates an execution context that contains local variables, arguments, and a link to the outer lexical environment.</p>" +
+      "<p><b>Why it is used:</b> It explains scope, <code>this</code>, and how function calls behave.</p>" +
+      "<p><b>When to use:</b> Use it when debugging <code>this</code> issues, closures, and stack behavior.</p>" +
+      "<p><b>When not to use:</b> Do not confuse it with the call stack. The execution context is the object-like runtime state; the call stack is the stack of those states.</p>" +
+      "<pre><code>function run() {\n  console.log(this);\n}\nrun();</code></pre>" +
+      "<p class='ex-gotcha'>Execution context differs by call site; this is why method calls and plain function calls behave differently.</p>",
 
     "Call stack":
-      "<p>The stack of execution contexts. Calling a function pushes a frame; returning pops it. When it overflows (e.g. infinite recursion) you get <code>Maximum call stack size exceeded</code>.</p>",
+      "<p><b>Simple definition:</b> The call stack is the ordered list of active function calls.</p>" +
+      "<p><b>Technical definition:</b> Each function call pushes a new frame onto the stack, and returning pops it off. A stack overflow happens when functions recurse without a base case.</p>" +
+      "<p><b>Why it is used:</b> It explains how JavaScript keeps track of nested execution and why recursion can crash.</p>" +
+      "<p><b>When to use:</b> Use it when analyzing recursion, async flow, or debugging stack overflow errors.</p>" +
+      "<p><b>When not to use:</b> Do not confuse it with the event loop or microtask queue; those are different runtime structures.</p>" +
+      "<pre><code>function recurse(n) {\n  if (n === 0) return;\n  recurse(n - 1);\n}\nrecurse(3);</code></pre>" +
+      "<p class='ex-gotcha'>If recursion has no base case, the call stack grows until the runtime throws a stack overflow error.</p>",
 
     "Strict mode":
-      "<p><code>\"use strict\"</code> opts into safer semantics: no accidental globals, throws on bad assignments, <code>this</code> is <code>undefined</code> in plain function calls.</p>" +
-      "<pre><code>\"use strict\";\nx = 5; // ReferenceError instead of a silent global</code></pre>" +
-      "<p class='ex-gotcha'>ES modules and class bodies are in strict mode automatically.</p>",
+      "<p><b>Simple definition:</b> Strict mode makes JavaScript stricter and catches common mistakes earlier.</p>" +
+      "<p><b>Technical definition:</b> Using <code>'use strict';</code> changes runtime semantics to prevent silent errors, reject insecure actions, and change <code>this</code> behavior in normal functions.</p>" +
+      "<p><b>Why it is used:</b> It reduces bugs, especially with accidental globals and unsafe code patterns.</p>" +
+      "<p><b>When to use:</b> Use it in scripts and modules where you want safer behavior and fewer silent failures.</p>" +
+      "<p><b>When not to use:</b> You usually do not need to add it manually inside modern ES modules, because modules are already strict by default.</p>" +
+      "<pre><code>\"use strict\";\nfunction f() {\n  this.x = 1;\n}\n// in strict mode, this is undefined in a plain call</code></pre>" +
+      "<p class='ex-gotcha'>Strict mode turns silent errors into immediate exceptions, which is usually a good thing during debugging.</p>",
   },
+
+  /* ------------------------------------------------------------------ */
 
   /* ------------------------------------------------------------------ */
   "Functions": {
     "Function basics (overview)":
       "<p><b>Simple definition:</b> A function is a reusable block of code that performs a task and can be called repeatedly.</p>" +
       "<p><b>Technical definition:</b> In JavaScript, a function is a callable value with its own execution context, parameters, local scope, and optional return value.</p>" +
-      "<p><b>Why it is used:</b> Functions let you avoid repeating code, organize behavior into meaningful units, and pass logic around as values.</p>" +
-      "<p><b>When to use:</b> Use a function when a task will be run more than once, when logic should be grouped, or when you need callbacks or reusable behavior.</p>" +
-      "<p><b>When not to use:</b> Do not create a function for one-off trivial code unless it improves clarity; also avoid mixing unrelated logic inside a single large function.</p>" +
-      "<p><b>How it works internally:</b> When a function is called, JavaScript creates a new execution context, assigns arguments to parameters, creates a local scope, and pushes that frame onto the call stack. When the function returns, that frame is popped.</p>" +
+      "<p><b>Why it is used:</b> Functions avoid duplicate code, let you group behavior, and make logic reusable.</p>" +
+      "<p><b>When to use:</b> Use functions when a task will run more than once or when logic needs to be isolated and named.</p>" +
+      "<p><b>When not to use:</b> Do not create a small function for a single line of code unless it improves clarity and reuse.</p>" +
+      "<p><b>How it works internally:</b> Each function call creates a new execution context, assigns arguments to parameters, runs the body, and then removes the frame from the call stack.</p>" +
       "<pre><code>function greet(name) {\n  return `Hello, ${name}!`;\n}\nconsole.log(greet(\"Ada\")); // Hello, Ada!</code></pre>" +
-      "<p class='ex-gotcha'>A function is not magic — it's just a reusable unit of work that JavaScript executes on demand. The real difference between declarations, expressions, and arrows is mostly <em>how it is created</em> and <em>what happens to <code>this</code></em>.</p>",
+      "<p class='ex-gotcha'>Functions are not magic; they are just reusable units of work. The real difference between declaration, expression, and arrow syntax is mostly about hoisting and <code>this</code>.</p>",
 
     "Function declarations":
-      "<p>A named function created with the <code>function</code> keyword. Fully <b>hoisted</b> — callable before its line.</p>" +
-      "<pre><code>function greet(name) {\n  return `Hello, ${name}!`;\n}</code></pre>",
+      "<p><b>Simple definition:</b> A function declaration is a named function created with the <code>function</code> keyword.</p>" +
+      "<p><b>Technical definition:</b> It is hoisted and available in its scope before the line where it is written.</p>" +
+      "<p><b>Why it is used:</b> Great for named utility logic and code that should be called from multiple places.</p>" +
+      "<p><b>When not to use:</b> Avoid it when you want a function as a value in a variable, or when arrow functions are clearer.</p>" +
+      "<pre><code>function greet(name) {\n  return `Hello, ${name}!`;\n}\nconsole.log(greet(\"Ada\"));</code></pre>" +
+      "<p class='ex-gotcha'>Function declarations are hoisted, so they can be called before they appear in the file. This convenience is a classic interview topic.</p>",
 
     "Function expressions":
-      "<p>A function assigned to a variable (often anonymous). <b>Not hoisted</b> — usable only after its line.</p>" +
-      "<pre><code>const square = function (n) { return n * n; };</code></pre>",
+      "<p><b>Simple definition:</b> A function expression assigns a function to a variable.</p>" +
+      "<p><b>Technical definition:</b> This creates a function as a value; it is not treated the same as a hoisted declaration.</p>" +
+      "<p><b>Why it is used:</b> It is useful when functions should be passed around or created dynamically.</p>" +
+      "<p><b>When not to use:</b> Do not call the function before the assignment is executed.</p>" +
+      "<pre><code>const square = function (n) {\n  return n * n;\n};\nconsole.log(square(4)); // 16</code></pre>" +
+      "<p class='ex-gotcha'>Calling a function expression before initialization throws a ReferenceError. That is why interviews often compare it with function declarations.</p>",
 
     "Arrow functions":
-      "<p>Short ES6 syntax. No own <code>this</code> (inherits from surrounding scope), no <code>arguments</code>, can't be a constructor.</p>" +
-      "<pre><code>const double = n => n * 2;\nconst makeUser = id => ({ id }); // object needs ()</code></pre>" +
-      "<p class='ex-gotcha'><code>id => { id }</code> returns undefined (that's a block). Wrap objects in <code>()</code>.</p>",
+      "<p><b>Simple definition:</b> Arrow functions are a shorter way to write function expressions.</p>" +
+      "<p><b>Technical definition:</b> They inherit <code>this</code> from the surrounding scope and do not have their own <code>arguments</code>.</p>" +
+      "<p><b>Why it is used:</b> They are ideal for concise callbacks and array methods.</p>" +
+      "<p><b>When not to use:</b> Avoid them when you need your own <code>this</code>, a constructor, or a prototype method.</p>" +
+      "<pre><code>const double = n => n * 2;\nconst makeUser = id => ({ id });\nconsole.log(double(5)); // 10</code></pre>" +
+      "<p class='ex-gotcha'>An arrow with braces is a block, not an implicit return. Use <code>() => ({ id })</code> to return an object.</p>",
 
     "Parameters and arguments":
-      "<p><b>Parameters</b> = names in the definition; <b>arguments</b> = values passed in. Missing args are <code>undefined</code>.</p>" +
-      "<pre><code>function fullName(first, last) { return `${first} ${last}`; }\nfullName(\"Ada\", \"Lovelace\");</code></pre>" +
-      "<p class='ex-gotcha'>The <code>arguments</code> object is array-<em>like</em>, not a real array (arrows lack it entirely).</p>",
+      "<p><b>Simple definition:</b> Parameters are names in the function definition; arguments are values passed at call time.</p>" +
+      "<p><b>Technical definition:</b> Parameters are local variables created by the function call; arguments are the actual values supplied to that call.</p>" +
+      "<p><b>Why it is used:</b> They let the same function behave differently with different inputs.</p>" +
+      "<p><b>When not to use:</b> Missing or unexpected arguments are common sources of bugs unless validated.</p>" +
+      "<pre><code>function fullName(first, last) {\n  return `${first} ${last}`;\n}\nconsole.log(fullName(\"Ada\", \"Lovelace\"));</code></pre>" +
+      "<p class='ex-gotcha'>Missing arguments become <code>undefined</code>. The <code>arguments</code> object is array-like, not a real array.</p>",
 
     "Default parameters":
-      "<p>A fallback value used when the argument is missing or <code>undefined</code>.</p>" +
-      "<pre><code>function multiply(a, b = 2) { return a * b; }\nmultiply(5); // 10</code></pre>" +
-      "<p class='ex-gotcha'>Triggers on <code>undefined</code> but not <code>null</code> — <code>multiply(5, null)</code> is 0.</p>",
+      "<p><b>Simple definition:</b> Default parameters assign a fallback value when an argument is missing or <code>undefined</code>.</p>" +
+      "<p><b>Technical definition:</b> They are evaluated at call time and provide a safer default input shape without repetitive guards.</p>" +
+      "<p><b>Why it is used:</b> They simplify function APIs and reduce null/undefined checks.</p>" +
+      "<p><b>When not to use:</b> Defaults do not apply to explicit <code>null</code> values, so handle those separately when needed.</p>" +
+      "<pre><code>function multiply(a, b = 2) {\n  return a * b;\n}\nconsole.log(multiply(5)); // 10</code></pre>" +
+      "<p class='ex-gotcha'>Passing <code>null</code> does not trigger the default. It is treated as a real value, not an omitted argument.</p>",
 
     "Rest parameters":
-      "<p>Collects any number of remaining args into a <b>real array</b> with <code>...</code>. Must be last.</p>" +
-      "<pre><code>function sum(...nums) { return nums.reduce((t,n)=>t+n, 0); }\nsum(1,2,3,4); // 10</code></pre>",
+      "<p><b>Simple definition:</b> Rest parameters collect all remaining arguments into an array.</p>" +
+      "<p><b>Technical definition:</b> A rest parameter uses <code>...</code> in the function definition and gathers extra arguments into a real array.</p>" +
+      "<p><b>Why it is used:</b> It is ideal for functions accepting unknown numbers of values, like math or logging helpers.</p>" +
+      "<p><b>When not to use:</b> Only one rest parameter is allowed, and it must be the last parameter.</p>" +
+      "<pre><code>function sum(...numbers) {\n  return numbers.reduce((total, n) => total + n, 0);\n}\nconsole.log(sum(1, 2, 3, 4)); // 10</code></pre>" +
+      "<p class='ex-gotcha'>Rest is different from the <code>arguments</code> object: the rest parameter is a true array with array methods available.</p>",
 
     "Spread syntax":
-      "<p>Same <code>...</code>, but it <em>expands</em> an array/object into pieces (rest collects, spread expands).</p>" +
-      "<pre><code>[...[1,2], ...[3,4]]   // [1,2,3,4]\n{ ...user, age: 30 }   // copy + override\nMath.max(...[4,9,2])   // 9</code></pre>" +
-      "<p class='ex-gotcha'>Spread makes a <b>shallow</b> copy — nested objects stay shared.</p>",
+      "<p><b>Simple definition:</b> Spread expands an array or object into smaller pieces.</p>" +
+      "<p><b>Technical definition:</b> Spread uses <code>...</code> in a call or literal to expand collections into individual values.</p>" +
+      "<p><b>Why it is used:</b> It is used for copying arrays, merging objects, and passing multiple values to functions.</p>" +
+      "<p><b>When not to use:</b> Remember it is shallow; nested objects are still shared by reference.</p>" +
+      "<pre><code>const merged = [...[1, 2], ...[3, 4]];\nconst user = { name: 'Ada' };\nconst copy = { ...user, age: 30 };\nconsole.log(merged); // [1, 2, 3, 4]</code></pre>" +
+      "<p class='ex-gotcha'>Rest collects values; spread expands them. The same syntax behaves differently depending on context.</p>",
 
     "Higher-order functions":
-      "<p>A function that takes and/or returns another function. <code>map</code>, <code>filter</code>, <code>reduce</code>, <code>setTimeout</code> are examples.</p>" +
-      "<pre><code>const applyTwice = (fn, x) => fn(fn(x));\napplyTwice(n => n + 3, 0); // 6</code></pre>",
+      "<p><b>Simple definition:</b> A higher-order function either takes a function as an argument or returns one.</p>" +
+      "<p><b>Technical definition:</b> It abstracts behavior and is central to functional programming techniques in JavaScript.</p>" +
+      "<p><b>Why it is used:</b> APIs like <code>map</code>, <code>filter</code>, and <code>reduce</code> are built around this concept.</p>" +
+      "<p><b>When not to use:</b> Do not make every function higher-order; only use it when abstraction adds clarity.</p>" +
+      "<pre><code>function applyTwice(fn, value) {\n  return fn(fn(value));\n}\nconsole.log(applyTwice(n => n + 3, 0)); // 6</code></pre>" +
+      "<p class='ex-gotcha'>Higher-order functions are powerful, but too much abstraction can make code harder to follow.</p>",
 
     "Callback functions":
-      "<p>A function passed into another to be called later — the basis of events, timers, and async code.</p>" +
-      "<pre><code>[1,2,3].forEach(n => console.log(n));\nsetTimeout(() => console.log(\"done\"), 1000);</code></pre>" +
-      "<p class='ex-gotcha'>Deeply nested callbacks = \"callback hell\"; promises/async-await fix it.</p>",
+      "<p><b>Simple definition:</b> A callback is a function passed into another function to be called later.</p>" +
+      "<p><b>Technical definition:</b> The receiving function decides when to call the callback and with what arguments.</p>" +
+      "<p><b>Why it is used:</b> Events, timers, promises, and array methods all rely on callbacks.</p>" +
+      "<p><b>When not to use:</b> Deeply nested callbacks are hard to read; this is why promises and async/await became popular.</p>" +
+      "<pre><code>[1, 2, 3].forEach(n => console.log(n));\nsetTimeout(() => console.log(\"done\"), 1000);</code></pre>" +
+      "<p class='ex-gotcha'>Callbacks are the basis of async JavaScript, but callback-heavy code can quickly become difficult to debug.</p>",
 
     "First-class functions":
-      "<p>Functions are <b>values</b> — store them in variables/arrays, pass them, return them. This is what makes callbacks and HOFs possible.</p>" +
-      "<pre><code>const list = [n => n + 1, n => n * 2];\nlist.map(fn => fn(3)); // [4, 6]</code></pre>",
+      "<p><b>Simple definition:</b> First-class functions are functions treated like values.</p>" +
+      "<p><b>Technical definition:</b> In JavaScript, functions can be stored in variables, passed to other functions, and returned from functions.</p>" +
+      "<p><b>Why it is used:</b> This is the foundation for callbacks, higher-order functions, and functional design.</p>" +
+      "<p><b>When not to use:</b> You do not need to pass functions around everywhere; use the feature when it makes the code clearer.</p>" +
+      "<pre><code>const list = [n => n + 1, n => n * 2];\nconsole.log(list.map(fn => fn(3))); // [4, 6]</code></pre>" +
+      "<p class='ex-gotcha'>This capability is one of the biggest reasons JavaScript is so flexible and expressive.</p>",
 
     "Closures":
-      "<p>A function <b>remembers variables</b> from where it was created, even after that outer function returned.</p>" +
-      "<pre><code>function makeCounter() {\n  let count = 0;\n  return () => ++count;\n}\nconst c = makeCounter(); c(); c(); // 1, 2</code></pre>" +
-      "<p class='ex-gotcha'>Loop bug: <code>var</code> shares one binding (3,3,3); <code>let</code> makes a new one each pass (0,1,2).</p>",
+      "<p><b>Simple definition:</b> A closure is a function that remembers variables from the scope where it was created.</p>" +
+      "<p><b>Technical definition:</b> A closure keeps access to its lexical environment even after the outer function has returned.</p>" +
+      "<p><b>Why it is used:</b> Closures power private state, async behavior, and factory functions.</p>" +
+      "<p><b>When not to use:</b> Watch for loop bugs when using <code>var</code> inside asynchronous callbacks.</p>" +
+      "<pre><code>function makeCounter() {\n  let count = 0;\n  return () => ++count;\n}\nconst c = makeCounter();\nconsole.log(c(), c()); // 1 2</code></pre>" +
+      "<p class='ex-gotcha'>Closures are powerful but can create stale references if variables are shared unintentionally.</p>",
 
     "IIFE":
-      "<p>Immediately Invoked Function Expression — runs the instant it's defined, creating a private scope.</p>" +
-      "<pre><code>(function () { /* runs now */ })();\n(() => { const secret = 42; })();</code></pre>" +
-      "<p class='ex-gotcha'>Needs the wrapping <code>()</code>. Mostly replaced by ES modules today.</p>",
+      "<p><b>Simple definition:</b> An IIFE runs immediately after it is defined.</p>" +
+      "<p><b>Technical definition:</b> An Immediately Invoked Function Expression creates a scope boundary and executes once on definition.</p>" +
+      "<p><b>Why it is used:</b> It was historically used to isolate state from the global scope.</p>" +
+      "<p><b>When not to use:</b> Modern modules and block scope usually replace it, so it is not required in most modern code.</p>" +
+      "<pre><code>(function () {\n  const secret = 42;\n  console.log(secret);\n})();</code></pre>" +
+      "<p class='ex-gotcha'>A bare function expression must be wrapped in parentheses to make the syntax valid.</p>",
 
     "Pure vs impure functions":
-      "<p><b>Pure:</b> same input → same output, no side effects. <b>Impure:</b> depends on or changes outside state.</p>" +
-      "<pre><code>const add = (a,b) => a + b;        // pure\nlet t = 0; const addT = n => t += n; // impure</code></pre>" +
-      "<p class='ex-gotcha'>Pure functions are predictable, testable, and cacheable — core to React.</p>",
+      "<p><b>Simple definition:</b> Pure functions always return the same result for the same input and do not change outside state.</p>" +
+      "<p><b>Technical definition:</b> Pure functions have no side effects and depend only on their arguments.</p>" +
+      "<p><b>Why it is used:</b> They are easier to test, reason about, and optimize.</p>" +
+      "<p><b>When not to use:</b> Impure functions are necessary when interacting with the DOM, timers, APIs, or global state.</p>" +
+      "<pre><code>const add = (a, b) => a + b;\nlet total = 0;\nconst addToTotal = n => (total += n);</code></pre>" +
+      "<p class='ex-gotcha'>Pure functions are the foundation of many React patterns and functional programming ideas.</p>",
 
     "Function composition":
-      "<p>Combining small functions so the output of one feeds the next.</p>" +
-      "<pre><code>const compose = (f, g) => x => f(g(x));\nconst shout = compose(s => s + \"!\", s => s.toUpperCase());\nshout(\"hi\"); // \"HI!\"</code></pre>",
+      "<p><b>Simple definition:</b> Composition means combining small functions so the result of one becomes the input of another.</p>" +
+      "<p><b>Technical definition:</b> It creates pipelines of transformations that are easy to reason about in small, readable steps.</p>" +
+      "<p><b>Why it is used:</b> It is useful when code naturally flows through a sequence of transforms.</p>" +
+      "<p><b>When not to use:</b> Avoid composition when a simple step-by-step function body is clearer.</p>" +
+      "<pre><code>const compose = (f, g) => x => f(g(x));\nconst shout = compose(s => s + \"!\", s => s.toUpperCase());\nconsole.log(shout(\"hi\")); // HI!</code></pre>" +
+      "<p class='ex-gotcha'>Composing too many small functions can become harder to debug than a plain function body.</p>",
 
     "Currying concept":
-      "<p>Turning a multi-arg function into a chain of single-arg functions.</p>" +
-      "<pre><code>const add = a => b => c => a + b + c;\nadd(1)(2)(3); // 6</code></pre>",
+      "<p><b>Simple definition:</b> Currying turns one function with many arguments into a series of single-argument functions.</p>" +
+      "<p><b>Technical definition:</b> Each call returns another function until all arguments have been supplied.</p>" +
+      "<p><b>Why it is used:</b> It helps create reusable specialized functions by fixing arguments gradually.</p>" +
+      "<p><b>When not to use:</b> Use it when argument flow is naturally stepwise; otherwise it may feel overengineered.</p>" +
+      "<pre><code>const add = a => b => c => a + b + c;\nconsole.log(add(1)(2)(3)); // 6</code></pre>" +
+      "<p class='ex-gotcha'>Currying is different from partial application. Currying fixes arguments one at a time; partial application can fix multiple arguments at once.</p>",
 
     "Partial application concept":
-      "<p>Pre-filling <em>some</em> arguments now, supplying the rest later — producing a more specific reusable function.</p>" +
-      "<pre><code>const add = (a, b) => a + b;\nconst add10 = add.bind(null, 10);\nadd10(5); // 15</code></pre>" +
-      "<p class='ex-gotcha'>Currying = one arg at a time; partial application = fix any number at once.</p>",
+      "<p><b>Simple definition:</b> Partial application pre-fills some arguments so you can call the function later with the remaining ones.</p>" +
+      "<p><b>Technical definition:</b> It creates a new function with some arguments already bound, while leaving the rest open.</p>" +
+      "<p><b>Why it is used:</b> It helps create reusable helpers with fewer repetitive wrappers.</p>" +
+      "<p><b>When not to use:</b> Avoid it when a direct wrapper function is more readable than an abstract pattern.</p>" +
+      "<pre><code>const add = (a, b) => a + b;\nconst add10 = b => add(10, b);\nconsole.log(add10(5)); // 15</code></pre>" +
+      "<p class='ex-gotcha'>Partial application is a practical pattern in libraries and APIs, but it should not hide obvious code behind unnecessary abstraction.</p>",
   },
 
 };

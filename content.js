@@ -88,6 +88,16 @@ window.EXPLANATIONS = {
 
   /* ------------------------------------------------------------------ */
   "Functions": {
+    "Function basics (overview)":
+      "<p><b>Simple definition:</b> A function is a reusable block of code that performs a task and can be called repeatedly.</p>" +
+      "<p><b>Technical definition:</b> In JavaScript, a function is a callable value with its own execution context, parameters, local scope, and optional return value.</p>" +
+      "<p><b>Why it is used:</b> Functions let you avoid repeating code, organize behavior into meaningful units, and pass logic around as values.</p>" +
+      "<p><b>When to use:</b> Use a function when a task will be run more than once, when logic should be grouped, or when you need callbacks or reusable behavior.</p>" +
+      "<p><b>When not to use:</b> Do not create a function for one-off trivial code unless it improves clarity; also avoid mixing unrelated logic inside a single large function.</p>" +
+      "<p><b>How it works internally:</b> When a function is called, JavaScript creates a new execution context, assigns arguments to parameters, creates a local scope, and pushes that frame onto the call stack. When the function returns, that frame is popped.</p>" +
+      "<pre><code>function greet(name) {\n  return `Hello, ${name}!`;\n}\nconsole.log(greet(\"Ada\")); // Hello, Ada!</code></pre>" +
+      "<p class='ex-gotcha'>A function is not magic — it's just a reusable unit of work that JavaScript executes on demand. The real difference between declarations, expressions, and arrows is mostly <em>how it is created</em> and <em>what happens to <code>this</code></em>.</p>",
+
     "Function declarations":
       "<p>A named function created with the <code>function</code> keyword. Fully <b>hoisted</b> — callable before its line.</p>" +
       "<pre><code>function greet(name) {\n  return `Hello, ${name}!`;\n}</code></pre>",

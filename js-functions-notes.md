@@ -3,6 +3,41 @@
 Study each section in order. Read the concept, the example, and the "Gotcha" line.
 Coding practice comes separately in chat — this file is your reference only.
 
+## 00. Why functions matter
+
+A function is a reusable block of code that performs a task and can be called again.
+
+- Simple definition: A function is a named action you can run whenever you need it.
+- Technical definition: In JavaScript, functions are first-class values. They are callable objects with their own execution context, local scope, parameters, and optional return value.
+- Why it is used: It avoids duplicate code, groups logic, and makes behavior reusable.
+- When to use it: Use functions for calculations, validation, event handlers, API calls, and code that should run multiple times with different inputs.
+- When not to use it: Avoid creating a function for one-off tiny logic that makes the code harder to read, and avoid mixing unrelated responsibilities inside one large function.
+
+### How a function runs internally
+
+When a function is called:
+
+1. JavaScript creates a new execution context.
+2. The arguments are assigned to the parameters.
+3. A new local scope is created for variables used inside the function.
+4. The function body runs line by line.
+5. If a return value exists, it is sent back to the caller.
+6. The function frame is removed from the call stack.
+
+```javascript
+function greet(name) {
+  return `Hello, ${name}!`;
+}
+
+console.log(greet("Ada")); // Hello, Ada!
+```
+
+### Interview-level summary
+
+- A function is the main building block of reusable logic in JavaScript.
+- Different function forms exist because they differ in hoisting, `this`, and creation style.
+- Understanding `this`, closures, higher-order functions, and callbacks is what separates basic syntax from real JavaScript fluency.
+
 ---
 
 ## 01. Function Declarations

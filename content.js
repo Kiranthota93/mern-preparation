@@ -779,18 +779,23 @@ window.EXPLANATIONS = {
   /* ------------------------------------------------------------------ */
   "this, objects & prototypes": {
     "this":
-      "<p><b>Simple meaning:</b> <code>this</code> is a keyword that points to the object a function is currently working on.</p>" +
-      "<p><b>Think of it as:</b> a floating pronoun — like \"I\" in a spoken sentence, the word itself doesn't say who's speaking; you have to look at who's actually talking (how the function was called) to know who \"I\" refers to.</p>" +
-      "<p><b>Why it exists:</b> it lets one method work for many objects. A single <code>greet()</code> method can say the right name for every user, because <code>this</code> changes per call instead of being hardcoded.</p>" +
-      "<p><b>How it works:</b> on every call JavaScript asks one question: what is to the <em>left of the dot</em>? That object becomes <code>this</code>. If there is no dot, there is no owner, and <code>this</code> falls back to the global object (or <code>undefined</code> in strict mode).</p>" +
-      "<pre><code>const user = {\n  name: 'Ada',\n  greet() {\n    return 'Hi, ' + this.name;\n  }\n};\n\nconsole.log(user.greet()); // 'Hi, Ada'  ← 'user' is left of the dot</code></pre>" +
-      "<p><b>What happens:</b> when <code>user.greet()</code> runs, JavaScript looks at the call site and sees <code>user</code> sitting directly before the dot — so for this one call, <code>this</code> is bound to <code>user</code>.</p>" +
-      "<p><b>Result:</b> <code>this.name</code> resolves to <code>'Ada'</code>, so <code>greet()</code> returns <code>'Hi, Ada'</code> — the string, not a mutation of anything.</p>" +
-      "<p><b>Important rule:</b> <code>this</code> is set at <b>call time</b>, not at definition time — the exact same function can have four different <code>this</code> values depending on how it's invoked.</p>" +
-      "<p><b>Don't confuse it with:</b> lexical scope — ordinary variables are resolved by where code is <em>written</em>; <code>this</code> is resolved by how code is <em>called</em>. They work by opposite rules.</p>" +
-      "<p><b>When to use:</b> inside object methods, classes, and constructor functions where the code must refer to the instance it belongs to.</p>" +
-      "<p><b>When not to use:</b> avoid it in standalone utility functions — a plain function that takes its data as an argument is simpler and safer than one that silently depends on how it's called.</p>" +
-      "<p class='ex-gotcha'>The single most useful rule: <code>this</code> is set at <b>call time</b>, not at definition time. The same function can have four different <code>this</code> values depending on how you invoke it.</p>",
+      "<p><b>Simple meaning:</b> <code>this</code> is a special keyword that refers to the object associated with the current function call. It is not fixed when the function is created — its value is decided when the function is invoked.</p>" +
+      "<p><b>Think of it as:</b> the word \"I\". If Alice says \"I am happy,\" I means Alice; if Bob says it, I means Bob. The word never changes — the speaker changes. <code>this</code> works the same way: the function is the sentence, the caller is the speaker.</p>" +
+      "<p><b>Why it exists:</b> without <code>this</code>, every object would need its own separate copy of each method. With <code>this</code>, one function works for every object, because <code>this</code> changes per call instead of being hardcoded.</p>" +
+      "<pre><code>const user = {\n  name: 'Ada',\n  greet() { return 'Hi ' + this.name; }\n};\nconst admin = { name: 'John', greet: user.greet };\n\nconsole.log(user.greet());  // 'Hi Ada'\nconsole.log(admin.greet()); // 'Hi John'  ← same function, different this</code></pre>" +
+      "<p><b>The real rule:</b> <code>this</code> is determined by <em>how a function is called</em> — not by where it's written, and not by \"what's left of the dot.\" That shortcut only covers plain method calls; it breaks for <code>call</code>/<code>apply</code>/<code>bind</code>, constructors, callbacks, and arrow functions, all of which have no dot at the call site at all.</p>" +
+      "<table class='ex-table'><tr><th>Call</th><th><code>this</code> value</th></tr>" +
+      "<tr><td><code>user.greet()</code></td><td><code>user</code></td></tr>" +
+      "<tr><td><code>admin.greet()</code></td><td><code>admin</code></td></tr>" +
+      "<tr><td><code>greet.call(user)</code></td><td><code>user</code></td></tr>" +
+      "<tr><td><code>new Person()</code></td><td>the newly created object</td></tr></table>" +
+      "<p><b>Bare function calls:</b> <code>function show(){ console.log(this); } show();</code> — the result depends on strict mode. In a non-strict script, <code>this === globalThis</code>. In strict mode (and JS modules are strict by default), <code>this === undefined</code>. So in real projects, a standalone function call usually gets <code>undefined</code>, not the global object.</p>" +
+      "<p><b>One dangerous mistake:</b> pulling a method off its object breaks the binding. <code>const fn = user.greet; fn();</code> looks the same as calling the method, but the call is now <code>fn()</code> with no calling object — the function never \"remembered\" <code>user</code>; only the original call site supplied it. In strict mode this throws when <code>this.name</code> is accessed.</p>" +
+      "<p><b>Don't confuse it with:</b> lexical scope — ordinary variables are resolved by where code is <em>written</em>; <code>this</code> is resolved by how code is <em>called</em>. They are completely independent mechanisms, even inside the same method.</p>" +
+      "<p><b>Arrow functions are the exception:</b> they don't create their own <code>this</code> at call time — they inherit it lexically from the surrounding scope, so <code>call</code>/<code>apply</code>/<code>bind</code> can't change it. That's a separate rule you'll study on its own.</p>" +
+      "<p><b>When to use:</b> inside object methods, classes, and constructor functions where the code must refer to the current instance.</p>" +
+      "<p><b>When not to use:</b> avoid it in standalone utility functions — a plain function that takes its data as arguments is easier to test and doesn't depend on how it's invoked.</p>" +
+      "<p class='ex-gotcha'>A regular function does not own a <code>this</code> — each invocation gives it one. <code>this</code> is decided at call time, not definition time.</p>",
 
     "this in regular functions":
       "<p><b>Simple meaning:</b> In a normal function, <code>this</code> depends entirely on how the function was called — not on where or how it was defined.</p>" +

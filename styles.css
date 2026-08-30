@@ -506,6 +506,14 @@
   .nb-explain code { font-family: var(--nb-mono); font-size: .8em; background: var(--nb-code-bg); padding: 2px 6px; border-radius: 6px; color: var(--nb-ink); }
   .nb-explain pre { background: var(--nb-code-bg); border: 1px solid var(--nb-line); border-radius: 12px; padding: 15px 17px; overflow-x: auto; margin: 14px 0; max-width: 90ch; }
   .nb-explain pre code { background: none; padding: 0; font-size: 13px; line-height: 1.6; white-space: pre; color: var(--nb-ink); }
+  .nb-explain .ex-table {
+    border-collapse: collapse; margin: 14px 0; max-width: 90ch; font-size: 15px;
+  }
+  .nb-explain .ex-table th, .nb-explain .ex-table td {
+    border: 1px solid var(--nb-line); padding: 8px 14px; text-align: left; color: var(--nb-ink);
+  }
+  .nb-explain .ex-table th { color: var(--nb-ink-soft); font-weight: 600; font-family: var(--nb-mono); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+  .nb-explain .ex-table td code, .nb-explain .ex-table th code { font-family: var(--nb-mono); font-size: .85em; background: var(--nb-code-bg); padding: 2px 6px; border-radius: 6px; }
   .nb-explain .ex-gotcha {
     background: var(--nb-accent-soft); border-radius: 10px; padding: 12px 15px;
     color: var(--nb-ink); margin: 14px 0; max-width: 90ch; font-size: 15px; line-height: 1.55;

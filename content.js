@@ -10,167 +10,252 @@ window.EXPLANATIONS = {
   /* ------------------------------------------------------------------ */
   "JavaScript fundamentals": {
     "JavaScript fundamentals overview":
-      "<p><b>Simple definition:</b> JavaScript fundamentals are the core building blocks: variables, values, types, operators, scope, and control flow.</p>" +
-      "<p><b>Technical definition:</b> These concepts define how JavaScript stores data, evaluates expressions, manages scope and hoisting, and controls execution.</p>" +
-      "<p><b>Why it is used:</b> Without these basics, later topics such as functions, arrays, objects, async code, and React become much harder to reason about.</p>" +
-      "<p><b>When to use:</b> Use these concepts whenever you read or write JavaScript, especially when choosing declarations, comparing values, or debugging logic.</p>" +
-      "<p><b>When not to use:</b> Do not rely on loose equality or <code>var</code> when a safer pattern exists. Do not assume every value behaves the same under coercion.</p>" +
-      "<p><b>How it works internally:</b> JavaScript creates execution contexts, resolves variable names through scope chains, and evaluates expressions using coercion rules when needed.</p>" +
+      "<p><b>Simple meaning:</b> JavaScript fundamentals are the core building blocks: variables, values, types, operators, scope, and control flow.</p>" +
+      "<p><b>Think of it as:</b> the alphabet and grammar of the language — before you can write sentences (functions, apps), you need to know how words (values), spelling rules (types), and sentence structure (scope, control flow) work.</p>" +
+      "<p><b>Why it exists:</b> without a shared, well-defined set of rules for storing data and evaluating expressions, no two lines of code could reliably talk to each other.</p>" +
+      "<p><b>How it works:</b> JavaScript creates execution contexts, resolves variable names by walking outward through scope chains, and evaluates expressions using coercion rules when types don't match.</p>" +
       "<pre><code>let count = 0;\nif (count === 0) {\n  console.log('start');\n}</code></pre>" +
+      "<p><b>What happens:</b> <code>count</code> is declared and assigned <code>0</code>. The <code>if</code> condition evaluates <code>count === 0</code> — a strict comparison, no coercion — which is <code>true</code>, so the block runs.</p>" +
+      "<p><b>Result:</b> logs <code>'start'</code>. Nothing is returned — this is a statement, not an expression.</p>" +
+      "<p><b>Important rule:</b> every later topic (functions, arrays, objects, async, React) is built on these fundamentals — a shaky grasp here causes confusing bugs everywhere else.</p>" +
+      "<p><b>When to use:</b> constantly — every line of JavaScript you write or read touches variables, types, scope, or control flow.</p>" +
+      "<p><b>When not to use:</b> n/a — this isn't an optional tool, it's the baseline. The judgment calls are in the specific choices (which declaration, which comparison), covered by each entry below.</p>" +
       "<p class='ex-gotcha'>These basics are the difference between code that works by accident and code you can debug with confidence.</p>",
 
     "var, let, const":
-      "<p><b>Simple definition:</b> These are three ways to declare variables. They differ in scope and whether they can be reassigned.</p>" +
-      "<p><b>Technical definition:</b> <code>var</code> is function-scoped, <code>let</code> is block-scoped and reassignable, and <code>const</code> is block-scoped and immutable by reassignment.</p>" +
-      "<p><b>Why it is used:</b> They control lifetime and visibility of values. Modern JavaScript prefers <code>const</code> by default and <code>let</code> when reassignment is required.</p>" +
-      "<p><b>When to use:</b> Use <code>const</code> for stable values, <code>let</code> for counters and toggles, and avoid <code>var</code> in modern code.</p>" +
-      "<p><b>When not to use:</b> Do not use <code>var</code> for new code because it ignores block boundaries and creates confusing bugs.</p>" +
-      "<pre><code>var a = 1;   // function-scoped, old style\nlet b = 2;   // block-scoped, reassignable\nconst c = 3; // block-scoped, no reassign</code></pre>" +
+      "<p><b>Simple meaning:</b> Three ways to declare a variable. They differ in scope (where it's visible) and mutability (whether you can reassign it).</p>" +
+      "<p><b>Think of it as:</b> three containers with different rules — <code>var</code> is a leaky box that spills past the room it's in, <code>let</code> is a sealed box you can swap the contents of, <code>const</code> is a sealed, labeled box you can't swap.</p>" +
+      "<p><b>Why it exists:</b> early JavaScript only had <code>var</code>, and its function-only scoping caused real bugs (see \"Function scope\"). ES6 added <code>let</code>/<code>const</code> specifically to fix that.</p>" +
+      "<p><b>How it works:</b> <code>var</code> is scoped to the nearest function (or global, if outside any function) and is hoisted as <code>undefined</code>. <code>let</code>/<code>const</code> are scoped to the nearest <code>{ }</code> block and live in a Temporal Dead Zone until their line runs.</p>" +
+      "<pre><code>var a = 1;   // function-scoped, old style\nlet b = 2;   // block-scoped, reassignable\nconst c = 3; // block-scoped, no reassign\n\nconst arr = [1];\narr.push(2); // allowed — mutating, not reassigning\nconsole.log(arr); // [1, 2]</code></pre>" +
+      "<p><b>What happens:</b> the first three lines declare one variable each, in three different ways. The last three show that <code>const</code> blocks <em>reassigning</em> <code>arr</code> to a new value, but does nothing to stop you mutating the array <code>arr</code> already points to.</p>" +
+      "<p><b>Result:</b> <code>arr</code> becomes <code>[1, 2]</code> — the push succeeded because <code>const</code> only locks the <em>binding</em> (the name-to-value link), not the value's contents.</p>" +
+      "<p><b>Important rule:</b> <code>const</code> means \"this name will always point to the same thing\" — not \"this value can never change.\"</p>" +
+      "<p><b>Don't confuse it with:</b> immutability. A frozen object (<code>Object.freeze</code>) is actually protected from change; a <code>const</code> object is not.</p>" +
+      "<p><b>When to use:</b> default to <code>const</code>. Use <code>let</code> only when you know the variable must be reassigned (loop counters, accumulators, toggles).</p>" +
+      "<p><b>When not to use:</b> avoid <code>var</code> in new code — its function-scoping and silent redeclaration allow bugs that <code>let</code>/<code>const</code> catch immediately.</p>" +
       "<p class='ex-gotcha'>Using <code>const</code> does not mean the value is frozen. <code>const arr = [1]; arr.push(2)</code> works because the array is mutated, not reassigned.</p>",
 
     "Primitive vs reference types":
-      "<p><b>Simple definition:</b> Primitive values are copied by value, while objects and arrays are shared by reference.</p>" +
-      "<p><b>Technical definition:</b> Primitives are stored directly in memory; objects, arrays, and functions store references to shared memory locations.</p>" +
-      "<p><b>Why it is used:</b> This matters when you copy variables and mutate state, because two variables may refer to the same object.</p>" +
-      "<p><b>When to use:</b> Use this knowledge when updating arrays, copying objects, and tracking source-of-truth state in React or Node applications.</p>" +
-      "<p><b>When not to use:</b> Do not assume <code>const</code> protects nested object data from mutation; it only protects the binding, not the contents.</p>" +
-      "<pre><code>let a = { x: 1 };\nlet b = a;\nb.x = 9;\nconsole.log(a.x); // 9</code></pre>" +
-      "<p class='ex-gotcha'>Comparing objects checks identity, not contents, so <code>{} === {}</code> is <code>false</code>.</p>",
+      "<p><b>Simple meaning:</b> Primitive values are copied by value; objects and arrays are shared by reference.</p>" +
+      "<p><b>Think of it as:</b> a primitive is like writing a number on a sticky note and handing someone a copy — they can scribble on their copy without touching yours. An object is like handing someone the key to your house — now you both have access to the exact same rooms.</p>" +
+      "<p><b>Why it exists:</b> copying every object on every assignment would be slow and wasteful for large data structures, so JavaScript stores objects once in memory and passes around references (pointers) to that single copy.</p>" +
+      "<p><b>How it works:</b> primitives (string, number, boolean, null, undefined, symbol, bigint) are stored directly in the variable. Objects, arrays, and functions store a reference — the variable itself holds a pointer to a shared location in memory.</p>" +
+      "<pre><code>let x = 5;\nlet y = x;\ny = 9;\nconsole.log(x); // 5 — untouched, x and y are independent\n\nlet a = { x: 1 };\nlet b = a;\nb.x = 9;\nconsole.log(a.x); // 9 — a and b point at the SAME object</code></pre>" +
+      "<p><b>What happens:</b> in the first block, <code>y = x</code> copies the number <code>5</code>; reassigning <code>y</code> can't affect <code>x</code>. In the second, <code>b = a</code> copies the <em>reference</em>, not the object — <code>a</code> and <code>b</code> now both point at one shared object.</p>" +
+      "<p><b>Result:</b> <code>x</code> stays <code>5</code>; <code>a.x</code> becomes <code>9</code> even though only <code>b</code> was mutated.</p>" +
+      "<p><b>Important rule:</b> assigning an object to a new variable never copies it — it copies the pointer. To get an independent copy, you must explicitly copy the object (spread, <code>structuredClone</code>, etc.).</p>" +
+      "<p><b>Don't confuse it with:</b> <code>const</code> — <code>const b = a</code> still lets you mutate what <code>b</code> points to; <code>const</code> only blocks reassigning <code>b</code> itself.</p>" +
+      "<p><b>When to use:</b> keep this model in mind any time you copy, pass, or store an object/array — especially before mutating it.</p>" +
+      "<p><b>When not to use:</b> don't assume <code>const</code> or a simple <code>=</code> assignment protects nested data from mutation; it protects only the variable binding.</p>" +
+      "<p class='ex-gotcha'>Comparing objects checks identity, not contents, so <code>{} === {}</code> is <code>false</code> — two separately created empty objects are never equal.</p>",
 
     "Type coercion":
-      "<p><b>Simple definition:</b> Type coercion is JavaScript converting values into a different type during evaluation.</p>" +
-      "<p><b>Technical definition:</b> JavaScript performs implicit conversion to satisfy operators like <code>+</code>, <code>-</code>, and comparison logic.</p>" +
-      "<p><b>Why it is used:</b> It lets code be flexible, but it is one of the biggest causes of confusing bugs.</p>" +
-      "<p><b>When to use:</b> You need to understand it when mixing strings, numbers, booleans, and objects in calculations or conditions.</p>" +
-      "<p><b>When not to use:</b> Avoid relying on coercion in production code. Prefer explicit conversion with <code>Number()</code>, <code>String()</code>, or comparison operators you control.</p>" +
-      "<pre><code>\"5\" + 1  // \"51\"\n\"5\" - 1  // 4\ntrue + 1 // 2</code></pre>" +
-      "<p class='ex-gotcha'>The <code>+</code> operator concatenates when either side is a string, while other math operators usually force numeric conversion.</p>",
+      "<p><b>Simple meaning:</b> JavaScript automatically converting a value from one type to another so an operation can proceed.</p>" +
+      "<p><b>Think of it as:</b> JavaScript trying to be helpful by guessing what you meant when you mix types — like adding \"5\" apples and 1 orange and getting a nonsensical \"51\" instead of an error.</p>" +
+      "<p><b>Why it exists:</b> JavaScript was designed to never throw a type error for basic operators — it always tries to produce <em>some</em> result, converting types as needed to make that possible.</p>" +
+      "<p><b>How it works:</b> the <code>+</code> operator concatenates as a string if <em>either</em> side is a string; every other math operator (<code>-</code>, <code>*</code>, <code>/</code>) forces both sides to numbers first.</p>" +
+      "<pre><code>\"5\" + 1   // \"51\" — number 1 converted to string, then concatenated\n\"5\" - 1   // 4    — string \"5\" converted to number, then subtracted\ntrue + 1  // 2    — true converted to 1</code></pre>" +
+      "<p><b>What happens:</b> each line mixes types. <code>+</code> checks: is either operand a string? Yes → convert the other to a string and concatenate. The other operators always coerce toward numbers.</p>" +
+      "<p><b>Result:</b> a string (<code>\"51\"</code>) in the first case, numbers (<code>4</code>, <code>2</code>) in the other two — same-looking operators, different outcomes based purely on <code>+</code>'s special string-preferring rule.</p>" +
+      "<p><b>Important rule:</b> <code>+</code> is the odd one out — it prefers strings; every other arithmetic operator prefers numbers.</p>" +
+      "<p><b>When to use:</b> understanding coercion matters whenever you mix strings, numbers, and booleans in a calculation or condition, even by accident.</p>" +
+      "<p><b>When not to use:</b> don't rely on coercion deliberately in real code — prefer explicit conversion (<code>Number(x)</code>, <code>String(x)</code>) so the intent is visible and predictable.</p>" +
+      "<p class='ex-gotcha'>The <code>+</code> operator concatenates when either side is a string, while other math operators force numeric conversion — this asymmetry is the root of most coercion bugs.</p>",
 
     "== vs ===":
-      "<p><b>Simple definition:</b> <code>==</code> may convert types first; <code>===</code> compares both value and type without conversion.</p>" +
-      "<p><b>Technical definition:</b> Loose equality uses coercion; strict equality compares both type and value and is usually the safer default in production code.</p>" +
-      "<p><b>Why it is used:</b> It avoids accidental bugs from implicit conversions when comparing values.</p>" +
-      "<p><b>When to use:</b> Use <code>===</code> most of the time. Use <code>== null</code> only for the common null/undefined check.</p>" +
-      "<p><b>When not to use:</b> Do not use <code>==</code> for numeric, string, or boolean comparisons unless you deliberately want coercion.</p>" +
-      "<pre><code>0 == \"\"    // true\n0 === \"\"   // false\n1 == \"1\"   // true\n1 === \"1\"  // false</code></pre>" +
-      "<p class='ex-gotcha'>Loose comparison is convenient but risky. In JavaScript interviews, strict equality is usually the expected answer.</p>",
+      "<p><b>Simple meaning:</b> <code>==</code> compares after converting types if needed; <code>===</code> requires the same type <em>and</em> value, with no conversion.</p>" +
+      "<p><b>Think of it as:</b> <code>===</code> asks \"are these identical twins?\" (same type, same value); <code>==</code> asks the looser \"do these basically mean the same thing?\" and will convert one side to make that true.</p>" +
+      "<p><b>Why it exists:</b> <code>==</code> is a holdover from JavaScript's early design, meant to make comparisons forgiving; <code>===</code> was always available as the strict, predictable alternative and is now the recommended default.</p>" +
+      "<p><b>How it works:</b> <code>===</code> returns <code>false</code> immediately if the types differ. <code>==</code> instead runs a type-coercion algorithm first (converting one or both sides) before comparing.</p>" +
+      "<pre><code>0 == \"\"    // true  — \"\" coerces to 0\n0 === \"\"   // false — different types, no coercion\n1 == \"1\"   // true  — \"1\" coerces to 1\n1 === \"1\"  // false</code></pre>" +
+      "<p><b>What happens:</b> each <code>==</code> line has JavaScript first convert the string operand to a number, then compare; each <code>===</code> line stops at the type check and returns <code>false</code> without even looking at the values.</p>" +
+      "<p><b>Result:</b> a boolean each time — but the same pair of values gives opposite answers depending only on which operator you used.</p>" +
+      "<p><b>Important rule:</b> use <code>===</code> by default. The one accepted exception is <code>x == null</code>, which conveniently matches both <code>null</code> and <code>undefined</code> in a single check.</p>" +
+      "<p><b>Don't confuse it with:</b> <code>Object.is()</code> — a third, rarer comparison that behaves like <code>===</code> except for two edge cases (<code>NaN</code> and <code>-0</code>).</p>" +
+      "<p><b>When to use:</b> use <code>===</code> for essentially all comparisons in real code.</p>" +
+      "<p><b>When not to use:</b> avoid <code>==</code> for numeric, string, or boolean comparisons unless you deliberately want coercion — which is almost never.</p>" +
+      "<p class='ex-gotcha'>Loose comparison is convenient but risky. In interviews and code review, strict equality is almost always the expected answer.</p>",
 
     "Truthy and falsy values":
-      "<p><b>Simple definition:</b> Every value is either truthy or falsy when used in a condition.</p>" +
-      "<p><b>Technical definition:</b> JavaScript converts a value to a Boolean as part of condition evaluation. The falsy set is fixed and everything else is truthy.</p>" +
-      "<p><b>Why it is used:</b> If conditions, short-circuiting, and checks depend on this behavior.</p>" +
-      "<p><b>When to use:</b> Understand it when writing conditionals, validation, and guards in API and UI logic.</p>" +
-      "<p><b>When not to use:</b> Do not rely on truthiness for values where <code>0</code>, <code>\"\"</code>, or <code>false</code> have meaningful differences.</p>" +
-      "<pre><code>// falsy values\nfalse, 0, -0, 0n, \"\", null, undefined, NaN\nif ([]) console.log('runs'); // true</code></pre>" +
-      "<p class='ex-gotcha'>Empty arrays and objects are truthy, even though they may look empty. This often surprises beginners.</p>",
+      "<p><b>Simple meaning:</b> Every value, when used where a boolean is expected (like an <code>if</code> condition), is treated as either truthy or falsy.</p>" +
+      "<p><b>Think of it as:</b> JavaScript doesn't ask \"is this literally <code>true</code>?\" in a condition — it asks \"does this count as something, or as nothing?\" Most values count as something (truthy); a short, fixed list counts as nothing (falsy).</p>" +
+      "<p><b>Why it exists:</b> it lets you write compact conditionals (<code>if (value)</code>) instead of always writing an explicit comparison (<code>if (value !== null && value !== undefined)</code>).</p>" +
+      "<p><b>How it works:</b> a condition implicitly converts its value to a boolean. The <b>entire falsy list is fixed and short</b>: <code>false, 0, -0, 0n, \"\", null, undefined, NaN</code>. Every other value — including every object and array — is truthy.</p>" +
+      "<pre><code>if ([]) console.log('runs');   // true — an empty array is truthy\nif ({}) console.log('runs');   // true — an empty object is truthy\nif (0) console.log('never');   // false — 0 is falsy\nif (\"0\") console.log('runs');  // true — a non-empty STRING, even \"0\", is truthy</code></pre>" +
+      "<p><b>What happens:</b> each condition converts its operand to boolean using the fixed falsy list. <code>[]</code> and <code>{}</code> aren't on that list, so despite looking \"empty\", they're truthy. <code>\"0\"</code> is a non-empty string, so it's truthy too — it is not the same as the number <code>0</code>.</p>" +
+      "<p><b>Result:</b> three of the four conditions run; only <code>if (0)</code> is skipped.</p>" +
+      "<p><b>Important rule:</b> memorize the 8 falsy values — everything else, with no exceptions, is truthy.</p>" +
+      "<p><b>Don't confuse it with:</b> <code>Boolean(value)</code> explicit conversion — same rules apply, just written out instead of implicit.</p>" +
+      "<p><b>When to use:</b> conditionals, validation, and quick existence checks (<code>if (user)</code>).</p>" +
+      "<p><b>When not to use:</b> don't rely on truthiness where <code>0</code>, <code>\"\"</code>, or <code>false</code> are meaningful, valid values you need to distinguish from \"missing\" — use an explicit check or <code>??</code> instead.</p>" +
+      "<p class='ex-gotcha'>Empty arrays and objects are truthy, even though they may look empty. This trips up almost everyone the first time.</p>",
 
     "null vs undefined":
-      "<p><b>Simple definition:</b> <code>null</code> means 'there is intentionally no value'; <code>undefined</code> means 'there is no value yet'.</p>" +
-      "<p><b>Technical definition:</b> <code>undefined</code> is the default value for uninitialized variables and missing object properties; <code>null</code> is an explicit empty reference.</p>" +
-      "<p><b>Why it is used:</b> Distinguishing them helps you understand missing data versus intentionally empty data.</p>" +
-      "<p><b>When to use:</b> Use <code>null</code> when you want to say 'empty on purpose'; use <code>undefined</code> for uninitialized or missing values unless your API contract says otherwise.</p>" +
-      "<p><b>When not to use:</b> Do not treat them as the same in strict comparisons. They are only loosely equal to each other.</p>" +
-      "<pre><code>let x;\nlet y = null;\nconsole.log(x); // undefined\nconsole.log(y); // null</code></pre>" +
-      "<p class='ex-gotcha'><code>null == undefined</code> is true, but <code>null === undefined</code> is false.</p>",
+      "<p><b>Simple meaning:</b> <code>undefined</code> means \"nothing has been assigned yet\" (JavaScript's own default); <code>null</code> means \"deliberately empty\" (you assigned it yourself).</p>" +
+      "<p><b>Think of it as:</b> <code>undefined</code> is an unlabeled empty box nobody has touched; <code>null</code> is a box with a label that says \"intentionally left empty.\"</p>" +
+      "<p><b>Why it exists:</b> having two distinct \"nothing\" values lets code distinguish \"this was never set\" from \"this was explicitly cleared\" — a real, useful distinction in APIs and state.</p>" +
+      "<p><b>How it works:</b> JavaScript itself assigns <code>undefined</code> automatically — to a declared-but-unassigned variable, a missing function argument, a missing object property. <code>null</code> is never assigned automatically; a human (or your code) has to write it explicitly.</p>" +
+      "<pre><code>let x;\nlet y = null;\nconsole.log(x); // undefined — JS default, nobody assigned anything\nconsole.log(y); // null — deliberately set</code></pre>" +
+      "<p><b>What happens:</b> <code>x</code> is declared with no assignment, so JavaScript gives it <code>undefined</code> automatically. <code>y</code> is explicitly assigned <code>null</code> by the code.</p>" +
+      "<p><b>Result:</b> two different \"empty\" values, logged distinctly — but see the gotcha below for how they compare.</p>" +
+      "<p><b>Important rule:</b> <code>null == undefined</code> is <code>true</code> (the one sanctioned use of <code>==</code>), but <code>null === undefined</code> is <code>false</code> — they are not the same type.</p>" +
+      "<p><b>Don't confuse it with:</b> a missing object key vs. a key explicitly set to <code>undefined</code> — <code>'a' in {a: undefined}</code> is <code>true</code>, even though <code>obj.a</code> reads as <code>undefined</code> either way.</p>" +
+      "<p><b>When to use:</b> use <code>null</code> when you want to say \"empty on purpose\" (e.g. resetting a selected item); let <code>undefined</code> represent \"not set yet\" unless an API contract says otherwise.</p>" +
+      "<p><b>When not to use:</b> don't use <code>===</code> to treat them as interchangeable — they're genuinely different types.</p>" +
+      "<p class='ex-gotcha'><code>null == undefined</code> is true, but <code>null === undefined</code> is false — this is the one place <code>==</code> is commonly considered acceptable.</p>",
 
     "typeof":
-      "<p><b>Simple definition:</b> <code>typeof</code> tells you the runtime type of a value as a string.</p>" +
-      "<p><b>Technical definition:</b> It is an operator that returns a type label such as <code>'string'</code>, <code>'number'</code>, or <code>'object'</code>.</p>" +
-      "<p><b>Why it is used:</b> It is helpful during debugging, validation, and type checks.</p>" +
-      "<p><b>When to use:</b> Use it for quick debugging or dynamic code paths, but not as a full type-safe replacement for runtime validation.</p>" +
-      "<p><b>When not to use:</b> Do not depend on it for array detection; arrays are objects, so <code>typeof []</code> is <code>'object'</code>.</p>" +
-      "<pre><code>typeof 'hi'    // 'string'\ntypeof 42     // 'number'\ntypeof []     // 'object'\ntypeof null   // 'object'</code></pre>" +
-      "<p class='ex-gotcha'>JavaScript's <code>typeof null</code> result is a historic bug that still exists for compatibility.</p>",
+      "<p><b>Simple meaning:</b> An operator that returns a string naming a value's type.</p>" +
+      "<p><b>Think of it as:</b> asking a value \"what are you?\" and getting back a one-word label like <code>'string'</code> or <code>'number'</code>.</p>" +
+      "<p><b>Why it exists:</b> to let code branch on a value's type at runtime — useful for debugging and for handling different input shapes.</p>" +
+      "<p><b>How it works:</b> <code>typeof</code> returns one of a fixed set of strings based on the value's internal type tag. Notably, both arrays and plain objects report <code>'object'</code> — there's no separate <code>'array'</code> tag.</p>" +
+      "<pre><code>typeof 'hi'         // 'string'\ntypeof 42           // 'number'\ntypeof true          // 'boolean'\ntypeof undefined     // 'undefined'\ntypeof function(){}  // 'function'\ntypeof []            // 'object' — arrays are NOT their own type\ntypeof null          // 'object' — a long-standing historical bug</code></pre>" +
+      "<p><b>What happens:</b> each call inspects the value's internal type tag and returns the matching string. Functions get their own special case (<code>'function'</code>), but arrays don't — and <code>null</code>'s tag was mistakenly implemented as <code>'object'</code> decades ago and can never be fixed without breaking the web.</p>" +
+      "<p><b>Result:</b> a string in every case — but <code>typeof []</code> and <code>typeof null</code> are both <code>'object'</code>, which is rarely what you actually want to know.</p>" +
+      "<p><b>Important rule:</b> <code>typeof</code> can never distinguish an array from a plain object, and can never correctly identify <code>null</code>.</p>" +
+      "<p><b>Don't confuse it with:</b> <code>Array.isArray()</code> — the correct way to check for an array — or <code>value === null</code> — the correct way to check for null.</p>" +
+      "<p><b>When to use:</b> quick debugging, and distinguishing primitives (string/number/boolean/function) from each other or from <code>undefined</code>.</p>" +
+      "<p><b>When not to use:</b> never for array detection (use <code>Array.isArray()</code>) and never for null detection (use <code>=== null</code>).</p>" +
+      "<p class='ex-gotcha'>JavaScript's <code>typeof null === 'object'</code> is a historic bug baked in since the language's first release, kept forever for backward compatibility.</p>",
 
     "Scope":
-      "<p><b>Simple definition:</b> Scope is where a variable is accessible in code.</p>" +
-      "<p><b>Technical definition:</b> Scope determines the visibility and lifetime of bindings. JavaScript has global, function, and block scopes.</p>" +
-      "<p><b>Why it is used:</b> It prevents naming collisions and controls which parts of code can read or modify a variable.</p>" +
-      "<p><b>When to use:</b> Use it to understand why variables are visible in some places and not others.</p>" +
-      "<p><b>When not to use:</b> Avoid unnecessarily creating global variables because they can leak across files and modules.</p>" +
-      "<pre><code>function f() {\n  let inside = 1;\n  return inside;\n}\nconsole.log(f()); // 1</code></pre>" +
-      "<p class='ex-gotcha'>Scope rules are the reason closures and callback bugs behave the way they do.</p>",
+      "<p><b>Simple meaning:</b> Scope is where in your code a given variable is accessible.</p>" +
+      "<p><b>Think of it as:</b> a set of nested rooms — code inside a room can see everything in that room and every room outside it, but code outside a room can't see inside it.</p>" +
+      "<p><b>Why it exists:</b> without scope, every variable in a program would collide with every other variable of the same name — scope lets the same name (<code>i</code>, <code>result</code>, <code>data</code>) be reused safely in different parts of a program.</p>" +
+      "<p><b>How it works:</b> JavaScript has global scope (visible everywhere), function scope (visible inside a function), and block scope (visible inside <code>{ }</code>, for <code>let</code>/<code>const</code>). Which scope a variable belongs to is decided by <em>where it's declared</em>.</p>" +
+      "<pre><code>function f() {\n  let inside = 1; // only visible inside f\n  return inside;\n}\nconsole.log(f());       // 1\nconsole.log(inside);    // ReferenceError — inside doesn't exist out here</code></pre>" +
+      "<p><b>What happens:</b> <code>inside</code> is declared inside <code>f</code>'s function scope. Calling <code>f()</code> can read it and return it fine. Trying to read <code>inside</code> from outside <code>f</code> fails, because that name was never declared in the outer (global) scope.</p>" +
+      "<p><b>Result:</b> <code>f()</code> returns <code>1</code>; the second <code>console.log</code> throws instead of logging anything.</p>" +
+      "<p><b>Important rule:</b> a variable is visible in the scope it's declared in, and in every scope nested inside that one — never in a sibling or outer scope.</p>" +
+      "<p><b>Don't confuse it with:</b> the call stack — scope is about where a name is <em>visible in the code</em> (fixed at write-time); the call stack is about which functions are <em>currently executing</em> (changes at run-time).</p>" +
+      "<p><b>When to use:</b> constantly — every variable declaration relies on scope rules to determine where it can be read.</p>" +
+      "<p><b>When not to use:</b> avoid unnecessarily widening a variable's scope (e.g. making something global that only one function needs) — it just increases the risk of naming collisions.</p>" +
+      "<p class='ex-gotcha'>Scope rules are the reason closures and callback bugs behave the way they do — most \"weird\" async bugs trace back to a misunderstanding of scope.</p>",
 
     "Global scope":
-      "<p><b>Simple definition:</b> A global variable is one declared outside functions or blocks.</p>" +
-      "<p><b>Technical definition:</b> It is accessible from the entire program or runtime environment, which makes it easy to reach but also risky to overwrite.</p>" +
-      "<p><b>Why it is used:</b> Global state is sometimes necessary for configuration, but it should be used sparingly.</p>" +
-      "<p><b>When to use:</b> Use it only for truly app-wide settings or constants. Avoid it for local logic or temporary state.</p>" +
-      "<p><b>When not to use:</b> Do not bury business logic in global variables because they can be modified from anywhere and produce hard-to-debug bugs.</p>" +
-      "<pre><code>const API_URL = 'https://api.example.com';\nconsole.log(API_URL);</code></pre>" +
-      "<p class='ex-gotcha'>In browsers, <code>var</code> at the top level creates a property on <code>window</code>, while <code>let</code> and <code>const</code> do not.</p>",
+      "<p><b>Simple meaning:</b> The outermost scope — variables declared here are visible from anywhere in the program.</p>" +
+      "<p><b>Think of it as:</b> a bulletin board in the lobby that every room in the building can see and, with <code>var</code>, even write on.</p>" +
+      "<p><b>Why it exists:</b> some values (app-wide config, feature flags) genuinely need to be reachable from everywhere — global scope is where those live.</p>" +
+      "<p><b>How it works:</b> anything declared outside every function and block lives in global scope. In a browser, a top-level <code>var</code> also becomes a property on the <code>window</code> object; <code>let</code>/<code>const</code> do not.</p>" +
+      "<pre><code>const API_URL = 'https://api.example.com'; // global const\nvar oldStyle = 'legacy';                    // global var\n\nconsole.log(window.oldStyle); // 'legacy' — var attaches to window\nconsole.log(window.API_URL);  // undefined — const does not</code></pre>" +
+      "<p><b>What happens:</b> both variables are declared at the top level, outside any function, so both are in global scope. But only the <code>var</code> also gets attached as a property of the global <code>window</code> object — a browser-specific side effect specific to <code>var</code>.</p>" +
+      "<p><b>Result:</b> <code>window.oldStyle</code> reads back the value; <code>window.API_URL</code> is <code>undefined</code> even though <code>API_URL</code> itself is perfectly readable as a plain variable.</p>" +
+      "<p><b>Important rule:</b> a global variable is reachable from — and can be overwritten by — literally any other file or script running in the same environment.</p>" +
+      "<p><b>When to use:</b> only for genuinely app-wide constants or configuration, deliberately.</p>" +
+      "<p><b>When not to use:</b> don't bury business logic or mutable state in globals — anything can read or overwrite it from anywhere, making bugs very hard to trace.</p>" +
+      "<p class='ex-gotcha'>In browsers, <code>var</code> at the top level creates a property on <code>window</code>, while <code>let</code> and <code>const</code> deliberately do not.</p>",
 
     "Function scope":
-      "<p><b>Simple definition:</b> Function scope means a variable is visible inside the function where it is declared.</p>" +
-      "<p><b>Technical definition:</b> Variables declared with <code>var</code> are scoped to the nearest function body and ignore block boundaries.</p>" +
-      "<p><b>Why it is used:</b> This is why older JavaScript code often has surprising bugs when variables bleed out of <code>if</code> or loop blocks.</p>" +
-      "<p><b>When to use:</b> Recognize it when debugging legacy code and when working with older codebases.</p>" +
-      "<p><b>When not to use:</b> Do not rely on it in modern code; prefer <code>let</code> or <code>const</code> for better block behavior.</p>" +
-      "<pre><code>function f() {\n  if (true) {\n    var x = 1;\n  }\n  return x; // 1\n}</code></pre>" +
-      "<p class='ex-gotcha'>This is the classic <code>var</code> trap: block scope is ignored, so a value can leak outside the block.</p>",
+      "<p><b>Simple meaning:</b> A variable declared with <code>var</code> is visible throughout the entire function it's in — it ignores inner block boundaries like <code>if</code> or loops.</p>" +
+      "<p><b>Think of it as:</b> <code>var</code> treats the whole function as one big room, even if you drew smaller rooms (<code>if</code> blocks, loops) inside it on paper — those inner walls don't actually contain a <code>var</code>.</p>" +
+      "<p><b>Why it exists:</b> this was the <em>only</em> kind of scoping <code>var</code> ever had — JavaScript had no block scope at all until <code>let</code>/<code>const</code> arrived in ES6.</p>" +
+      "<p><b>How it works:</b> a <code>var</code> declared anywhere inside a function — even nested three <code>if</code> blocks deep — is hoisted to the top of that <em>whole function</em>, not just its immediate block.</p>" +
+      "<pre><code>function f() {\n  if (true) {\n    var x = 1; // declared inside an if block...\n  }\n  return x;    // ...but still visible here, outside the block\n}\nconsole.log(f()); // 1</code></pre>" +
+      "<p><b>What happens:</b> <code>var x</code> is hoisted to the top of <code>f</code>, not just the <code>if</code> block. By the time <code>return x</code> runs, <code>x</code> has already been assigned <code>1</code> inside the block — and since <code>var</code> doesn't respect block boundaries, that assignment is visible outside the <code>if</code> too.</p>" +
+      "<p><b>Result:</b> <code>f()</code> returns <code>1</code> — the value \"leaked\" out of the <code>if</code> block, which surprises anyone expecting block scoping.</p>" +
+      "<p><b>Important rule:</b> <code>var</code> only respects function boundaries; it does not respect <code>{ }</code> blocks at all.</p>" +
+      "<p><b>Don't confuse it with:</b> \"Block scope\" — the entry right after this one — which describes exactly the opposite, safer behavior that <code>let</code>/<code>const</code> have.</p>" +
+      "<p><b>When to use:</b> recognize this when reading legacy codebases that still use <code>var</code>.</p>" +
+      "<p><b>When not to use:</b> don't rely on it in new code — this leaking behavior is exactly the bug class <code>let</code>/<code>const</code> were introduced to prevent.</p>" +
+      "<p class='ex-gotcha'>This is the classic <code>var</code> trap: block scope is ignored, so a value assigned inside an <code>if</code> or loop can leak outside it.</p>",
 
     "Block scope":
-      "<p><b>Simple definition:</b> A block-scoped variable is only visible inside the surrounding braces.</p>" +
-      "<p><b>Technical definition:</b> <code>let</code> and <code>const</code> are scoped to the nearest block, statement, or control structure.</p>" +
-      "<p><b>Why it is used:</b> It reduces accidental variable reuse and makes code easier to reason about.</p>" +
-      "<p><b>When to use:</b> Prefer block scope for variables that should not escape a loop or conditional.</p>" +
-      "<p><b>When not to use:</b> Do not try to access a block-scoped variable outside its block; it will throw a ReferenceError.</p>" +
-      "<pre><code>{\n  let a = 1;\n}\nconsole.log(a); // ReferenceError</code></pre>" +
-      "<p class='ex-gotcha'>This is one of the main reasons modern JavaScript uses <code>let</code> and <code>const</code> instead of <code>var</code>.</p>",
+      "<p><b>Simple meaning:</b> A <code>let</code>/<code>const</code> variable is only visible inside the nearest surrounding <code>{ }</code> — it does not leak out.</p>" +
+      "<p><b>Think of it as:</b> unlike <code>var</code>'s leaky walls, <code>let</code>/<code>const</code> build real walls — a variable declared inside an <code>if</code> or loop genuinely stays inside it.</p>" +
+      "<p><b>Why it exists:</b> to fix exactly the leaking problem described in \"Function scope\" — block scope is the safer default modern JavaScript was designed around.</p>" +
+      "<p><b>How it works:</b> any <code>{ }</code> — an <code>if</code>, a loop, or even a bare block with no keyword — creates a new scope boundary for <code>let</code>/<code>const</code>. Trying to read the variable outside that boundary throws, rather than silently returning a leaked value.</p>" +
+      "<pre><code>{\n  let a = 1;\n  console.log(a); // 1 — fine, still inside the block\n}\nconsole.log(a);   // ReferenceError — outside the block now</code></pre>" +
+      "<p><b>What happens:</b> <code>a</code> is declared inside a bare <code>{ }</code> block. Reading it from inside that same block works. The moment execution passes the closing <code>}</code>, <code>a</code> no longer exists as far as the outer scope is concerned.</p>" +
+      "<p><b>Result:</b> the first log succeeds with <code>1</code>; the second throws a <code>ReferenceError</code> instead of returning any value.</p>" +
+      "<p><b>Important rule:</b> if you can't reference a variable outside its declaring block, that's block scope working correctly, not a bug.</p>" +
+      "<p><b>When to use:</b> the default for essentially all new variable declarations — prefer <code>let</code>/<code>const</code> so variables don't outlive the block they logically belong to.</p>" +
+      "<p><b>When not to use:</b> don't try to read a block-scoped variable from outside its block — declare it in an outer scope first if you genuinely need it there.</p>" +
+      "<p class='ex-gotcha'>This containment is one of the main reasons modern JavaScript uses <code>let</code> and <code>const</code> instead of <code>var</code> — it turns a whole class of leaking bugs into an immediate, loud error.</p>",
 
     "Lexical scope":
-      "<p><b>Simple definition:</b> Lexical scope means inner functions can access variables from the place where they were written.</p>" +
-      "<p><b>Technical definition:</b> Scope is determined statically by the source structure, not dynamically by where a function is called.</p>" +
-      "<p><b>Why it is used:</b> It is the foundation of closures and higher-order functions.</p>" +
-      "<p><b>When to use:</b> Understand it when working with closures, callbacks, and factory functions in JavaScript.</p>" +
-      "<p><b>When not to use:</b> Do not confuse lexical scope with dynamic execution order; they are related but not the same concept.</p>" +
-      "<pre><code>function outer() {\n  const msg = 'hi';\n  return () => msg;\n}\nconsole.log(outer()()); // hi</code></pre>" +
-      "<p class='ex-gotcha'>Lexical scope is why a nested function can still access outer variables even after the outer function returns.</p>",
+      "<p><b>Simple meaning:</b> A function can access variables from the scope where it was <em>written</em>, no matter where or when it's later called.</p>" +
+      "<p><b>Think of it as:</b> a function remembers its birthplace — like a person always knowing their childhood address, even after moving away and being asked to do things far from home.</p>" +
+      "<p><b>Why it exists:</b> it's the foundation that makes closures possible — without it, an inner function couldn't reliably reach variables from its enclosing function.</p>" +
+      "<p><b>How it works:</b> scope is resolved statically, based on the nesting structure of the source code itself — not dynamically, based on how or where the function is eventually invoked.</p>" +
+      "<pre><code>function outer() {\n  const msg = 'hi';\n  return () => msg; // this arrow 'sees' msg because of WHERE it was written\n}\nconst greet = outer();\nconsole.log(greet()); // 'hi' — even though outer() already finished running</code></pre>" +
+      "<p><b>What happens:</b> the returned arrow function was <em>written</em> inside <code>outer</code>, right next to <code>msg</code>. That fixes its scope chain permanently — it will always be able to reach <code>msg</code>, regardless of where <code>greet</code> is later called from.</p>" +
+      "<p><b>Result:</b> <code>greet()</code> returns <code>'hi'</code>, even though <code>outer()</code> has already returned and its execution finished long before <code>greet()</code> is called.</p>" +
+      "<p><b>Important rule:</b> a function's outer scope is fixed at the moment it is <em>defined</em> in the source — never at the moment it is called.</p>" +
+      "<p><b>Don't confuse it with:</b> <code>this</code>, which works the opposite way — resolved dynamically, based on how a function is called, not where it's written.</p>" +
+      "<p><b>When to use:</b> this is the mental model behind every closure, callback, and factory function you write.</p>" +
+      "<p><b>When not to use:</b> don't assume calling a function from a different location changes what variables it can see — lexical scope never changes based on call site.</p>" +
+      "<p class='ex-gotcha'>Lexical scope is why a nested function can still access outer variables even after the outer function has already returned — that's exactly what a closure is.</p>",
 
     "Hoisting":
-      "<p><b>Simple definition:</b> Hoisting is JavaScript moving declarations to the top of their scope before execution.</p>" +
-      "<p><b>Technical definition:</b> The engine processes declarations before running the code, but initialization still happens in place.</p>" +
-      "<p><b>Why it is used:</b> It explains why function declarations are callable before they appear in code and why <code>var</code> feels weird.</p>" +
-      "<p><b>When to use:</b> Use this knowledge to explain confusing runtime behavior in interviews and debugging sessions.</p>" +
-      "<p><b>When not to use:</b> Do not assume all declarations behave the same. <code>var</code>, function declarations, and <code>let</code>/<code>const</code> each hoist differently.</p>" +
-      "<pre><code>console.log(a); // undefined\nvar a = 5;\nconsole.log(greet());\nfunction greet() { return 'hi'; }</code></pre>" +
-      "<p class='ex-gotcha'>The declaration is hoisted, but the value is not initialized until assignment time. This is why <code>var</code> starts as <code>undefined</code>.</p>",
+      "<p><b>Simple meaning:</b> JavaScript processes declarations before running any code, so some names exist (in some form) before their declaration line is reached.</p>" +
+      "<p><b>Think of it as:</b> imagine JavaScript skims the whole scope for every <code>var</code>/<code>function</code>/<code>let</code>/<code>const</code> name first, jotting each one on a clipboard — then goes back and actually runs the code line by line. The clipboard entries exist early; the <em>values</em> don't, until their line runs.</p>" +
+      "<p><b>Why it exists:</b> it's a side effect of how the engine's two-phase execution works (see \"Execution context\") — not a deliberate feature to lean on, but a consequence worth understanding.</p>" +
+      "<p><b>How it works:</b> function declarations are hoisted completely — the whole function is usable before its line. <code>var</code> is hoisted as <code>undefined</code>. <code>let</code>/<code>const</code> are hoisted too, but stay inaccessible (Temporal Dead Zone) until their own line runs.</p>" +
+      "<pre><code>console.log(a);        // undefined — var hoisted, not yet assigned\nvar a = 5;\n\nconsole.log(greet());  // 'hi' — fully usable before its own line\nfunction greet() { return 'hi'; }</code></pre>" +
+      "<p><b>What happens:</b> before any line runs, the engine's creation phase already knows about both <code>a</code> (as <code>var</code>, defaulted to <code>undefined</code>) and <code>greet</code> (as a complete, callable function). The execution phase then runs top to bottom: reading <code>a</code> early gets the hoisted default; calling <code>greet()</code> early works because the whole function was already hoisted.</p>" +
+      "<p><b>Result:</b> <code>undefined</code>, then <code>'hi'</code> — two very different outcomes for reading something \"before\" its declaration, depending entirely on which kind of declaration it is.</p>" +
+      "<p><b>Important rule:</b> hoisting moves the <em>declaration</em>, never the <em>assignment</em> — a <code>var</code> exists early but holds no real value until its line executes.</p>" +
+      "<p><b>Don't confuse it with:</b> the Temporal Dead Zone — <code>let</code>/<code>const</code> are hoisted too, but reading them early throws instead of returning <code>undefined</code>.</p>" +
+      "<p><b>When to use:</b> use this knowledge to explain (not to rely on) confusing early-access behavior when debugging or in interviews.</p>" +
+      "<p><b>When not to use:</b> never write code that depends on hoisting for correctness — declare and initialize before use, regardless of what technically happens to be legal.</p>" +
+      "<p class='ex-gotcha'>The declaration is hoisted, but the value is not initialized until assignment time — this is exactly why an early-read <code>var</code> is <code>undefined</code>, not an error.</p>",
 
     "Temporal Dead Zone":
-      "<p><b>Simple definition:</b> TDZ is the period before a <code>let</code> or <code>const</code> variable is initialized where it cannot be read.</p>" +
-      "<p><b>Technical definition:</b> The variable exists in the scope but cannot be accessed until execution reaches its declaration line.</p>" +
-      "<p><b>Why it is used:</b> It prevents accidental early access and catches bugs earlier than <code>var</code> does.</p>" +
-      "<p><b>When to use:</b> It matters when you encounter ReferenceErrors for variables before their declarations.</p>" +
-      "<p><b>When not to use:</b> Do not confuse TDZ with ordinary <code>undefined</code>. TDZ is an access error before initialization.</p>" +
-      "<pre><code>console.log(b); // ReferenceError\nlet b = 5;</code></pre>" +
-      "<p class='ex-gotcha'>TDZ is a key reason <code>let</code> and <code>const</code> are safer than <code>var</code>.</p>",
+      "<p><b>Simple meaning:</b> The stretch of code between a <code>let</code>/<code>const</code> variable being hoisted and its declaration line actually running, where touching it throws an error.</p>" +
+      "<p><b>Think of it as:</b> the variable's name is reserved (like a seat with a \"reserved\" sign) but the seat itself isn't usable yet — sitting in it early gets you thrown out, unlike <code>var</code>, which would just let you sit on an empty (<code>undefined</code>) seat.</p>" +
+      "<p><b>Why it exists:</b> to catch a real class of bugs — reading a variable before it's meaningfully initialized — loudly and immediately, instead of silently returning <code>undefined</code> like <code>var</code> does.</p>" +
+      "<p><b>How it works:</b> <code>let</code>/<code>const</code> are hoisted (their name is known to the scope) but placed in an uninitialized state until their declaration line executes. Any access before that line throws a <code>ReferenceError</code>.</p>" +
+      "<pre><code>console.log(b); // ReferenceError: Cannot access 'b' before initialization\nlet b = 5;</code></pre>" +
+      "<p><b>What happens:</b> <code>b</code>'s name is already known to the scope (hoisted), but it is still in the Temporal Dead Zone because its declaration line hasn't executed yet. Reading it there is a genuine error, not a fallback to <code>undefined</code>.</p>" +
+      "<p><b>Result:</b> the program throws immediately and stops, rather than continuing with a silently wrong value.</p>" +
+      "<p><b>Important rule:</b> TDZ turns \"accessed too early\" into a loud crash instead of a quiet <code>undefined</code> — that's a deliberate safety improvement over <code>var</code>.</p>" +
+      "<p><b>Don't confuse it with:</b> a variable simply being <code>undefined</code> — TDZ is an access <em>error</em>, not a value.</p>" +
+      "<p><b>When to use:</b> understand it as the explanation whenever you see a ReferenceError for a variable that appears to exist later in the same scope.</p>" +
+      "<p><b>When not to use:</b> n/a — this isn't something you opt into; it's automatic for every <code>let</code>/<code>const</code>.</p>" +
+      "<p class='ex-gotcha'>TDZ is a key reason <code>let</code> and <code>const</code> are considered safer than <code>var</code> — early access fails loudly instead of quietly.</p>",
 
     "Execution context":
-      "<p><b>Simple definition:</b> Execution context is the environment in which code runs, including its scope and <code>this</code> value.</p>" +
-      "<p><b>Technical definition:</b> Each function call creates an execution context that contains local variables, arguments, and a link to the outer lexical environment.</p>" +
-      "<p><b>Why it is used:</b> It explains scope, <code>this</code>, and how function calls behave.</p>" +
-      "<p><b>When to use:</b> Use it when debugging <code>this</code> issues, closures, and stack behavior.</p>" +
-      "<p><b>When not to use:</b> Do not confuse it with the call stack. The execution context is the object-like runtime state; the call stack is the stack of those states.</p>" +
-      "<pre><code>function run() {\n  console.log(this);\n}\nrun();</code></pre>" +
-      "<p class='ex-gotcha'>Execution context differs by call site; this is why method calls and plain function calls behave differently.</p>",
+      "<p><b>Simple meaning:</b> The environment JavaScript sets up for a running piece of code — it tracks that code's variables, its <code>this</code> value, and a link to the outer scope.</p>" +
+      "<p><b>Think of it as:</b> a fresh, labeled folder created every time a function is called, holding that call's own local notes (variables), a sticky note for <code>this</code>, and a reference pointing back to the folder it was created inside.</p>" +
+      "<p><b>Why it exists:</b> the engine needs somewhere to keep track of each call's local state independently, so calling the same function twice doesn't mix up the two calls' variables.</p>" +
+      "<p><b>How it works:</b> a new execution context is created on every function call, going through a creation phase (hoisting, setting up <code>this</code>) before the execution phase (running the code line by line). It's pushed onto the call stack on entry, popped off on return.</p>" +
+      "<pre><code>function run() {\n  console.log(this);\n}\nrun();          // this === undefined (strict) / globalThis (sloppy)\nconst obj = { run };\nobj.run();       // this === obj — SAME function, different execution context</code></pre>" +
+      "<p><b>What happens:</b> both calls run the exact same function body, but each call creates its own fresh execution context. <code>this</code> is determined per-context by <em>how</em> that particular call happened — with no owner before the dot for the first call, with <code>obj</code> as the owner for the second.</p>" +
+      "<p><b>Result:</b> the same <code>run</code> function logs two different <code>this</code> values, purely based on call site.</p>" +
+      "<p><b>Important rule:</b> every function call gets its own execution context — that's what makes <code>this</code>, local variables, and recursion all work independently per call.</p>" +
+      "<p><b>Don't confuse it with:</b> the call stack — the execution context is the state <em>for one call</em>; the call stack is the ordered list of all currently-active execution contexts.</p>" +
+      "<p><b>When to use:</b> reach for this model when debugging <code>this</code>, closures, or unexpected variable values between calls.</p>" +
+      "<p><b>When not to use:</b> n/a — this happens automatically on every call; there's no opting in or out.</p>" +
+      "<p class='ex-gotcha'>Execution context differs by call site, not by function definition — this is exactly why the same method behaves differently depending on how it's invoked.</p>",
 
     "Call stack":
-      "<p><b>Simple definition:</b> The call stack is the ordered list of active function calls.</p>" +
-      "<p><b>Technical definition:</b> Each function call pushes a new frame onto the stack, and returning pops it off. A stack overflow happens when functions recurse without a base case.</p>" +
-      "<p><b>Why it is used:</b> It explains how JavaScript keeps track of nested execution and why recursion can crash.</p>" +
-      "<p><b>When to use:</b> Use it when analyzing recursion, async flow, or debugging stack overflow errors.</p>" +
-      "<p><b>When not to use:</b> Do not confuse it with the event loop or microtask queue; those are different runtime structures.</p>" +
-      "<pre><code>function recurse(n) {\n  if (n === 0) return;\n  recurse(n - 1);\n}\nrecurse(3);</code></pre>" +
-      "<p class='ex-gotcha'>If recursion has no base case, the call stack grows until the runtime throws a stack overflow error.</p>",
+      "<p><b>Simple meaning:</b> The ordered list of function calls currently in progress, most recent on top.</p>" +
+      "<p><b>Think of it as:</b> a stack of plates — each function call adds a plate on top when it starts, and removes it when it finishes. You can only ever interact with the top plate, and it has to come off before the one below it can.</p>" +
+      "<p><b>Why it exists:</b> JavaScript needs to know, at every moment, exactly which function is running and which functions are waiting for it to finish — the stack is that bookkeeping structure.</p>" +
+      "<p><b>How it works:</b> calling a function pushes a new frame onto the stack; returning from it pops that frame off. If frames keep getting pushed without ever being popped (infinite recursion with no base case), the stack overflows.</p>" +
+      "<pre><code>function recurse(n) {\n  if (n === 0) return; // base case — stops the stack from growing further\n  recurse(n - 1);\n}\nrecurse(3);\n// stack: recurse(3) -> recurse(2) -> recurse(1) -> recurse(0) -> returns, unwinds</code></pre>" +
+      "<p><b>What happens:</b> each call to <code>recurse</code> pushes a new frame before the next call, growing the stack to 4 frames deep. <code>recurse(0)</code> hits the base case and returns without recursing further — then each frame pops off in reverse order as each call finishes.</p>" +
+      "<p><b>Result:</b> nothing is logged (this example returns nothing), but the stack correctly grows to depth 4, then fully unwinds back to empty.</p>" +
+      "<p><b>Important rule:</b> without a base case that actually gets reached, recursion pushes frames forever until the stack overflows.</p>" +
+      "<p><b>Don't confuse it with:</b> the event loop's task/microtask queues — the call stack is for currently-running synchronous code; the queues hold callbacks waiting for the stack to empty.</p>" +
+      "<p><b>When to use:</b> reason about it when analyzing recursion depth, reading a stack trace, or debugging a <code>\"Maximum call stack size exceeded\"</code> error.</p>" +
+      "<p><b>When not to use:</b> n/a — every function call uses the stack automatically; there's nothing to opt into.</p>" +
+      "<p class='ex-gotcha'>If recursion has no base case — or never reaches it — the call stack grows until the runtime throws <code>\"Maximum call stack size exceeded\"</code>.</p>",
 
     "Strict mode":
-      "<p><b>Simple definition:</b> Strict mode makes JavaScript stricter and catches common mistakes earlier.</p>" +
-      "<p><b>Technical definition:</b> Using <code>'use strict';</code> changes runtime semantics to prevent silent errors, reject insecure actions, and change <code>this</code> behavior in normal functions.</p>" +
-      "<p><b>Why it is used:</b> It reduces bugs, especially with accidental globals and unsafe code patterns.</p>" +
-      "<p><b>When to use:</b> Use it in scripts and modules where you want safer behavior and fewer silent failures.</p>" +
-      "<p><b>When not to use:</b> You usually do not need to add it manually inside modern ES modules, because modules are already strict by default.</p>" +
-      "<pre><code>\"use strict\";\nfunction f() {\n  this.x = 1;\n}\n// in strict mode, this is undefined in a plain call</code></pre>" +
-      "<p class='ex-gotcha'>Strict mode turns silent errors into immediate exceptions, which is usually a good thing during debugging.</p>",
+      "<p><b>Simple meaning:</b> An opt-in mode that makes JavaScript enforce stricter rules, turning several silent mistakes into loud errors.</p>" +
+      "<p><b>Think of it as:</b> a stricter teacher grading your code — instead of quietly letting a typo create an accidental global variable, strict mode stops class and makes you fix it immediately.</p>" +
+      "<p><b>Why it exists:</b> early JavaScript allowed several dangerous patterns (accidental globals, silent failed assignments) for backward compatibility; strict mode was added later as an opt-in way to disable them without breaking old code that depends on them.</p>" +
+      "<p><b>How it works:</b> adding <code>\"use strict\";</code> at the top of a script or function changes runtime behavior — assigning to an undeclared variable throws instead of silently creating a global, and <code>this</code> in a plain function call is <code>undefined</code> instead of the global object.</p>" +
+      "<pre><code>\"use strict\";\nx = 5; // ReferenceError: x is not defined — instead of silently creating a global\n\nfunction f() { return this; }\nf(); // undefined, in strict mode (vs globalThis in sloppy mode)</code></pre>" +
+      "<p><b>What happens:</b> without strict mode, <code>x = 5</code> would silently create a new global variable — a classic source of hard-to-find bugs. With strict mode on, that same assignment is treated as an error instead, since <code>x</code> was never declared.</p>" +
+      "<p><b>Result:</b> a thrown <code>ReferenceError</code> instead of a silently created (and easily forgotten) global variable.</p>" +
+      "<p><b>Important rule:</b> strict mode doesn't add new features — it removes permissiveness, converting several classes of silent mistakes into immediate, visible errors.</p>" +
+      "<p><b>Don't confuse it with:</b> TypeScript or linting — those are separate, additional tools; strict mode is a built-in JavaScript runtime behavior, always available with no dependencies.</p>" +
+      "<p><b>When to use:</b> it's on by default inside ES modules and class bodies — you rarely need to add it manually in modern code.</p>" +
+      "<p><b>When not to use:</b> no real downside to having it on; the main reason to omit it manually is that modules already include it automatically.</p>" +
+      "<p class='ex-gotcha'>Strict mode turns silent errors into immediate exceptions — genuinely useful during debugging, since bugs surface right where they happen instead of much later.</p>",
   },
 
   /* ------------------------------------------------------------------ */

@@ -1,0 +1,659 @@
+<title>Asynchronous JavaScript Notebook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=JetBrains+Mono:wght@400;600&display=swap">
+
+<style>
+  :root {
+    --paper: #F7F6F2;
+    --surface: #FFFFFF;
+    --ink: #1A1917;
+    --ink-soft: #55524B;
+    --ink-faint: #8A867C;
+    --accent: #C77E12;
+    --accent-soft: #F3E4C6;
+    --teal: #2A6F6B;
+    --line: #E4E0D6;
+    --code-bg: #F2EFE7;
+    --shadow: 0 1px 2px rgba(26,25,23,.04), 0 8px 24px rgba(26,25,23,.06);
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #17161A;
+      --surface: #201F24;
+      --ink: #EDEAE3;
+      --ink-soft: #B4AFA4;
+      --ink-faint: #7E7A70;
+      --accent: #E8A32C;
+      --accent-soft: #3A2E17;
+      --teal: #6FC3BC;
+      --line: #322F38;
+      --code-bg: #1B1A1F;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #17161A;
+    --surface: #201F24;
+    --ink: #EDEAE3;
+    --ink-soft: #B4AFA4;
+    --ink-faint: #7E7A70;
+    --accent: #E8A32C;
+    --accent-soft: #3A2E17;
+    --teal: #6FC3BC;
+    --line: #322F38;
+    --code-bg: #1B1A1F;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 30px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Newsreader", Georgia, serif;
+    font-size: 18px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  header {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--paper) 88%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .head-inner {
+    max-width: 1080px; margin: 0 auto;
+    padding: 18px 24px 0;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .brand { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .brand h1 {
+    font-family: "Fraunces", serif; font-weight: 600;
+    font-size: 26px; margin: 0; letter-spacing: -.01em;
+  }
+  .brand .tag {
+    font-family: "JetBrains Mono", monospace; font-size: 11px;
+    letter-spacing: .14em; text-transform: uppercase;
+    color: var(--accent); background: var(--accent-soft);
+    padding: 4px 9px; border-radius: 999px;
+  }
+  .tabs { display: flex; gap: 4px; }
+  .tab {
+    appearance: none; border: none; background: none; cursor: pointer;
+    font-family: "Fraunces", serif; font-size: 16px; font-weight: 500;
+    color: var(--ink-soft); padding: 10px 4px 14px; margin-right: 22px;
+    border-bottom: 2px solid transparent; transition: color .15s;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+  .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 32px 24px 80px; }
+  .layout { display: grid; grid-template-columns: 220px 1fr; gap: 40px; align-items: start; }
+  @media (max-width: 780px) { .layout { grid-template-columns: 1fr; } .toc { display: none; } }
+
+  .toc {
+    position: sticky; top: 130px;
+    font-family: "JetBrains Mono", monospace; font-size: 12.5px;
+    line-height: 1.4; max-height: calc(100vh - 150px); overflow-y: auto;
+  }
+  .toc a {
+    display: block; color: var(--ink-faint); text-decoration: none;
+    padding: 5px 0; border-left: 2px solid transparent; padding-left: 12px;
+    transition: color .12s, border-color .12s;
+  }
+  .toc a:hover { color: var(--ink); }
+  .toc a.active { color: var(--accent); border-left-color: var(--accent); }
+
+  .intro { color: var(--ink-soft); font-size: 17px; margin: 0 0 8px; max-width: 62ch; }
+  section.topic { scroll-margin-top: 130px; padding: 30px 0; border-top: 1px solid var(--line); }
+  section.topic:first-of-type { border-top: none; padding-top: 6px; }
+  .topic h2 {
+    font-family: "Fraunces", serif; font-weight: 600; font-size: 25px;
+    margin: 0 0 4px; letter-spacing: -.01em; text-wrap: balance;
+    display: flex; align-items: baseline; gap: 12px;
+  }
+  .topic h2 .num {
+    font-family: "JetBrains Mono", monospace; font-size: 13px;
+    color: var(--accent); font-weight: 600;
+  }
+  .topic p { max-width: 64ch; margin: 12px 0; }
+  .topic ul { max-width: 64ch; padding-left: 22px; }
+  .topic li { margin: 6px 0; }
+  code {
+    font-family: "JetBrains Mono", monospace; font-size: .82em;
+    background: var(--code-bg); padding: 2px 6px; border-radius: 6px;
+  }
+  pre {
+    background: var(--code-bg); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 16px 18px; overflow-x: auto;
+    box-shadow: var(--shadow); margin: 16px 0;
+  }
+  pre code { background: none; padding: 0; font-size: 13.5px; line-height: 1.6; color: var(--ink); }
+  .gotcha {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: var(--accent-soft); border-radius: 10px;
+    padding: 12px 15px; margin: 14px 0; max-width: 64ch;
+    font-size: 15.5px; color: var(--ink);
+  }
+  .gotcha b { color: var(--accent); font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; }
+
+  .cm { color: var(--ink-faint); font-style: italic; }
+  .kw { color: var(--teal); font-weight: 600; }
+  .st { color: var(--accent); }
+
+  .q-intro { color: var(--ink-soft); max-width: 62ch; margin-bottom: 26px; }
+  .qcard {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 20px 22px; margin: 16px 0;
+    box-shadow: var(--shadow);
+  }
+  .qhead { display: flex; align-items: baseline; gap: 12px; margin-bottom: 6px; }
+  .qhead .qn {
+    font-family: "JetBrains Mono", monospace; font-size: 12px;
+    color: var(--accent); background: var(--accent-soft);
+    padding: 3px 8px; border-radius: 6px; font-weight: 600;
+  }
+  .qhead .lvl {
+    margin-left: auto; font-family: "JetBrains Mono", monospace;
+    font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--ink-faint); border: 1px solid var(--line);
+    padding: 2px 8px; border-radius: 999px;
+  }
+  .qtext { font-size: 17px; margin: 4px 0 12px; }
+  .qtopic { font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--teal); }
+  details.answer summary {
+    cursor: pointer; font-family: "Fraunces", serif; font-weight: 500;
+    color: var(--teal); font-size: 15px; list-style: none; user-select: none;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  details.answer summary::-webkit-details-marker { display: none; }
+  details.answer summary::before { content: "▸"; transition: transform .15s; }
+  details.answer[open] summary::before { transform: rotate(90deg); }
+  details.answer summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+  .ans-body { margin-top: 12px; }
+
+  .panel[hidden] { display: none; }
+  footer { text-align: center; color: var(--ink-faint); font-size: 13px; font-family: "JetBrains Mono", monospace; padding: 20px; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<header>
+  <div class="head-inner">
+    <div class="brand">
+      <h1>Asynchronous JavaScript</h1>
+      <span class="tag">Notebook</span>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Notebook sections">
+      <button class="tab" role="tab" id="tab-notes" aria-controls="panel-notes" aria-selected="true">Explanations</button>
+      <button class="tab" role="tab" id="tab-code" aria-controls="panel-code" aria-selected="false">Coding Questions</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ============ EXPLANATIONS ============ -->
+  <div class="panel" id="panel-notes" role="tabpanel" aria-labelledby="tab-notes">
+    <div class="layout">
+      <nav class="toc" aria-label="Topics">
+        <a href="#t1">01 · Synchronous vs asynchronou…</a>
+        <a href="#t2">02 · Callbacks</a>
+        <a href="#t3">03 · Callback hell</a>
+        <a href="#t4">04 · Promises</a>
+        <a href="#t5">05 · Promise states</a>
+        <a href="#t6">06 · .then</a>
+        <a href="#t7">07 · .catch</a>
+        <a href="#t8">08 · .finally</a>
+        <a href="#t9">09 · Promise chaining</a>
+        <a href="#t10">10 · async/await</a>
+        <a href="#t11">11 · try/catch with async</a>
+        <a href="#t12">12 · Promise.all</a>
+        <a href="#t13">13 · Promise.allSettled</a>
+        <a href="#t14">14 · Promise.race</a>
+        <a href="#t15">15 · Promise.any</a>
+        <a href="#t16">16 · Sequential vs parallel asy…</a>
+        <a href="#t17">17 · Error propagation in promi…</a>
+        <a href="#t18">18 · Promise cancellation conce…</a>
+        <a href="#t19">19 · AbortController</a>
+      </nav>
+
+      <main>
+        <p class="intro">Reference notes for Asynchronous JavaScript. Read a topic, note the <b style="color:var(--accent)">Gotcha</b>, then switch to Coding Questions.</p>
+
+        <section class="topic" id="t1">
+          <h2><span class="num">01</span> Synchronous vs asynchronous execution</h2>
+          <p><b>Simple definition:</b> Synchronous code runs one line at a time, each line waiting for the last. Asynchronous code lets a slow operation run in the background while the rest of the program keeps going.</p><p><b>Technical definition:</b> JavaScript itself is single-threaded &mdash; it can only run one piece of your code at a time. "Async" does not mean multiple threads; it means the slow part (a timer, a network request, a file read) is handed off to the browser or Node runtime, and your code is notified with a callback once it finishes.</p><p><b>Why it is used:</b> Without it, a 2-second network request would freeze the entire page (or block the whole Node server) for those 2 seconds. Handing the wait off keeps the program responsive.</p><p><b>How it works internally:</b> the runtime (not the JS engine) does the actual waiting.</p><pre><code>call stack (your code)
+   ↓ hands off a slow task
+Web API / Node API (timer, network, file system)
+   ↓ when done, queues a callback
+callback queue
+   ↓ event loop moves it back
+call stack (runs when stack is empty)</code></pre><pre><code>console.log('1');
+setTimeout(() => console.log('3'), 1000);
+console.log('2');
+// logs: 1, 2, 3 — the timer runs LATER, script keeps going now</code></pre><div class="gotcha"><b>Gotcha</b><span>"Asynchronous" does not mean "runs in parallel". Your JS callbacks still run one at a time, on the same single thread &mdash; async only changes <em>when</em> they run, not how many run at once.</span></div>
+        </section>
+
+        <section class="topic" id="t2">
+          <h2><span class="num">02</span> Callbacks</h2>
+          <p><b>Simple definition:</b> A callback is a function you hand to another function, to be run later &mdash; often once some slow work finishes.</p><p><b>Technical definition:</b> Callbacks were JavaScript's original mechanism for asynchronous control flow, before Promises existed. The function that receives the callback decides when (and with what arguments) to invoke it.</p><p><b>Why it is used:</b> It is still the basis for events (<code>addEventListener</code>) and many Node APIs, and every Promise is built on the same underlying idea.</p><p><b>When not to use:</b> For new async code with multiple steps, prefer Promises/<code>async</code>-<code>await</code> &mdash; see "Callback hell" for why.</p><pre><code>function loadUser(id, callback) {
+  setTimeout(() => {
+    callback(null, { id, name: 'Ada' }); // (error, result) convention
+  }, 500);
+}
+
+loadUser(1, (err, user) => {
+  if (err) return console.log('failed');
+  console.log(user.name); // 'Ada' — after 500ms
+});</code></pre><div class="gotcha"><b>Gotcha</b><span>The <code>(error, result)</code> parameter order ("error-first callback") is a Node.js convention, not a language rule &mdash; forgetting to check <code>err</code> first is a classic source of silent bugs.</span></div>
+        </section>
+
+        <section class="topic" id="t3">
+          <h2><span class="num">03</span> Callback hell</h2>
+          <p><b>Simple definition:</b> When each async step depends on the last, callback-based code nests deeper and deeper, until it becomes a sideways-growing pyramid that's hard to read or change.</p><p><b>Technical definition:</b> Callback hell (the "pyramid of doom") arises because callbacks have no way to compose &mdash; the only way to sequence async steps with callbacks alone is to nest the next one inside the previous one's callback.</p><p><b>Why it matters:</b> beyond ugliness, nested callbacks make error handling repetitive (every level needs its own <code>if (err)</code>) and control flow (loops, early returns, try/catch) far harder to reason about.</p><pre><code>getUser(id, (err, user) => {
+  if (err) return handle(err);
+  getPosts(user.id, (err, posts) => {
+    if (err) return handle(err);
+    getComments(posts[0].id, (err, comments) => {
+      if (err) return handle(err);
+      console.log(comments); // 3 levels deep, and growing
+    });
+  });
+});</code></pre><div class="gotcha"><b>Gotcha</b><span>The fix is not "write less nested code" as a style rule &mdash; it's a structural problem that Promises and <code>async</code>/<code>await</code> solve directly, by letting async steps read top-to-bottom instead of nesting.</span></div>
+        </section>
+
+        <section class="topic" id="t4">
+          <h2><span class="num">04</span> Promises</h2>
+          <p><b>Simple definition:</b> A promise is an object that stands in for a value you don't have yet, but will (or will fail to) get eventually.</p><p><b>Technical definition:</b> A <code>Promise</code> wraps an asynchronous operation and exposes a consistent interface (<code>.then</code>/<code>.catch</code>/<code>.finally</code>) for reacting to its eventual success or failure, regardless of how long it takes.</p><p><b>Why it is used:</b> It replaces nested callbacks with a chain that reads top-to-bottom, and gives async code a single, predictable way to report success or failure.</p><p><b>When to use:</b> Any time you're wrapping or consuming an async operation &mdash; a network call, a timer, a file read.</p><pre><code>const promise = new Promise((resolve, reject) => {
+  setTimeout(() => {
+    const ok = true;
+    ok ? resolve('done') : reject(new Error('failed'));
+  }, 500);
+});
+
+promise.then(value => console.log(value)); // 'done', after 500ms</code></pre><p><b>Returns:</b> the constructor returns a new promise object immediately &mdash; the executor function inside runs synchronously right away, but <code>resolve</code>/<code>reject</code> settle it later.</p><div class="gotcha"><b>Gotcha</b><span>Creating a promise does not start a timer or a fetch "in the background" by magic &mdash; the code inside the executor runs immediately and synchronously; it's <em>settling</em> (calling resolve/reject) that can happen later.</span></div>
+        </section>
+
+        <section class="topic" id="t5">
+          <h2><span class="num">05</span> Promise states</h2>
+          <p><b>Simple definition:</b> Every promise is in exactly one of three states: waiting, succeeded, or failed &mdash; and once it succeeds or fails, that's final.</p><p><b>Technical definition:</b> A promise starts <b>pending</b>. It can transition once to either <b>fulfilled</b> (resolved with a value) or <b>rejected</b> (failed with a reason). Fulfilled and rejected are both called <em>settled</em>, and a settled promise can never change state again.</p><p><b>Why it matters:</b> this permanence is what makes promises trustworthy &mdash; you can attach a <code>.then</code> at any time, even after it has already settled, and it will still fire with the correct final value exactly once.</p><pre><code>pending
+  ├──→ fulfilled  (resolve() was called)   ─┐
+  └──→ rejected   (reject() was called)    ─┴─→ settled (permanent)</code></pre><pre><code>const p = new Promise(resolve => resolve('first'));
+p.then(v => console.log(v)); // 'first'
+// calling resolve again does nothing — already settled</code></pre><div class="gotcha"><b>Gotcha</b><span>Calling <code>resolve()</code> a second time, or calling <code>reject()</code> after <code>resolve()</code>, is silently ignored &mdash; the first settlement wins and every later one is a no-op.</span></div>
+        </section>
+
+        <section class="topic" id="t6">
+          <h2><span class="num">06</span> .then</h2>
+          <p><b>Simple definition:</b> <code>.then(onSuccess, onFailure)</code> registers what should happen once a promise settles.</p><p><b>Technical definition:</b> <code>.then</code> takes up to two callbacks &mdash; one for fulfillment, one for rejection &mdash; and, critically, <b>always returns a brand-new promise</b>, which is what makes chaining possible.</p><p><b>Why it is used:</b> It's the fundamental way to consume a promise's eventual value.</p><pre><code>fetchUser(1)
+  .then(user => user.name)   // returns a NEW promise, resolved with the name
+  .then(name => console.log(name)); // 'Ada'</code></pre><p><b>Returns:</b> a new promise. If the callback returns a plain value, the new promise resolves with it. If the callback returns <em>another promise</em>, the new promise waits for that one and adopts its outcome (auto-"flattening", no manual unwrapping needed).</p><div class="gotcha"><b>Gotcha</b><span>Forgetting to <code>return</code> inside a <code>.then</code> callback is one of the most common async bugs &mdash; the next <code>.then</code> in the chain receives <code>undefined</code> instead of the value you meant to pass along.</span></div>
+        </section>
+
+        <section class="topic" id="t7">
+          <h2><span class="num">07</span> .catch</h2>
+          <p><b>Simple definition:</b> <code>.catch(onFailure)</code> handles a rejection anywhere earlier in the chain.</p><p><b>Technical definition:</b> <code>.catch(fn)</code> is exactly shorthand for <code>.then(undefined, fn)</code>. It catches a rejection from the promise it's attached to, and (importantly) from <em>any</em> earlier <code>.then</code> in the same chain that didn't already handle it.</p><p><b>Why it is used:</b> A single <code>.catch</code> at the end of a chain is usually cleaner than passing an error handler to every individual <code>.then</code>.</p><pre><code>fetchUser(1)
+  .then(user => { throw new Error('boom'); })
+  .then(x => console.log('never runs'))
+  .catch(err => console.log('caught:', err.message)); // 'caught: boom'</code></pre><div class="gotcha"><b>Gotcha</b><span>A <code>.catch</code> handles the error and, by returning normally, <b>resumes the chain as fulfilled</b> &mdash; any <code>.then</code> after the <code>.catch</code> runs normally, not as an error handler. If you re-throw inside <code>.catch</code>, the chain stays rejected.</span></div>
+        </section>
+
+        <section class="topic" id="t8">
+          <h2><span class="num">08</span> .finally</h2>
+          <p><b>Simple definition:</b> <code>.finally(fn)</code> runs after a promise settles, no matter whether it succeeded or failed.</p><p><b>Technical definition:</b> The callback receives no arguments (it can't see the value or the error) and cannot change the outcome &mdash; the original fulfillment value or rejection reason passes through to whatever comes next, unless <code>finally</code>'s own callback throws.</p><p><b>Why it is used:</b> Cleanup that must always happen &mdash; hiding a loading spinner, closing a connection &mdash; regardless of success or failure.</p><pre><code>fetchUser(1)
+  .then(user => console.log(user))
+  .catch(err => console.log('failed'))
+  .finally(() => console.log('done loading')); // always runs last</code></pre><div class="gotcha"><b>Gotcha</b><span>Because it can't see the value, <code>.finally</code> is not the place to do anything with the result &mdash; and if its own callback throws or returns a rejected promise, <em>that</em> becomes the new outcome, overriding whatever came before.</span></div>
+        </section>
+
+        <section class="topic" id="t9">
+          <h2><span class="num">09</span> Promise chaining</h2>
+          <p><b>Simple definition:</b> Chaining is stringing multiple <code>.then</code> calls together to run async steps one after another, each using the result of the last.</p><p><b>Technical definition:</b> Because every <code>.then</code> returns a new promise, and returning a promise from inside a <code>.then</code> callback makes the chain wait for it, you can sequence any number of async steps in a single flat chain instead of nesting them.</p><p><b>Why it is used:</b> It's the direct fix for callback hell &mdash; a chain reads top-to-bottom instead of growing sideways.</p><pre><code>getUser(1)
+  .then(user => getPosts(user.id))   // waits for this promise too
+  .then(posts => getComments(posts[0].id))
+  .then(comments => console.log(comments))
+  .catch(err => console.log('any step failed:', err.message));</code></pre><div class="gotcha"><b>Gotcha</b><span>Nesting <code>.then</code> calls instead of chaining them flat (<code>getUser().then(u => getPosts(u).then(p => ...))</code>) recreates callback hell with promises &mdash; the whole benefit is lost. Always <code>return</code> and chain flat.</span></div>
+        </section>
+
+        <section class="topic" id="t10">
+          <h2><span class="num">10</span> async/await</h2>
+          <p><b>Simple definition:</b> <code>async</code>/<code>await</code> is syntax that lets you write promise-based code that <em>looks</em> synchronous, top to bottom.</p><p><b>Technical definition:</b> An <code>async</code> function always returns a promise. Inside it, <code>await</code> pauses that function's execution (without blocking anything else) until the awaited promise settles, then resumes with its value.</p><p><b>Why it is used:</b> It reads like normal sequential code &mdash; loops, try/catch, and conditionals all work naturally, unlike inside a <code>.then</code> chain.</p><p><b>When not to use:</b> Do not use <code>await</code> for independent operations that could run at the same time &mdash; see "Sequential vs parallel async execution".</p><pre><code>async function loadDashboard(id) {
+  const user = await getUser(id);     // pauses here
+  const posts = await getPosts(user.id); // then here
+  return { user, posts };
+}
+
+loadDashboard(1).then(data => console.log(data));
+// loadDashboard itself always returns a promise</code></pre><p><b>Returns:</b> whatever you <code>return</code> from an <code>async</code> function is automatically wrapped in a resolved promise. If you <code>throw</code>, the returned promise rejects.</p><div class="gotcha"><b>Gotcha</b><span>"<code>await</code> pauses everything" is the common misreading &mdash; it only pauses <em>that function</em>. The rest of the program (other code, the event loop, other async functions) keeps running normally.</span></div>
+        </section>
+
+        <section class="topic" id="t11">
+          <h2><span class="num">11</span> try/catch with async</h2>
+          <p><b>Simple definition:</b> Wrapping <code>await</code> in <code>try</code>/<code>catch</code> lets you handle a rejected promise the same way you'd handle a thrown error.</p><p><b>Technical definition:</b> When an awaited promise rejects, <code>await</code> effectively re-throws that rejection reason at the point of the <code>await</code>, so an ordinary <code>catch</code> block around it will catch it.</p><p><b>Why it is used:</b> It unifies error handling for sync and async code into one familiar pattern, instead of a separate <code>.catch()</code> chain.</p><pre><code>async function loadUser(id) {
+  try {
+    const user = await fetchUser(id); // rejects
+    console.log(user);
+  } catch (err) {
+    console.log('failed:', err.message); // catches it
+  }
+}</code></pre><div class="gotcha"><b>Gotcha</b><span>The <code>try</code>/<code>catch</code> only catches a rejection from an <code>await</code> <em>inside its own block</em>. A promise you create but forget to <code>await</code> rejects on its own, outside the <code>try</code>, and the <code>catch</code> will never see it &mdash; it becomes an unhandled rejection instead.</span></div>
+        </section>
+
+        <section class="topic" id="t12">
+          <h2><span class="num">12</span> Promise.all</h2>
+          <p><b>Simple definition:</b> <code>Promise.all(promises)</code> waits for every promise in a list to succeed, and gives you back all their results together.</p><p><b>Technical definition:</b> It returns a single promise that fulfills with an array of results (in the same order as the input) once <em>all</em> input promises fulfill, or rejects immediately as soon as <em>any one</em> of them rejects ("fail-fast").</p><p><b>Why it is used:</b> Running independent async operations at the same time, when you need every result and can't proceed without all of them.</p><pre><code>const [user, posts, settings] = await Promise.all([
+  fetchUser(1), fetchPosts(1), fetchSettings(1)
+]); // all three run concurrently, not one after another</code></pre><div class="gotcha"><b>Gotcha</b><span>Fail-fast means one failure discards everything &mdash; even if 2 of 3 requests already succeeded, <code>Promise.all</code> rejects and you get none of the results back. Use <code>Promise.allSettled</code> if you need the successes even when something fails.</span></div>
+        </section>
+
+        <section class="topic" id="t13">
+          <h2><span class="num">13</span> Promise.allSettled</h2>
+          <p><b>Simple definition:</b> Like <code>Promise.all</code>, but it never fails &mdash; it waits for every promise to finish, whether it succeeded or not, and reports both.</p><p><b>Technical definition:</b> It always fulfills (never rejects) with an array of <code>{ status, value }</code> or <code>{ status, reason }</code> objects, one per input promise, once every one of them has settled.</p><p><b>Why it is used:</b> When you want the results of everything that succeeded, even if some operations failed &mdash; e.g. loading several independent widgets where one failing shouldn't blank out the rest.</p><pre><code>const results = await Promise.allSettled([
+  fetchA(), fetchB() // B rejects
+]);
+// [
+//   { status: 'fulfilled', value: 'A ok' },
+//   { status: 'rejected', reason: Error('B failed') }
+// ]
+results
+  .filter(r => r.status === 'fulfilled')
+  .forEach(r => console.log(r.value));</code></pre><div class="gotcha"><b>Gotcha</b><span>Because it never rejects, wrapping it in <code>try</code>/<code>catch</code> is pointless &mdash; you must check each <code>result.status</code> yourself instead of relying on an exception.</span></div>
+        </section>
+
+        <section class="topic" id="t14">
+          <h2><span class="num">14</span> Promise.race</h2>
+          <p><b>Simple definition:</b> <code>Promise.race(promises)</code> settles as soon as the <em>first</em> promise settles &mdash; win or lose.</p><p><b>Technical definition:</b> It returns a promise that adopts the outcome (fulfilled or rejected) of whichever input promise settles first; the rest keep running but their results are ignored.</p><p><b>Why it is used:</b> The classic use case is a timeout &mdash; race a real request against a timer that rejects, so a hung request can't stall forever.</p><pre><code>const timeout = new Promise((_, reject) =>
+  setTimeout(() => reject(new Error('timeout')), 3000)
+);
+
+const data = await Promise.race([fetchData(), timeout]);
+// resolves with fetchData()'s result if it beats 3s, else rejects</code></pre><div class="gotcha"><b>Gotcha</b><span>"Race" means first to <b>settle</b>, not first to succeed &mdash; if the fastest promise rejects, <code>Promise.race</code> rejects too, even if a slower one would have fulfilled. That's the exact difference from <code>Promise.any</code>.</span></div>
+        </section>
+
+        <section class="topic" id="t15">
+          <h2><span class="num">15</span> Promise.any</h2>
+          <p><b>Simple definition:</b> <code>Promise.any(promises)</code> gives you the first one that <em>succeeds</em>, ignoring failures unless everything fails.</p><p><b>Technical definition:</b> It fulfills as soon as any input promise fulfills. It only rejects if <em>all</em> of them reject, and in that case rejects with an <code>AggregateError</code> containing every individual rejection reason.</p><p><b>Why it is used:</b> Trying several equivalent sources (mirrors, fallback servers) and taking whichever answers first, successfully.</p><pre><code>const fastest = await Promise.any([
+  fetchFromMirrorA(),  // fails
+  fetchFromMirrorB(),  // succeeds
+  fetchFromMirrorC(),  // still pending
+]);
+// resolves with mirror B's result — A's failure is ignored</code></pre><div class="gotcha"><b>Gotcha</b><span>Don't confuse it with <code>Promise.race</code>: <code>race</code> cares about who settles first (success or failure); <code>any</code> specifically waits for the first <em>success</em> and only gives up if literally everything fails.</span></div>
+        </section>
+
+        <section class="topic" id="t16">
+          <h2><span class="num">16</span> Sequential vs parallel async execution</h2>
+          <p><b>Simple definition:</b> If async steps don't depend on each other, running them one-by-one with separate <code>await</code>s wastes time &mdash; you should start them together instead.</p><p><b>Technical definition:</b> Each <code>await</code> pauses until that specific promise settles before moving to the next line. If the operations are independent, awaiting them in sequence adds their durations together, when starting them concurrently (e.g. with <code>Promise.all</code>) only takes as long as the slowest one.</p><p><b>Why it matters:</b> this is one of the highest-impact real-world performance bugs in async code &mdash; three independent 1-second requests can take 3 seconds sequentially, or ~1 second run together.</p><pre><code>// SEQUENTIAL — slow, ~3× the time (unnecessary, they don't depend on each other)
+const a = await fetchA(); // waits
+const b = await fetchB(); // then waits again
+const c = await fetchC(); // then waits again
+
+// PARALLEL — fast, all start together
+const [a, b, c] = await Promise.all([fetchA(), fetchB(), fetchC()]);</code></pre><div class="gotcha"><b>Gotcha</b><span>The classic version of this bug is <code>await</code> inside a <code>for</code> loop over independent items &mdash; it silently runs every iteration one after another. If the items don't depend on each other, map to an array of promises first, then <code>Promise.all</code> that array.</span></div>
+        </section>
+
+        <section class="topic" id="t17">
+          <h2><span class="num">17</span> Error propagation in promises</h2>
+          <p><b>Simple definition:</b> An error in a promise chain skips forward past every <code>.then</code> until it finds a <code>.catch</code> (or an <code>await</code> inside a <code>try</code>/<code>catch</code>).</p><p><b>Technical definition:</b> A rejection (or a thrown error inside a <code>.then</code> callback, which becomes a rejection) propagates down the chain, skipping the success handlers of subsequent <code>.then</code> calls, until it reaches a rejection handler.</p><p><b>Why it is used:</b> This mirrors synchronous <code>try</code>/<code>catch</code> propagation, so you don't need an error check after every single async step &mdash; one handler at the end (or one <code>try</code>/<code>catch</code>) is usually enough.</p><pre><code>step1()
+  .then(step2)          // throws
+  .then(step3)          // SKIPPED — error is already propagating
+  .then(step4)          // SKIPPED
+  .catch(err => console.log('caught at the end:', err.message));</code></pre><div class="gotcha"><b>Gotcha</b><span>A promise that's created but never given a <code>.catch</code> (and never awaited inside a <code>try</code>) still fails silently at first &mdash; it becomes an <b>unhandled rejection</b>, which most environments will eventually log as a warning or crash the process.</span></div>
+        </section>
+
+        <section class="topic" id="t18">
+          <h2><span class="num">18</span> Promise cancellation concepts</h2>
+          <p><b>Simple definition:</b> Once a promise exists, you cannot cancel it directly &mdash; there's no built-in <code>.cancel()</code> method.</p><p><b>Technical definition:</b> A <code>Promise</code> represents a value that will eventually exist, not a runnable task &mdash; it has no concept of being stopped. What you actually cancel is the underlying <em>operation</em> (a fetch, a timer), which then causes its promise to reject.</p><p><b>Why it matters:</b> a component that unmounts, or a search box where the user typed a new query, both need a way to say "ignore the result of that earlier request" &mdash; and promises alone can't express that.</p><pre><code>// A promise cannot stop itself:
+const p = fetch('/slow-endpoint');
+// there is no p.cancel() — the request keeps running</code></pre><div class="gotcha"><b>Gotcha</b><span>"Cancelling a promise" is really shorthand for "cancelling the operation and ignoring its promise's eventual result" &mdash; see <code>AbortController</code>, the standard tool for the former.</span></div>
+        </section>
+
+        <section class="topic" id="t19">
+          <h2><span class="num">19</span> AbortController</h2>
+          <p><b>Simple definition:</b> <code>AbortController</code> is a standard way to tell a cancellable async operation (like <code>fetch</code>) to stop.</p><p><b>Technical definition:</b> Creating an <code>AbortController</code> gives you a <code>.signal</code> to pass into a cancellable API, and an <code>.abort()</code> method to call when you want it to stop. The operation then rejects its promise with an <code>AbortError</code>.</p><p><b>Why it is used:</b> Cancelling an in-flight request when a user navigates away, types a new search, or a component unmounts &mdash; so a stale, late-arriving response can't overwrite newer data.</p><pre><code>const controller = new AbortController();
+
+fetch('/search?q=abc', { signal: controller.signal })
+  .then(res => res.json())
+  .catch(err => {
+    if (err.name === 'AbortError') console.log('cancelled');
+  });
+
+controller.abort(); // triggers the rejection above</code></pre><div class="gotcha"><b>Gotcha</b><span>Aborting doesn't magically undo work already done, and it doesn't stop the underlying network byte transfer instantly &mdash; it tells the API to stop and reject its promise so <em>your code</em> can ignore the result; always check <code>err.name === 'AbortError'</code> so you don't treat a deliberate cancel as a real failure.</span></div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- ============ CODING QUESTIONS ============ -->
+  <div class="panel" id="panel-code" role="tabpanel" aria-labelledby="tab-code" hidden>
+    <p class="q-intro">11 questions, ordered easy → hard. Try each one before revealing the answer.</p>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q1</span><span class="lvl">easy</span></div>
+      <p class="qtopic">// sync vs async</p>
+      <p class="qtext">What order do these log?<pre><code>console.log("1");
+setTimeout(() => console.log("3"), 0);
+console.log("2");</code></pre></p>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p><code>1, 2, 3</code>. <code>setTimeout(fn, 0)</code> does not run immediately — it hands the callback to the runtime, which queues it to run only after all currently-running synchronous code finishes. So both synchronous logs always happen before the timer's callback, no matter how small the delay.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q2</span><span class="lvl">easy</span></div>
+      <p class="qtopic">// promise states</p>
+      <p class="qtext">What logs, and why does the second <code>resolve</code> have no effect?<pre><code>const p = new Promise(resolve => {
+  resolve("first");
+  resolve("second");
+});
+p.then(v => console.log(v));</code></pre></p>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p><code>"first"</code>. A promise can only settle <b>once</b> — pending → fulfilled/rejected is a one-way transition. The first call to <code>resolve</code> settles it; every call after that (even <code>reject</code>) is silently ignored.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q3</span><span class="lvl">easy</span></div>
+      <p class="qtopic">// then chaining</p>
+      <p class="qtext">What does the second <code>.then</code> receive, and why?<pre><code>Promise.resolve(5)
+  .then(n => { n * 2; })   // no return!
+  .then(result => console.log(result));</code></pre></p>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p><code>undefined</code>. The first <code>.then</code>'s callback has a <code>{}</code> block body but no explicit <code>return</code>, so it returns <code>undefined</code> — and <code>.then</code> always resolves its new promise with whatever the callback returned. This is the async version of the classic "forgot to return from an arrow block" bug.</p><p><b>Fix:</b> <code>n => n * 2</code> (implicit return) or <code>n => { return n * 2; }</code>.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q4</span><span class="lvl">medium</span></div>
+      <p class="qtopic">// microtask vs macrotask</p>
+      <p class="qtext">Predict the exact order:<pre><code>console.log("1");
+setTimeout(() => console.log("6"), 0);
+Promise.resolve().then(() => console.log("4"));
+queueMicrotask(() => console.log("5"));
+console.log("2");</code></pre></p>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p><code>1, 2, 4, 5, 6</code>.</p><p>All synchronous code runs first (<code>1</code>, <code>2</code>). Then, before anything else, the <b>entire microtask queue is drained</b> — the promise <code>.then</code> and <code>queueMicrotask</code> callbacks both run, in the order they were queued (<code>4</code>, then <code>5</code>). Only after the microtask queue is fully empty does the event loop take one macrotask off the queue — the <code>setTimeout</code> callback (<code>6</code>).</p><p><b>Rule:</b> microtasks (promises, <code>queueMicrotask</code>) always fully drain before the next macrotask (<code>setTimeout</code>, <code>setInterval</code>), regardless of delay values.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q5</span><span class="lvl">medium</span></div>
+      <p class="qtopic">// async/await ordering</p>
+      <p class="qtext">Predict the order:<pre><code>async function a() {
+  console.log("2");
+  await null;
+  console.log("5");
+}
+
+console.log("1");
+a();
+Promise.resolve().then(() => console.log("6"));
+setTimeout(() => console.log("7"), 0);
+console.log("3");</code></pre></p>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p><code>1, 2, 3, 5, 6, 7</code>.</p><p><code>a()</code> runs synchronously up to the <code>await</code> — that's why <code>"2"</code> logs before <code>"3"</code>. At <code>await null</code>, the function pauses and control returns to the caller, so <code>"3"</code> logs next. Everything after that <code>await</code> resumes as a <b>microtask</b>, so <code>"5"</code> and the already-queued <code>.then</code> (<code>"6"</code>) both run before the <code>setTimeout</code> macrotask (<code>"7"</code>). <code>await</code> effectively splits a function into a synchronous part before it and a microtask-scheduled part after it.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q6</span><span class="lvl">medium</span></div>
+      <p class="qtopic">// unhandled rejection</p>
+      <p class="qtext">Why does the <code>catch</code> block never run?<pre><code>function risky() {
+  return new Promise((res, rej) => rej(new Error("boom")));
+}
+
+try {
+  risky(); // not awaited!
+  console.log("after risky");
+} catch (err) {
+  console.log("caught:", err.message);
+}</code></pre></p>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p>Logs <code>"after risky"</code>, then a separate <b>unhandled promise rejection</b> warning — the <code>catch</code> block never runs.</p><p><code>try</code>/<code>catch</code> only catches errors <em>thrown synchronously</em> inside its block, or from an <code>await</code>ed promise. Here <code>risky()</code> is called but never awaited — the rejected promise it returns is simply discarded, and its rejection has nothing to do with the surrounding <code>try</code>/<code>catch</code> at all.</p><p><b>Fix:</b> <code>await risky();</code> inside the <code>try</code> block (inside an <code>async</code> function), or add a <code>.catch()</code> to the returned promise.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q7</span><span class="lvl">medium</span></div>
+      <p class="qtopic">// sequential vs parallel</p>
+      <p class="qtext">Roughly how long does each version take, given each fetch takes 1 second?<pre><code>// A
+const x = await fetchA();
+const y = await fetchB();
+
+// B
+const [x, y] = await Promise.all([fetchA(), fetchB()]);</code></pre></p>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p><b>A: ~2 seconds.</b> Each <code>await</code> fully waits before starting the next call — the two independent requests are forced to run one after another.</p><p><b>B: ~1 second.</b> Both promises are created and start running <em>before</em> either is awaited, so they run concurrently — the total time is roughly the slowest one, not the sum.</p><p>This is one of the most common real-world async performance bugs: sequential <code>await</code>s on work that doesn't actually depend on each other.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q8</span><span class="lvl">medium</span></div>
+      <p class="qtopic">// finally value</p>
+      <p class="qtext">What does this log?<pre><code>Promise.resolve("data")
+  .finally(() => "ignored")
+  .then(v => console.log(v));</code></pre></p>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p><code>"data"</code>.</p><p><code>.finally</code>'s callback receives no arguments and its return value is discarded — the original fulfillment value passes through untouched to the next <code>.then</code>. <code>.finally</code> can only affect the outcome if its own callback <em>throws</em> or returns a rejected promise, in which case that new rejection replaces the original result.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q9</span><span class="lvl">hard</span></div>
+      <p class="qtopic">// Promise.all fail-fast</p>
+      <p class="qtext">What does this log, and how would you get the successful results too?<pre><code>Promise.all([
+  Promise.resolve("A"),
+  Promise.reject(new Error("B failed")),
+  Promise.resolve("C"),
+])
+  .then(r => console.log("all:", r))
+  .catch(e => console.log("caught:", e.message));</code></pre></p>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p>Logs <code>"caught: B failed"</code> — the <code>.then</code> never runs.</p><p><code>Promise.all</code> is <b>fail-fast</b>: the instant any input promise rejects, the whole thing rejects immediately, and the successful results from A and C are simply lost — there's no way to recover them from this call.</p><p><b>To keep every result:</b></p><pre><code>const results = await Promise.allSettled([...]);
+const succeeded = results
+  .filter(r => r.status === 'fulfilled')
+  .map(r => r.value); // ['A', 'C']</code></pre>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q10</span><span class="lvl">hard</span></div>
+      <p class="qtopic">// race vs any</p>
+      <p class="qtext">What does each log, given A rejects fast and B resolves slower?<pre><code>const A = new Promise((_, rej) => setTimeout(() => rej("A failed"), 10));
+const B = new Promise(res => setTimeout(() => res("B ok"), 50));
+
+Promise.race([A, B]).then(console.log).catch(console.log);
+Promise.any([A, B]).then(console.log).catch(console.log);</code></pre></p>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p><code>Promise.race</code> logs <code>"A failed"</code> — it settles on whichever promise finishes <em>first</em>, win or lose, and A rejects first at 10ms.</p><p><code>Promise.any</code> logs <code>"B ok"</code> — it specifically waits for the first <b>success</b>, so A's rejection is ignored and it resolves with B's result once B succeeds at 50ms.</p><p><code>any</code> only rejects if <em>every</em> input promise rejects, and does so with an <code>AggregateError</code> collecting all the reasons.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q11</span><span class="lvl">hard</span></div>
+      <p class="qtopic">// abortcontroller</p>
+      <p class="qtext">What happens, and what should the <code>.catch</code> check for?<pre><code>const controller = new AbortController();
+
+fetch("/slow", { signal: controller.signal })
+  .then(res => res.json())
+  .then(data => console.log(data))
+  .catch(err => console.log("error:", err.message));
+
+setTimeout(() => controller.abort(), 100);</code></pre></p>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p>If the request hasn't finished within 100ms, calling <code>controller.abort()</code> makes the <code>fetch</code> promise reject with an <code>AbortError</code>, and the <code>.catch</code> logs that message.</p><p><b>The important check:</b> a well-written handler should distinguish a deliberate cancellation from a real failure:</p><pre><code>.catch(err => {
+  if (err.name === 'AbortError') {
+    console.log('request was cancelled — not a real error');
+  } else {
+    console.log('actual failure:', err.message);
+  }
+});</code></pre><p>Aborting doesn't "undo" the promise — a promise can't be cancelled, only the underlying operation can be, which is exactly what <code>AbortController</code> does; that then surfaces as a rejection you handle like any other.</p>
+        </div>
+      </details>
+    </div>
+  </div>
+</div>
+
+<footer>Asynchronous JavaScript Notebook · read the Explanations, test with Coding Questions</footer>
+
+<script>
+  const tabs = document.querySelectorAll('.tab');
+  const panels = { 'tab-notes': 'panel-notes', 'tab-code': 'panel-code' };
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => selectTab(tab.id));
+    tab.addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        const ids = Object.keys(panels);
+        const i = ids.indexOf(tab.id);
+        const next = e.key === 'ArrowRight' ? (i + 1) % ids.length : (i - 1 + ids.length) % ids.length;
+        document.getElementById(ids[next]).focus();
+        selectTab(ids[next]);
+      }
+    });
+  });
+  function selectTab(id) {
+    tabs.forEach(t => {
+      const on = t.id === id;
+      t.setAttribute('aria-selected', on);
+      document.getElementById(panels[t.id]).hidden = !on;
+    });
+    window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+  }
+
+  const tocLinks = document.querySelectorAll('.toc a');
+  const sections = [...document.querySelectorAll('section.topic')];
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(en => {
+      if (en.isIntersecting) {
+        const id = en.target.id;
+        tocLinks.forEach(l => l.classList.toggle('active', l.getAttribute('href') === '#' + id));
+      }
+    });
+  }, { rootMargin: '-120px 0px -70% 0px' });
+  sections.forEach(s => obs.observe(s));
+</script>

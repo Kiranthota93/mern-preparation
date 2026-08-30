@@ -1,0 +1,654 @@
+<title>ES6+ Features Notebook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=JetBrains+Mono:wght@400;600&display=swap">
+
+<style>
+  :root {
+    --paper: #F7F6F2;
+    --surface: #FFFFFF;
+    --ink: #1A1917;
+    --ink-soft: #55524B;
+    --ink-faint: #8A867C;
+    --accent: #C77E12;
+    --accent-soft: #F3E4C6;
+    --teal: #2A6F6B;
+    --line: #E4E0D6;
+    --code-bg: #F2EFE7;
+    --shadow: 0 1px 2px rgba(26,25,23,.04), 0 8px 24px rgba(26,25,23,.06);
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #17161A;
+      --surface: #201F24;
+      --ink: #EDEAE3;
+      --ink-soft: #B4AFA4;
+      --ink-faint: #7E7A70;
+      --accent: #E8A32C;
+      --accent-soft: #3A2E17;
+      --teal: #6FC3BC;
+      --line: #322F38;
+      --code-bg: #1B1A1F;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #17161A;
+    --surface: #201F24;
+    --ink: #EDEAE3;
+    --ink-soft: #B4AFA4;
+    --ink-faint: #7E7A70;
+    --accent: #E8A32C;
+    --accent-soft: #3A2E17;
+    --teal: #6FC3BC;
+    --line: #322F38;
+    --code-bg: #1B1A1F;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 30px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Newsreader", Georgia, serif;
+    font-size: 18px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  header {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--paper) 88%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .head-inner {
+    max-width: 1080px; margin: 0 auto;
+    padding: 18px 24px 0;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .brand { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .brand h1 {
+    font-family: "Fraunces", serif; font-weight: 600;
+    font-size: 26px; margin: 0; letter-spacing: -.01em;
+  }
+  .brand .tag {
+    font-family: "JetBrains Mono", monospace; font-size: 11px;
+    letter-spacing: .14em; text-transform: uppercase;
+    color: var(--accent); background: var(--accent-soft);
+    padding: 4px 9px; border-radius: 999px;
+  }
+  .tabs { display: flex; gap: 4px; }
+  .tab {
+    appearance: none; border: none; background: none; cursor: pointer;
+    font-family: "Fraunces", serif; font-size: 16px; font-weight: 500;
+    color: var(--ink-soft); padding: 10px 4px 14px; margin-right: 22px;
+    border-bottom: 2px solid transparent; transition: color .15s;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+  .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 32px 24px 80px; }
+  .layout { display: grid; grid-template-columns: 220px 1fr; gap: 40px; align-items: start; }
+  @media (max-width: 780px) { .layout { grid-template-columns: 1fr; } .toc { display: none; } }
+
+  .toc {
+    position: sticky; top: 130px;
+    font-family: "JetBrains Mono", monospace; font-size: 12.5px;
+    line-height: 1.4; max-height: calc(100vh - 150px); overflow-y: auto;
+  }
+  .toc a {
+    display: block; color: var(--ink-faint); text-decoration: none;
+    padding: 5px 0; border-left: 2px solid transparent; padding-left: 12px;
+    transition: color .12s, border-color .12s;
+  }
+  .toc a:hover { color: var(--ink); }
+  .toc a.active { color: var(--accent); border-left-color: var(--accent); }
+
+  .intro { color: var(--ink-soft); font-size: 17px; margin: 0 0 8px; max-width: 62ch; }
+  section.topic { scroll-margin-top: 130px; padding: 30px 0; border-top: 1px solid var(--line); }
+  section.topic:first-of-type { border-top: none; padding-top: 6px; }
+  .topic h2 {
+    font-family: "Fraunces", serif; font-weight: 600; font-size: 25px;
+    margin: 0 0 4px; letter-spacing: -.01em; text-wrap: balance;
+    display: flex; align-items: baseline; gap: 12px;
+  }
+  .topic h2 .num {
+    font-family: "JetBrains Mono", monospace; font-size: 13px;
+    color: var(--accent); font-weight: 600;
+  }
+  .topic p { max-width: 64ch; margin: 12px 0; }
+  .topic ul { max-width: 64ch; padding-left: 22px; }
+  .topic li { margin: 6px 0; }
+  code {
+    font-family: "JetBrains Mono", monospace; font-size: .82em;
+    background: var(--code-bg); padding: 2px 6px; border-radius: 6px;
+  }
+  pre {
+    background: var(--code-bg); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 16px 18px; overflow-x: auto;
+    box-shadow: var(--shadow); margin: 16px 0;
+  }
+  pre code { background: none; padding: 0; font-size: 13.5px; line-height: 1.6; color: var(--ink); }
+  .gotcha {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: var(--accent-soft); border-radius: 10px;
+    padding: 12px 15px; margin: 14px 0; max-width: 64ch;
+    font-size: 15.5px; color: var(--ink);
+  }
+  .gotcha b { color: var(--accent); font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; }
+
+  .cm { color: var(--ink-faint); font-style: italic; }
+  .kw { color: var(--teal); font-weight: 600; }
+  .st { color: var(--accent); }
+
+  .q-intro { color: var(--ink-soft); max-width: 62ch; margin-bottom: 26px; }
+  .qcard {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 20px 22px; margin: 16px 0;
+    box-shadow: var(--shadow);
+  }
+  .qhead { display: flex; align-items: baseline; gap: 12px; margin-bottom: 6px; }
+  .qhead .qn {
+    font-family: "JetBrains Mono", monospace; font-size: 12px;
+    color: var(--accent); background: var(--accent-soft);
+    padding: 3px 8px; border-radius: 6px; font-weight: 600;
+  }
+  .qhead .lvl {
+    margin-left: auto; font-family: "JetBrains Mono", monospace;
+    font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--ink-faint); border: 1px solid var(--line);
+    padding: 2px 8px; border-radius: 999px;
+  }
+  .qtext { font-size: 17px; margin: 4px 0 12px; }
+  .qtopic { font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--teal); }
+  details.answer summary {
+    cursor: pointer; font-family: "Fraunces", serif; font-weight: 500;
+    color: var(--teal); font-size: 15px; list-style: none; user-select: none;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  details.answer summary::-webkit-details-marker { display: none; }
+  details.answer summary::before { content: "▸"; transition: transform .15s; }
+  details.answer[open] summary::before { transform: rotate(90deg); }
+  details.answer summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+  .ans-body { margin-top: 12px; }
+
+  .panel[hidden] { display: none; }
+  footer { text-align: center; color: var(--ink-faint); font-size: 13px; font-family: "JetBrains Mono", monospace; padding: 20px; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<header>
+  <div class="head-inner">
+    <div class="brand">
+      <h1>ES6+ Features</h1>
+      <span class="tag">Notebook</span>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Notebook sections">
+      <button class="tab" role="tab" id="tab-notes" aria-controls="panel-notes" aria-selected="true">Explanations</button>
+      <button class="tab" role="tab" id="tab-code" aria-controls="panel-code" aria-selected="false">Coding Questions</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ============ EXPLANATIONS ============ -->
+  <div class="panel" id="panel-notes" role="tabpanel" aria-labelledby="tab-notes">
+    <div class="layout">
+      <nav class="toc" aria-label="Topics">
+        <a href="#t1">01 · Template literals</a>
+        <a href="#t2">02 · Destructuring</a>
+        <a href="#t3">03 · Spread syntax</a>
+        <a href="#t4">04 · Rest parameters</a>
+        <a href="#t5">05 · Default parameters</a>
+        <a href="#t6">06 · Arrow functions</a>
+        <a href="#t7">07 · Enhanced object literals</a>
+        <a href="#t8">08 · Computed property names</a>
+        <a href="#t9">09 · Modules</a>
+        <a href="#t10">10 · import</a>
+        <a href="#t11">11 · export</a>
+        <a href="#t12">12 · Named exports</a>
+        <a href="#t13">13 · Default exports</a>
+        <a href="#t14">14 · Optional chaining</a>
+        <a href="#t15">15 · Nullish coalescing</a>
+        <a href="#t16">16 · Logical assignment operators</a>
+        <a href="#t17">17 · for...of</a>
+        <a href="#t18">18 · Symbols</a>
+        <a href="#t19">19 · Iterators</a>
+        <a href="#t20">20 · Generators</a>
+        <a href="#t21">21 · Map</a>
+        <a href="#t22">22 · Set</a>
+        <a href="#t23">23 · WeakMap</a>
+        <a href="#t24">24 · WeakSet</a>
+      </nav>
+
+      <main>
+        <p class="intro">Reference notes for ES6+ Features. Read a topic, note the <b style="color:var(--accent)">Gotcha</b>, then switch to Coding Questions.</p>
+
+        <section class="topic" id="t1">
+          <h2><span class="num">01</span> Template literals</h2>
+          <p><b>Simple definition:</b> Backtick-quoted strings that let you interpolate variables directly and span multiple lines without special escape characters.</p><p><b>What ES6 added:</b> before this, building a string with variables meant painful concatenation (<code>'Hi, ' + name + '!'</code>); template literals let you write <code>`Hi, ${name}!`</code> directly, and backticked strings can span multiple lines as-is.</p><pre><code>const name = 'Ada';
+const greeting = `Hello, ${name}! You are ${2024 - 1815} years old.`;
+
+const multi = `line one
+line two`; // real newline, no \n needed</code></pre><div class="gotcha"><b>Gotcha</b><span>Tagged templates (<code>tag\`text ${value}\`</code>) let a function intercept and process the literal's pieces before the final string is built — this is how libraries like <code>styled-components</code> parse CSS written inside a template literal.</span></div>
+        </section>
+
+        <section class="topic" id="t2">
+          <h2><span class="num">02</span> Destructuring</h2>
+          <p><b>Simple definition:</b> ES6's syntax for pulling values out of arrays (by position) or objects (by name) directly into variables.</p><p><b>What ES6 added:</b> a concise, built-in replacement for writing individual <code>const x = obj.x;</code> or <code>const first = arr[0];</code> lines one at a time.</p><pre><code>const [a, b] = [1, 2];             // array — by position
+const { name, age } = user;        // object — by name</code></pre><div class="gotcha"><b>Gotcha</b><span>For the full depth of object destructuring (nesting, renaming, defaults), see "Destructuring" under this, objects &amp; prototypes — here it's about recognizing it as one of ES6's headline syntax additions.</span></div>
+        </section>
+
+        <section class="topic" id="t3">
+          <h2><span class="num">03</span> Spread syntax</h2>
+          <p><b>Simple definition:</b> The <code>...</code> operator that expands an array or object into its individual elements/properties.</p><p><b>What ES6 added (ES2018 for objects):</b> a concise way to copy, merge, or pass array/object contents without <code>concat</code>, <code>Object.assign</code>, or <code>apply</code>.</p><pre><code>[...[1,2], ...[3,4]];   // [1,2,3,4]
+{ ...user, age: 30 };   // shallow-copy + override</code></pre><div class="gotcha"><b>Gotcha</b><span>See "Spread with arrays" / "Object spread" elsewhere in this app for the shallow-copy caveat — the important thing here is recognizing <code>...</code> as one syntax with two related but distinct uses (arrays vs objects, expand vs collect).</span></div>
+        </section>
+
+        <section class="topic" id="t4">
+          <h2><span class="num">04</span> Rest parameters</h2>
+          <p><b>Simple definition:</b> The same <code>...</code> syntax, but used in a parameter list to <em>collect</em> the remaining arguments into a real array.</p><p><b>What ES6 added:</b> a real-array replacement for the old, awkward <code>arguments</code> object (which isn't a true array and doesn't exist at all in arrow functions).</p><pre><code>function sum(...nums) { return nums.reduce((a,b) => a+b, 0); }
+sum(1, 2, 3); // 6 — 'nums' is a genuine array</code></pre><div class="gotcha"><b>Gotcha</b><span>Rest <em>collects</em> (in a parameter list); spread <em>expands</em> (in a call or literal) — same three dots, opposite direction, and it's easy to mix the two names up under pressure.</span></div>
+        </section>
+
+        <section class="topic" id="t5">
+          <h2><span class="num">05</span> Default parameters</h2>
+          <p><b>Simple definition:</b> A fallback value a parameter takes when its argument is missing or explicitly <code>undefined</code>.</p><p><b>What ES6 added:</b> before this, defaults required a manual check inside the function body (<code>b = b || 2;</code>) — with its own bug, since that also overrides a deliberately passed <code>0</code>.</p><pre><code>function multiply(a, b = 2) { return a * b; }
+multiply(5);       // 10
+multiply(5, null); // 0 — default only triggers on undefined, NOT null</code></pre><div class="gotcha"><b>Gotcha</b><span>The old <code>b || 2</code> pattern breaks on any falsy argument (<code>0</code>, <code>''</code>); ES6 default parameters correctly trigger only on <code>undefined</code>, which is the whole reason this feature exists as language syntax rather than a userland idiom.</span></div>
+        </section>
+
+        <section class="topic" id="t6">
+          <h2><span class="num">06</span> Arrow functions</h2>
+          <p><b>Simple definition:</b> Shorter function syntax that also, distinctively, has no <code>this</code> of its own — it inherits <code>this</code> lexically from its surrounding scope.</p><p><b>What ES6 added:</b> concise syntax AND solved the classic "lost <code>this</code> in a callback" problem that previously required <code>.bind(this)</code> or <code>const self = this;</code> workarounds.</p><pre><code>const double = n => n * 2;
+
+const timer = {
+  label: 'x',
+  start() { setTimeout(() => console.log(this.label), 100); } // inherits start()'s this
+};</code></pre><div class="gotcha"><b>Gotcha</b><span>For the full depth on <code>this</code> inheritance and when NOT to use an arrow (never as an object method), see "this in arrow functions" under this, objects &amp; prototypes — the point here is recognizing arrow functions as the ES6 feature that fixed this long-standing pain point.</span></div>
+        </section>
+
+        <section class="topic" id="t7">
+          <h2><span class="num">07</span> Enhanced object literals</h2>
+          <p><b>Simple definition:</b> ES6 shorthand for writing object literals — method shorthand, property shorthand, and computed keys, all without the old boilerplate.</p><p><b>Technical definition:</b> Before ES6: <code>{ name: name, greet: function() {...} }</code>. After: property shorthand when the variable name matches the key, method shorthand dropping <code>function</code>, and <code>[expr]:</code> for computed keys — all in one literal.</p><pre><code>const name = 'Ada';
+const key = 'role';
+
+const user = {
+  name,                    // shorthand for name: name
+  greet() { return 'hi'; }, // shorthand for greet: function(){...}
+  [key]: 'admin'            // computed key
+};</code></pre><div class="gotcha"><b>Gotcha</b><span>Method shorthand (<code>greet() {}</code>) creates a regular function, not an arrow — it still gets its own <code>this</code>, bound normally by how it's called. Don't assume shorthand syntax changes <code>this</code> behavior; it doesn't.</span></div>
+        </section>
+
+        <section class="topic" id="t8">
+          <h2><span class="num">08</span> Computed property names</h2>
+          <p><b>Simple definition:</b> Using <code>[expression]</code> as an object literal's key, so the key itself can be a variable or any computed value.</p><p><b>What ES6 added:</b> before this, a dynamic key required creating the object first, then assigning the property in a separate step (<code>const obj = {}; obj[key] = value;</code>).</p><pre><code>const field = 'status';
+const obj = { [field]: 'active' }; // { status: 'active' } — built inline</code></pre><div class="gotcha"><b>Gotcha</b><span>Keys are always coerced to strings (or left as symbols) — <code>{ [{}]: 'x' }</code> silently becomes the key <code>'[object Object]'</code>, which is rarely what's intended; use a <code>Map</code> if you genuinely need object keys.</span></div>
+        </section>
+
+        <section class="topic" id="t9">
+          <h2><span class="num">09</span> Modules</h2>
+          <p><b>Simple definition:</b> ES6's native way to split code across files, with <code>import</code>/<code>export</code>, replacing older non-standard patterns (global script tags, CommonJS in the browser via bundlers, AMD).</p><p><b>Technical definition:</b> Each ES module has its own scope (nothing leaks to global by accident), is statically analyzed at parse time, and its imports are hoisted and resolved before the module's own code runs — see "ES Modules" under Modules &amp; runtime for the full CJS-vs-ESM comparison.</p><pre><code>// math.js
+export function add(a, b) { return a + b; }
+
+// app.js
+import { add } from './math.js';</code></pre><div class="gotcha"><b>Gotcha</b><span>In the browser, a script must be explicitly marked as a module (<code>&lt;script type="module"&gt;</code>) to use <code>import</code>/<code>export</code> at all — plain scripts don't get this syntax, and modules also run in strict mode automatically and defer execution until the DOM is parsed.</span></div>
+        </section>
+
+        <section class="topic" id="t10">
+          <h2><span class="num">10</span> import</h2>
+          <p><b>Simple definition:</b> The ES6 keyword for pulling named or default values out of another module.</p><pre><code>import { add, subtract } from './math.js'; // named
+import Calculator from './calc.js';        // default
+import * as math from './math.js';         // namespace object — everything</code></pre><div class="gotcha"><b>Gotcha</b><span>Static <code>import</code> must sit at the top level of a file — never inside an <code>if</code> or a function — because it's resolved before any code runs; use the separate <code>import()</code> function form (see "Dynamic imports") for conditional, runtime-decided loading.</span></div>
+        </section>
+
+        <section class="topic" id="t11">
+          <h2><span class="num">11</span> export</h2>
+          <p><b>Simple definition:</b> The ES6 keyword that marks a value as available for other modules to import.</p><pre><code>export const PI = 3.14;               // named export, attached to a declaration
+export { add, subtract };              // named exports, listed separately
+export default class Calculator {}     // the module's one default export</code></pre><div class="gotcha"><b>Gotcha</b><span>A module can have unlimited named exports but at most one default — see "Named exports" / "Default exports" for the practical difference in how each is imported.</span></div>
+        </section>
+
+        <section class="topic" id="t12">
+          <h2><span class="num">12</span> Named exports</h2>
+          <p><b>Simple definition:</b> Exports referred to by their exact name — a module can have as many as it wants, and importers must use (or explicitly rename) that same name.</p><pre><code>// utils.js
+export const add = (a, b) => a + b;
+export const subtract = (a, b) => a - b;
+
+// app.js
+import { add, subtract as minus } from './utils.js'; // rename with 'as'</code></pre><div class="gotcha"><b>Gotcha</b><span>Named imports must be wrapped in <code>{ }</code> and must match an actual exported name — <code>import add from './utils.js'</code> (no braces) is trying to import a <em>default</em> export that doesn't exist here, and silently gives <code>undefined</code> rather than an error in some setups.</span></div>
+        </section>
+
+        <section class="topic" id="t13">
+          <h2><span class="num">13</span> Default exports</h2>
+          <p><b>Simple definition:</b> A module's single "main" export, imported without needing curly braces and importable under any name the importer chooses.</p><pre><code>// Calculator.js
+export default class Calculator { /* ... */ }
+
+// app.js — the imported name doesn't have to match anything
+import Calc from './Calculator.js';
+import MyCalculator from './Calculator.js'; // also valid, same module</code></pre><div class="gotcha"><b>Gotcha</b><span>Because a default import's local name is entirely up to the importer, typos are never caught — <code>import Calclator from './Calculator.js'</code> (misspelled) works fine syntactically, unlike a named import typo, which fails immediately since it must match the real exported name.</span></div>
+        </section>
+
+        <section class="topic" id="t14">
+          <h2><span class="num">14</span> Optional chaining</h2>
+          <p><b>Simple definition:</b> <code>?.</code> safely reads a nested property, returning <code>undefined</code> instead of throwing if something along the way is <code>null</code>/<code>undefined</code>.</p><p><b>What it replaced:</b> long, repetitive guard chains like <code>user &amp;&amp; user.profile &amp;&amp; user.profile.city</code>.</p><pre><code>user.profile?.city;   // undefined instead of a TypeError, if profile is missing
+user.getName?.();     // safe optional call
+user.tags?.[0];        // safe optional index</code></pre><div class="gotcha"><b>Gotcha</b><span>It only guards against <code>null</code>/<code>undefined</code> — it won't protect you from other genuine errors deeper in an expression, and it can't be used on the left side of an assignment.</span></div>
+        </section>
+
+        <section class="topic" id="t15">
+          <h2><span class="num">15</span> Nullish coalescing</h2>
+          <p><b>Simple definition:</b> <code>??</code> provides a fallback, but only when the left side is <code>null</code> or <code>undefined</code> — unlike <code>||</code>, it doesn't treat <code>0</code>, <code>''</code>, or <code>false</code> as "missing".</p><pre><code>const count = 0;
+count || 10;  // 10 — bug: 0 is falsy, treated as missing
+count ?? 10;  // 0  — correct: 0 is a real, valid value</code></pre><div class="gotcha"><b>Gotcha</b><span>You cannot mix <code>??</code> directly with <code>||</code> or <code>&amp;&amp;</code> without parentheses — <code>a || b ?? c</code> is a <code>SyntaxError</code>, forcing you to make the intended precedence explicit.</span></div>
+        </section>
+
+        <section class="topic" id="t16">
+          <h2><span class="num">16</span> Logical assignment operators</h2>
+          <p><b>Simple definition:</b> <code>||=</code>, <code>&amp;&amp;=</code>, and <code>??=</code> combine a logical check with an assignment, only assigning when the check passes.</p><p><b>Technical definition:</b> <code>a ||= b</code> assigns <code>b</code> to <code>a</code> only if <code>a</code> is currently falsy; <code>a &amp;&amp;= b</code> assigns only if <code>a</code> is truthy; <code>a ??= b</code> assigns only if <code>a</code> is <code>null</code>/<code>undefined</code>. Crucially, all three <b>short-circuit</b> — if the condition fails, the right-hand side isn't even evaluated, and no assignment happens at all.</p><pre><code>let config = { retries: 0 };
+config.retries ||= 3; // 3 — 0 is falsy, so it WAS reassigned (probably not intended!)
+
+let config2 = { retries: 0 };
+config2.retries ??= 3; // 0 — stays 0, since 0 is not null/undefined (correct)</code></pre><div class="gotcha"><b>Gotcha</b><span>The short-circuiting matters for more than performance — if the right-hand side is a setter with side effects (or an expensive call), <code>??=</code> guarantees that code never runs at all when the left side is already non-nullish, unlike writing out <code>a = a ?? expensiveCall()</code> naively without checking it's actually equivalent.</span></div>
+        </section>
+
+        <section class="topic" id="t17">
+          <h2><span class="num">17</span> for...of</h2>
+          <p><b>Simple definition:</b> A loop that iterates over the <b>values</b> of any iterable — arrays, strings, Maps, Sets, and any custom object implementing the iterator protocol.</p><pre><code>for (const value of [10, 20, 30]) console.log(value); // 10, 20, 30 — values
+for (const char of 'hi') console.log(char);            // 'h', 'i'</code></pre><p><b>The essential contrast — <code>for...of</code> vs <code>for...in</code>:</b> <code>for...of</code> gives you <b>values</b> from an <em>iterable</em>. <code>for...in</code> gives you enumerable <b>keys</b> (as strings) from any object, including inherited ones, and should basically never be used on arrays.</p><pre><code>const arr = [10, 20, 30];
+for (const x of arr) console.log(x);      // 10, 20, 30 — the values
+for (const i in arr) console.log(typeof i, i); // 'string' '0', 'string' '1', 'string' '2' — STRING indices!</code></pre><div class="gotcha"><b>Gotcha</b><span>Using <code>for...in</code> on an array gives you string indices, not numbers — and it will also pick up any enumerable properties added to <code>Array.prototype</code> by other code. Use <code>for...of</code> (values) or <code>.forEach</code>/<code>.entries()</code> (index+value) for arrays instead.</span></div>
+        </section>
+
+        <section class="topic" id="t18">
+          <h2><span class="num">18</span> Symbols</h2>
+          <p><b>Simple definition:</b> A primitive type whose every value is guaranteed unique — used mainly as "invisible", collision-proof object keys.</p><p><b>Technical definition:</b> <code>Symbol('description')</code> creates a value that is never <code>===</code> to any other symbol, even one with the identical description. Symbol-keyed properties are skipped by <code>Object.keys</code>, <code>for...in</code>, and <code>JSON.stringify</code> — they only show up via <code>Object.getOwnPropertySymbols</code>.</p><pre><code>const id = Symbol('id');
+const user = { name: 'Ada', [id]: 123 };
+Object.keys(user);       // ['name'] — the symbol key is invisible here
+JSON.stringify(user);    // '{"name":"Ada"}' — symbol silently dropped
+
+Symbol('x') === Symbol('x'); // false — always unique, even with the same description</code></pre><div class="gotcha"><b>Gotcha</b><span><code>Symbol.iterator</code> is a "well-known symbol" built into the language — it's the exact key JavaScript looks for to decide whether something is iterable, which is what makes <code>for...of</code>, spread, and destructuring work on arrays, strings, Maps, and Sets (see "Iterators").</span></div>
+        </section>
+
+        <section class="topic" id="t19">
+          <h2><span class="num">19</span> Iterators</h2>
+          <p><b>Simple definition:</b> An object with a <code>.next()</code> method that hands out one value at a time, marking when it's done.</p><p><b>Technical definition:</b> An object is <b>iterable</b> if it has a <code>[Symbol.iterator]()</code> method returning an <b>iterator</b> — an object whose <code>.next()</code> returns <code>{ value, done }</code> each call, until <code>done</code> is <code>true</code>. This shared protocol is what <code>for...of</code>, spread, and destructuring all rely on.</p><pre><code>const arr = [10, 20];
+const it = arr[Symbol.iterator]();
+it.next(); // { value: 10, done: false }
+it.next(); // { value: 20, done: false }
+it.next(); // { value: undefined, done: true }</code></pre><div class="gotcha"><b>Gotcha</b><span>Implementing <code>[Symbol.iterator]()</code> on your own custom object automatically makes it work with <code>for...of</code>, spread, and destructuring — you get native-feeling syntax support for free, without those features knowing anything specifically about your object's structure.</span></div>
+        </section>
+
+        <section class="topic" id="t20">
+          <h2><span class="num">20</span> Generators</h2>
+          <p><b>Simple definition:</b> A <code>function*</code> that can pause with <code>yield</code> and resume later — the easy way to build an iterator without hand-writing a <code>.next()</code> method.</p><p><b>Technical definition:</b> Calling a generator function returns a generator object (which is itself an iterator) without running the body. Each <code>.next()</code> call runs until the next <code>yield</code>, returns that value, and pauses exactly there until the next <code>.next()</code> call.</p><pre><code>function* range(start, end) {
+  for (let i = start; i < end; i++) yield i;
+}
+for (const n of range(1, 4)) console.log(n); // 1, 2, 3
+
+function* naturals() { let n = 1; while (true) yield n++; } // infinite, but LAZY —
+// nothing runs until .next() is actually called, so this is perfectly safe to define</code></pre><div class="gotcha"><b>Gotcha</b><span>Generators are lazy by nature — this is precisely what makes an "infinite" generator safe to write: each value is computed only the instant it's requested, never all at once upfront.</span></div>
+        </section>
+
+        <section class="topic" id="t21">
+          <h2><span class="num">21</span> Map</h2>
+          <p><b>Simple definition:</b> A key-value collection like an object, but with real advantages: any type can be a key, insertion order is preserved, and it has a built-in <code>.size</code>.</p><p><b>Map vs Object — the real comparison:</b> object keys are always coerced to strings/symbols; a <code>Map</code> key can be <em>anything</em> — including an object or a function. Objects don't guarantee iteration order in every edge case; a <code>Map</code> always iterates in insertion order. Checking size means <code>Object.keys(obj).length</code> for an object, versus a direct <code>.size</code> property on a <code>Map</code>.</p><pre><code>const objKey = { role: 'admin' };
+const m = new Map();
+m.set(objKey, 'has extra permissions');
+m.set('plain string key', 'ok');
+
+m.get(objKey); // 'has extra permissions' — the OBJECT itself is the key
+m.size;         // 2
+
+for (const [key, value] of m) console.log(key, value); // directly iterable</code></pre><div class="gotcha"><b>Gotcha</b><span>An object literal cannot use another object as a genuinely distinct key — <code>{ [objKey]: 'x' }</code> coerces <code>objKey</code> to the useless string <code>'[object Object]'</code>. This is exactly the case a <code>Map</code> was designed to solve.</span></div>
+        </section>
+
+        <section class="topic" id="t22">
+          <h2><span class="num">22</span> Set</h2>
+          <p><b>Simple definition:</b> A collection that only ever holds unique values — adding a duplicate is silently a no-op.</p><pre><code>const nums = new Set([1, 2, 2, 3]);
+nums.size;        // 3 — the duplicate 2 was never actually added
+nums.has(2);       // true
+nums.add(2);       // no-op, already present
+
+const unique = [...new Set([1, 2, 2, 3])]; // [1, 2, 3] — the standard dedupe idiom</code></pre><div class="gotcha"><b>Gotcha</b><span><code>Set</code> uses <code>===</code>-like equality (technically "SameValueZero"), so two structurally-identical but separately-created objects are still treated as different members — <code>new Set([{}, {}]).size</code> is <code>2</code>, not <code>1</code>, because they're different references.</span></div>
+        </section>
+
+        <section class="topic" id="t23">
+          <h2><span class="num">23</span> WeakMap</h2>
+          <p><b>Simple definition:</b> Like <code>Map</code>, but its keys must be objects and are held <b>weakly</b> — that reference alone doesn't stop garbage collection.</p><p><b>Technical definition:</b> <code>WeakMap</code> keys must be objects (never primitives), aren't iterable, and have no <code>.size</code> — you can only interact with a specific object you already have a reference to.</p><pre><code>let user = { name: 'Ada' };
+const metadata = new WeakMap();
+metadata.set(user, { lastSeen: Date.now() });
+
+user = null; // no other references — the WeakMap entry can now be garbage collected too</code></pre><div class="gotcha"><b>Gotcha</b><span>The missing iteration/<code>.size</code> is deliberate, not a limitation to work around — see "WeakMap/WeakSet use cases" under Advanced JavaScript for why exposing that would be inherently unpredictable given when GC actually runs.</span></div>
+        </section>
+
+        <section class="topic" id="t24">
+          <h2><span class="num">24</span> WeakSet</h2>
+          <p><b>Simple definition:</b> Like <code>Set</code>, but its members must be objects, held weakly — not iterable, no <code>.size</code>.</p><p><b>Why it is used:</b> tracking "has this specific object been seen/processed?" without preventing that object from being garbage collected once nothing else references it.</p><pre><code>const processed = new WeakSet();
+function process(obj) {
+  if (processed.has(obj)) return; // already handled
+  processed.add(obj);
+  // ... do the real work
+}</code></pre><div class="gotcha"><b>Gotcha</b><span>Because it can't be iterated, a <code>WeakSet</code> is only useful for membership checks (<code>.has()</code>) on objects you already have a direct reference to — you can never ask it "what's currently in you?", which is the deliberate trade for allowing garbage collection.</span></div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- ============ CODING QUESTIONS ============ -->
+  <div class="panel" id="panel-code" role="tabpanel" aria-labelledby="tab-code" hidden>
+    <p class="q-intro">10 questions, ordered easy → hard. Try each one before revealing the answer.</p>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q1</span><span class="lvl">easy</span></div>
+      <p class="qtopic">// template literals</p>
+      <p class="qtext">Rewrite this using a template literal:<pre><code>const msg = 'Hello, ' + name + '! You have ' + count + ' items.';</code></pre></p>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <pre><code>const msg = `Hello, ${name}! You have ${count} items.`;</code></pre><p>Any valid expression can go inside <code>${...}</code> — not just plain variables, e.g. <code>${count + 1}</code> or <code>${user.name.toUpperCase()}</code> both work directly.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q2</span><span class="lvl">easy</span></div>
+      <p class="qtopic">// for...of vs for...in</p>
+      <p class="qtext">What does each loop log, and why are they different?<pre><code>const arr = [10, 20, 30];
+for (const x of arr) console.log(x);
+for (const i in arr) console.log(i);</code></pre></p>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p>First loop logs <code>10, 20, 30</code> — the actual <b>values</b>. Second loop logs <code>"0", "1", "2"</code> — the <b>keys</b>, as strings. <code>for...of</code> iterates values from an iterable; <code>for...in</code> iterates enumerable keys from any object, and on an array that means its string indices, not its values — a common source of confusion.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q3</span><span class="lvl">easy</span></div>
+      <p class="qtopic">// Set dedupe</p>
+      <p class="qtext">Write a one-liner that removes duplicates from <code>[1, 2, 2, 3, 3, 3]</code>.</p>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <pre><code>const unique = [...new Set([1, 2, 2, 3, 3, 3])];
+// [1, 2, 3]</code></pre><p>A <code>Set</code> can only ever hold unique values — constructing one from the array automatically drops duplicates, then spreading it back into <code>[...]</code> gives you a plain array again.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q4</span><span class="lvl">medium</span></div>
+      <p class="qtopic">// named vs default export</p>
+      <p class="qtext">What's wrong with this import, given how <code>math.js</code> exports things?<pre><code>// math.js
+export const add = (a, b) => a + b;
+
+// app.js
+import add from './math.js';
+console.log(add(2, 3));</code></pre></p>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p><code>add</code> logs as <code>undefined</code>, and calling it throws a <code>TypeError</code>. <code>math.js</code> exports <code>add</code> as a <b>named</b> export, but <code>app.js</code> is trying to import it as the <b>default</b> export (no curly braces means "give me the default"). Since there is no default export in <code>math.js</code>, the import silently resolves to <code>undefined</code>. <b>Fix:</b> <code>import { add } from './math.js';</code></p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q5</span><span class="lvl">medium</span></div>
+      <p class="qtopic">// logical assignment falsy trap</p>
+      <p class="qtext">What's the bug in this config-defaulting code?<pre><code>function setRetries(config) {
+  config.retries ||= 3; // default to 3 if not set
+  return config;
+}
+console.log(setRetries({ retries: 0 }).retries);</code></pre></p>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p>Logs <code>3</code>, but the caller explicitly set <code>retries: 0</code> — meaning "don't retry at all", a perfectly valid value — and it got silently overwritten. <code>||=</code> assigns whenever the current value is falsy, and <code>0</code> is falsy. <b>Fix:</b> use <code>??=</code> instead, which only assigns on <code>null</code>/<code>undefined</code>, correctly leaving a deliberate <code>0</code> alone: <code>config.retries ??= 3;</code></p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q6</span><span class="lvl">medium</span></div>
+      <p class="qtopic">// Map with object keys</p>
+      <p class="qtext">Why does this Object-based approach fail, and how does a Map fix it?<pre><code>const key1 = { id: 1 };
+const key2 = { id: 2 };
+const store = {};
+store[key1] = 'first';
+store[key2] = 'second';
+console.log(Object.keys(store));</code></pre></p>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p>Logs <code>['[object Object]']</code> — just one key. Object keys are always coerced to strings, and both <code>key1</code> and <code>key2</code> coerce to the exact same string, <code>'[object Object]'</code>, so the second assignment overwrites the first.</p><pre><code>const store = new Map();
+store.set(key1, 'first');
+store.set(key2, 'second');
+store.get(key1); // 'first' — the actual object reference is the key, no coercion</code></pre>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q7</span><span class="lvl">medium</span></div>
+      <p class="qtopic">// generator laziness</p>
+      <p class="qtext">Is it safe to define this generator? What does the loop actually log?<pre><code>function* naturals() {
+  let n = 1;
+  while (true) yield n++;
+}
+
+for (const n of naturals()) {
+  if (n > 3) break;
+  console.log(n);
+}</code></pre></p>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p>Perfectly safe — logs <code>1, 2, 3</code>, then stops. Generators are lazy: <code>while (true)</code> never actually runs an infinite loop all at once. Each iteration of the <code>for...of</code> calls <code>.next()</code> exactly once, advancing the generator by a single <code>yield</code>, and <code>break</code> simply stops requesting more.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q8</span><span class="lvl">hard</span></div>
+      <p class="qtopic">// WeakMap prevents leak</p>
+      <p class="qtext">Rewrite this cache using <code>WeakMap</code> so that objects can still be garbage collected once nothing else references them.<pre><code>const cache = new Map();
+function getMetadata(obj) {
+  if (!cache.has(obj)) cache.set(obj, computeMetadata(obj));
+  return cache.get(obj);
+}</code></pre></p>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <pre><code>const cache = new WeakMap(); // only this line changes
+function getMetadata(obj) {
+  if (!cache.has(obj)) cache.set(obj, computeMetadata(obj));
+  return cache.get(obj);
+}</code></pre><p>A regular <code>Map</code> holds its keys with a strong reference, so every object ever passed to <code>getMetadata</code> stays alive forever purely because it's a cache key — a silent memory leak. <code>WeakMap</code> holds keys weakly, so once nothing else in the program references a given object, it (and its cache entry) becomes eligible for garbage collection normally, exactly as if it had never been cached.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q9</span><span class="lvl">hard</span></div>
+      <p class="qtopic">// custom iterable</p>
+      <p class="qtext">Make this <code>range</code> object work with <code>for...of</code> and spread, by implementing the iterator protocol.<pre><code>const range = { start: 1, end: 4 };
+// desired: for (const n of range) ... logs 1, 2, 3
+// desired: [...range] === [1, 2, 3]</code></pre></p>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <pre><code>const range = {
+  start: 1,
+  end: 4,
+  [Symbol.iterator]() {
+    let current = this.start;
+    const end = this.end;
+    return {
+      next() {
+        if (current < end) return { value: current++, done: false };
+        return { value: undefined, done: true };
+      }
+    };
+  }
+};
+
+for (const n of range) console.log(n); // 1, 2, 3
+[...range]; // [1, 2, 3]</code></pre><p>Implementing <code>[Symbol.iterator]()</code> — returning an object with a <code>.next()</code> that yields <code>{ value, done }</code> — is exactly the protocol <code>for...of</code> and spread both rely on. Once it's there, any built-in syntax that consumes iterables works on this custom object automatically, for free.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q10</span><span class="lvl">hard</span></div>
+      <p class="qtopic">// optional chaining does not guard everything</p>
+      <p class="qtext">Does <code>?.</code> prevent an error here? Why or why not?<pre><code>function getCity(user) {
+  return user?.address.city; // note: only ONE ?. 
+}
+getCity({ address: null });</code></pre></p>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p><b>No</b> — this still throws a <code>TypeError</code>. <code>user?.address</code> is safely guarded (returns <code>undefined</code> if <code>user</code> is nullish), but the result of that (<code>null</code>, since <code>address</code> genuinely IS <code>null</code> here) is then accessed with a plain <code>.city</code>, which is NOT optional-chained. <code>?.</code> only guards the specific link it's placed on — every step in a chain that might be nullish needs its own <code>?.</code>: <code>user?.address?.city</code>.</p>
+        </div>
+      </details>
+    </div>
+  </div>
+</div>
+
+<footer>ES6+ Features Notebook · read the Explanations, test with Coding Questions</footer>
+
+<script>
+  const tabs = document.querySelectorAll('.tab');
+  const panels = { 'tab-notes': 'panel-notes', 'tab-code': 'panel-code' };
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => selectTab(tab.id));
+    tab.addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        const ids = Object.keys(panels);
+        const i = ids.indexOf(tab.id);
+        const next = e.key === 'ArrowRight' ? (i + 1) % ids.length : (i - 1 + ids.length) % ids.length;
+        document.getElementById(ids[next]).focus();
+        selectTab(ids[next]);
+      }
+    });
+  });
+  function selectTab(id) {
+    tabs.forEach(t => {
+      const on = t.id === id;
+      t.setAttribute('aria-selected', on);
+      document.getElementById(panels[t.id]).hidden = !on;
+    });
+    window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+  }
+
+  const tocLinks = document.querySelectorAll('.toc a');
+  const sections = [...document.querySelectorAll('section.topic')];
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(en => {
+      if (en.isIntersecting) {
+        const id = en.target.id;
+        tocLinks.forEach(l => l.classList.toggle('active', l.getAttribute('href') === '#' + id));
+      }
+    });
+  }, { rootMargin: '-120px 0px -70% 0px' });
+  sections.forEach(s => obs.observe(s));
+</script>

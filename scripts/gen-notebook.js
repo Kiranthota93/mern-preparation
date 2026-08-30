@@ -70,7 +70,7 @@ function escapeHtml(s) {
 // with the gotcha as <p class='ex-gotcha'>...</p> — convert that to the notebook's .gotcha div
 function toGotchaDiv(html) {
   return html.replace(
-    /<p class='ex-gotcha'>([\s\S]*?)<\/p>\s*$/,
+    /<p class='ex-gotcha'>([\s\S]*?)<\/p>/g,
     '<div class="gotcha"><b>Gotcha</b><span>$1</span></div>'
   );
 }

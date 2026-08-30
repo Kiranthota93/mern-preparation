@@ -1521,6 +1521,7 @@ const TIERS = [
     name: "Objects & immutability",
     tag: "red",
     items: [
+      "Objects & immutability overview",
       "Object destructuring",
       "Object spread",
       "Object rest",

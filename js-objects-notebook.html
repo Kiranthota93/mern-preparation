@@ -200,63 +200,76 @@
   <div class="panel" id="panel-notes" role="tabpanel" aria-labelledby="tab-notes">
     <div class="layout">
       <nav class="toc" aria-label="Topics">
-        <a href="#t1">01 · Object destructuring</a>
-        <a href="#t2">02 · Object spread</a>
-        <a href="#t3">03 · Object rest</a>
-        <a href="#t4">04 · Object.keys</a>
-        <a href="#t5">05 · Object.values</a>
-        <a href="#t6">06 · Object.entries</a>
-        <a href="#t7">07 · Object.assign</a>
-        <a href="#t8">08 · Object.freeze</a>
-        <a href="#t9">09 · Shallow copy</a>
-        <a href="#t10">10 · Deep copy</a>
-        <a href="#t11">11 · Structured cloning</a>
-        <a href="#t12">12 · Mutation vs immutability</a>
-        <a href="#t13">13 · Referential equality</a>
+        <a href="#t1">01 · Objects &amp; immutability ove…</a>
+        <a href="#t2">02 · Object destructuring</a>
+        <a href="#t3">03 · Object spread</a>
+        <a href="#t4">04 · Object rest</a>
+        <a href="#t5">05 · Object.keys</a>
+        <a href="#t6">06 · Object.values</a>
+        <a href="#t7">07 · Object.entries</a>
+        <a href="#t8">08 · Object.assign</a>
+        <a href="#t9">09 · Object.freeze</a>
+        <a href="#t10">10 · Shallow copy</a>
+        <a href="#t11">11 · Deep copy</a>
+        <a href="#t12">12 · Structured cloning</a>
+        <a href="#t13">13 · Mutation vs immutability</a>
+        <a href="#t14">14 · Referential equality</a>
       </nav>
 
       <main>
         <p class="intro">Reference notes for Objects. Read a topic, note the <b style="color:var(--accent)">Gotcha</b>, then switch to Coding Questions.</p>
 
         <section class="topic" id="t1">
-          <h2><span class="num">01</span> Object destructuring</h2>
-          <p><b>Simple definition:</b> Pulls named properties out of an object into their own variables, in one step.</p><p><b>Technical definition:</b> A destructuring pattern reads matching keys from the source object by name (not position), with optional renaming (<code>: newName</code>) and defaults (<code>= value</code>).</p><p><b>Why it is used:</b> Removes repetitive <code>const x = obj.x;</code> lines and documents exactly which fields a function needs, right in its signature.</p><pre><code>const user = { name: 'Ada', age: 36 };
+          <h2><span class="num">01</span> Objects &amp; immutability overview</h2>
+          <p><b>Simple definition:</b> Objects group related values under named keys; immutability means creating an updated object instead of changing the existing one.</p><p><b>Technical definition:</b> An object is a reference value containing properties. Assigning or passing it shares that reference, so a mutation is visible through every variable that refers to the same object. Immutable updates create a new outer object and copy the changed path.</p><p><b>Why it is used:</b> Named properties model records such as users, settings, and API data clearly. Immutable updates keep state changes predictable, especially in React and reducers.</p><p><b>When to use:</b> Use objects for structured data with named fields, and use spread or targeted copies when an update must preserve the original value.</p><p><b>When not to use:</b> Do not use an object when ordering is the main concern; an array is usually clearer for an ordered collection. Do not deep-clone an entire object graph when only one small path changes.</p><p><b>How it works internally:</b> Object variables hold references to property collections. Spread creates a new outer collection, while a nested immutable update creates new references only along the path that changed and reuses the untouched branches.</p><pre><code>const user = { name: 'Ada', settings: { theme: 'light' } };
+const updated = {
+  ...user,
+  settings: { ...user.settings, theme: 'dark' }
+};
+
+console.log(user.settings.theme);    // 'light'
+console.log(updated.settings.theme); // 'dark'</code></pre><div class="gotcha"><b>Gotcha</b><span>Object spread is only a <b>shallow</b> copy. For a nested update, copy every level on the path you change; otherwise the old and new objects still share the same nested reference.</span></div>
+        </section>
+
+        <section class="topic" id="t2">
+          <h2><span class="num">02</span> Object destructuring</h2>
+          <p><b>Simple definition:</b> Pulls named properties out of an object into their own variables, in one step.</p><p><b>Technical definition:</b> A destructuring pattern reads matching keys from the source object by name (not position), with optional renaming (<code>: newName</code>) and defaults (<code>= value</code>).</p><p><b>Why it is used:</b> Removes repetitive <code>const x = obj.x;</code> lines and documents exactly which fields a function needs, right in its signature.</p><p><b>When not to use:</b> Avoid deeply nested destructuring when missing intermediate values would make the pattern hard to read or throw; extract and validate the data in smaller steps instead.</p><pre><code>const user = { name: 'Ada', age: 36 };
 const { name, age = 18 } = user; // name='Ada', age=36 (already present)
 const { name: userName } = user;  // rename → userName
 
 function greet({ name }) { return 'Hi, ' + name; } // in parameters</code></pre><div class="gotcha"><b>Gotcha</b><span>Object destructuring matches by <b>key name</b>, so order doesn't matter — unlike array destructuring, which matches by position. Mixing the two mental models up is a common early bug.</span></div>
         </section>
 
-        <section class="topic" id="t2">
-          <h2><span class="num">02</span> Object spread</h2>
-          <p><b>Simple definition:</b> <code>{ ...obj }</code> copies an object's own properties into a new object literal.</p><p><b>Technical definition:</b> Spread inside an object literal enumerates the source's own enumerable properties and copies them into the new object, in order — later keys (including ones written after the spread) override earlier ones.</p><pre><code>const user = { name: 'Ada', role: 'admin' };
+        <section class="topic" id="t3">
+          <h2><span class="num">03</span> Object spread</h2>
+          <p><b>Simple definition:</b> <code>{ ...obj }</code> copies an object's own properties into a new object literal.</p><p><b>Why it is used:</b> It makes concise, non-mutating updates, copies, and merges for plain object data.</p><p><b>When not to use:</b> Do not treat spread as a deep clone or use it when you intentionally need to preserve property descriptors, prototypes, or getters.</p><p><b>Technical definition:</b> Spread inside an object literal enumerates the source's own enumerable properties and copies them into the new object, in order — later keys (including ones written after the spread) override earlier ones.</p><pre><code>const user = { name: 'Ada', role: 'admin' };
 const updated = { ...user, role: 'editor' }; // { name: 'Ada', role: 'editor' }
 const copy = { ...user };                    // a shallow copy</code></pre><div class="gotcha"><b>Gotcha</b><span>Spread only makes a <b>shallow</b> copy — nested objects are still shared by reference between the original and the copy. See "Shallow copy" for the consequences.</span></div>
         </section>
 
-        <section class="topic" id="t3">
-          <h2><span class="num">03</span> Object rest</h2>
-          <p><b>Simple definition:</b> In a destructuring pattern, <code>...rest</code> collects every property that wasn't explicitly pulled out into a new object.</p><p><b>Technical definition:</b> When used at the end of an object destructuring pattern, <code>...name</code> gathers the source's remaining own enumerable properties into a fresh object — the common pattern for "take this one field out, keep everything else together".</p><pre><code>const user = { id: 1, name: 'Ada', password: 'secret' };
+        <section class="topic" id="t4">
+          <h2><span class="num">04</span> Object rest</h2>
+          <p><b>Simple definition:</b> In a destructuring pattern, <code>...rest</code> collects every property that wasn't explicitly pulled out into a new object.</p><p><b>Why it is used:</b> It is a clear way to omit sensitive or already-handled fields while retaining the rest of a record.</p><p><b>When not to use:</b> Avoid it when you need an explicit allow-list of fields; listing the permitted keys is safer than copying every unknown property.</p><p><b>Technical definition:</b> When used at the end of an object destructuring pattern, <code>...name</code> gathers the source's remaining own enumerable properties into a fresh object — the common pattern for "take this one field out, keep everything else together".</p><pre><code>const user = { id: 1, name: 'Ada', password: 'secret' };
 const { password, ...safeUser } = user;
 console.log(safeUser); // { id: 1, name: 'Ada' } — password removed</code></pre><div class="gotcha"><b>Gotcha</b><span>Object rest must come <b>last</b> in the pattern, just like array rest — <code>{ ...rest, name }</code> is a SyntaxError.</span></div>
         </section>
 
-        <section class="topic" id="t4">
-          <h2><span class="num">04</span> Object.keys</h2>
-          <p><b>Simple definition:</b> Returns an array of an object's own property names.</p><p><b>Technical definition:</b> <code>Object.keys(obj)</code> returns an array of <code>obj</code>'s own <b>enumerable</b> string-keyed property names, in insertion order (with integer-like keys sorted first).</p><pre><code>const scores = { ada: 90, sam: 75 };
+        <section class="topic" id="t5">
+          <h2><span class="num">05</span> Object.keys</h2>
+          <p><b>Simple definition:</b> Returns an array of an object's own property names.</p><p><b>Technical definition:</b> <code>Object.keys(obj)</code> returns an array of <code>obj</code>'s own <b>enumerable</b> string-keyed property names, in insertion order (with integer-like keys sorted first).</p><p><b>Why it is used:</b> It lets you iterate, count, validate, or transform an object's named fields with familiar array methods.</p><p><b>When not to use:</b> Do not use it when you also need the values; <code>Object.entries</code> avoids a second property lookup.</p><pre><code>const scores = { ada: 90, sam: 75 };
 Object.keys(scores); // ['ada', 'sam']</code></pre><div class="gotcha"><b>Gotcha</b><span>"Own" and "enumerable" both matter: inherited properties (from the prototype chain) are never included, and neither are properties explicitly marked non-enumerable (e.g. via <code>Object.defineProperty</code>).</span></div>
         </section>
 
-        <section class="topic" id="t5">
-          <h2><span class="num">05</span> Object.values</h2>
-          <p><b>Simple definition:</b> Returns an array of just an object's property values.</p><p><b>Technical definition:</b> <code>Object.values(obj)</code> is the value-counterpart of <code>Object.keys</code> — same rules (own, enumerable, insertion order), but returns the values instead of the keys.</p><pre><code>const scores = { ada: 90, sam: 75 };
+        <section class="topic" id="t6">
+          <h2><span class="num">06</span> Object.values</h2>
+          <p><b>Simple definition:</b> Returns an array of just an object's property values.</p><p><b>Why it is used:</b> It turns object data into a list for aggregation, validation, or display without caring about each field name.</p><p><b>When not to use:</b> Do not use it when a value must stay associated with its key; use <code>Object.entries</code> instead.</p><p><b>Technical definition:</b> <code>Object.values(obj)</code> is the value-counterpart of <code>Object.keys</code> — same rules (own, enumerable, insertion order), but returns the values instead of the keys.</p><pre><code>const scores = { ada: 90, sam: 75 };
 Object.values(scores);              // [90, 75]
 Object.values(scores).reduce((a,b)=>a+b, 0); // 165 — sum via array methods</code></pre><div class="gotcha"><b>Gotcha</b><span>This is the usual bridge for using array methods (<code>reduce</code>, <code>map</code>, <code>filter</code>) on object data, since objects don't have those methods themselves.</span></div>
         </section>
 
-        <section class="topic" id="t6">
-          <h2><span class="num">06</span> Object.entries</h2>
-          <p><b>Simple definition:</b> Returns an array of <code>[key, value]</code> pairs — everything <code>Object.keys</code> and <code>Object.values</code> give you, zipped together.</p><p><b>Technical definition:</b> <code>Object.entries(obj)</code> returns an array of two-element arrays, one per own enumerable property, each holding that property's key and value.</p><pre><code>const scores = { ada: 90, sam: 75 };
+        <section class="topic" id="t7">
+          <h2><span class="num">07</span> Object.entries</h2>
+          <p><b>Simple definition:</b> Returns an array of <code>[key, value]</code> pairs — everything <code>Object.keys</code> and <code>Object.values</code> give you, zipped together.</p><p><b>Technical definition:</b> <code>Object.entries(obj)</code> returns an array of two-element arrays, one per own enumerable property, each holding that property's key and value.</p><p><b>Why it is used:</b> It makes object data easy to loop over, filter, map, and rebuild with array methods.</p><p><b>When not to use:</b> Avoid it for extremely hot paths when creating an intermediate array of every property is unnecessary; a direct property access or targeted loop may be simpler.</p><pre><code>const scores = { ada: 90, sam: 75 };
 Object.entries(scores);
 // [['ada', 90], ['sam', 75]]
 
@@ -267,9 +280,9 @@ for (const [name, score] of Object.entries(scores)) {
 ); // { ada: 95, sam: 80 }</code></pre><div class="gotcha"><b>Gotcha</b><span>Each entry is an array, so destructure it as <code>[key, value]</code> — accessing <code>entry.key</code> is a common but wrong assumption from developers used to other languages' map/dictionary APIs.</span></div>
         </section>
 
-        <section class="topic" id="t7">
-          <h2><span class="num">07</span> Object.assign</h2>
-          <p><b>Simple definition:</b> Copies properties from one or more source objects into a target object.</p><p><b>Technical definition:</b> <code>Object.assign(target, ...sources)</code> copies each source's own enumerable properties onto <code>target</code>, <b>mutating and returning it</b>, with later sources overwriting earlier ones for the same key.</p><pre><code>const defaults = { theme: 'light', notifications: true };
+        <section class="topic" id="t8">
+          <h2><span class="num">08</span> Object.assign</h2>
+          <p><b>Simple definition:</b> Copies properties from one or more source objects into a target object.</p><p><b>Technical definition:</b> <code>Object.assign(target, ...sources)</code> copies each source's own enumerable properties onto <code>target</code>, <b>mutating and returning it</b>, with later sources overwriting earlier ones for the same key.</p><p><b>Why it is used:</b> It merges properties and is useful when code needs an explicit target object or must support older patterns.</p><p><b>When not to use:</b> Avoid it for ordinary immutable updates because it is easy to mutate the wrong target; object spread is usually clearer.</p><pre><code>const defaults = { theme: 'light', notifications: true };
 const userPrefs = { theme: 'dark' };
 
 // mutates defaults! usually NOT what you want:
@@ -280,17 +293,17 @@ const merged = Object.assign({}, defaults, userPrefs);
 // or the modern equivalent: { ...defaults, ...userPrefs }</code></pre><div class="gotcha"><b>Gotcha</b><span>The classic mistake is calling <code>Object.assign(defaults, userPrefs)</code> and forgetting that it <b>mutates the first argument</b> — always pass a fresh <code>{}</code> as the target unless mutation is genuinely intended. Object spread (<code>{ ...a, ...b }</code>) is the modern, safer-by-default equivalent.</span></div>
         </section>
 
-        <section class="topic" id="t8">
-          <h2><span class="num">08</span> Object.freeze</h2>
-          <p><b>Simple definition:</b> Locks an object so its existing properties can't be changed, added, or removed.</p><p><b>Technical definition:</b> <code>Object.freeze(obj)</code> makes every existing own property non-writable and non-configurable, and prevents new properties from being added. It returns the <em>same</em> object (not a copy), now frozen. Attempted mutations fail silently in sloppy mode and throw a <code>TypeError</code> in strict mode/modules.</p><pre><code>const config = Object.freeze({ apiUrl: 'https://api.example.com' });
+        <section class="topic" id="t9">
+          <h2><span class="num">09</span> Object.freeze</h2>
+          <p><b>Simple definition:</b> Locks an object so its existing properties can't be changed, added, or removed.</p><p><b>Technical definition:</b> <code>Object.freeze(obj)</code> makes every existing own property non-writable and non-configurable, and prevents new properties from being added. It returns the <em>same</em> object (not a copy), now frozen. Attempted mutations fail silently in sloppy mode and throw a <code>TypeError</code> in strict mode/modules.</p><p><b>Why it is used:</b> It protects fixed configuration or constants from accidental top-level changes.</p><p><b>When not to use:</b> Do not rely on it as complete immutability for nested state, and avoid it where intentional updates are part of normal program flow.</p><pre><code>const config = Object.freeze({ apiUrl: 'https://api.example.com' });
 config.apiUrl = 'https://evil.com'; // silently ignored (or throws in strict mode)
 console.log(config.apiUrl);         // still the original URL
 Object.isFrozen(config);            // true</code></pre><div class="gotcha"><b>Gotcha</b><span><code>Object.freeze</code> is <b>shallow</b> — it only locks the object's own top-level properties. A nested object inside a frozen object is completely unprotected and can still be mutated freely: <code>frozen.nested.x = 1</code> works fine even though <code>frozen.x = 1</code> does not.</span></div>
         </section>
 
-        <section class="topic" id="t9">
-          <h2><span class="num">09</span> Shallow copy</h2>
-          <p><b>Simple definition:</b> A shallow copy duplicates the outer object, but any nested objects inside it are still the exact same shared objects as before.</p><p><b>Technical definition:</b> Spread (<code>{ ...obj }</code>), <code>Object.assign({}, obj)</code>, and array's <code>slice</code>/<code>[...arr]</code> all copy only the top level — for any property whose value is itself an object, both the original and the copy hold a reference to that <em>same</em> object.</p><pre><code>const original = { name: 'Ada', address: { city: 'London' } };
+        <section class="topic" id="t10">
+          <h2><span class="num">10</span> Shallow copy</h2>
+          <p><b>Simple definition:</b> A shallow copy duplicates the outer object, but any nested objects inside it are still the exact same shared objects as before.</p><p><b>Why it is used:</b> It is the inexpensive default for top-level updates where nested data is not being changed.</p><p><b>When not to use:</b> Do not use it when the update mutates nested data; copy the changed nested path or use a genuine deep-clone strategy instead.</p><p><b>Technical definition:</b> Spread (<code>{ ...obj }</code>), <code>Object.assign({}, obj)</code>, and array's <code>slice</code>/<code>[...arr]</code> all copy only the top level — for any property whose value is itself an object, both the original and the copy hold a reference to that <em>same</em> object.</p><pre><code>const original = { name: 'Ada', address: { city: 'London' } };
 const copy = { ...original };
 
 copy.name = 'Sam';               // safe — top-level primitive, truly separate
@@ -300,18 +313,18 @@ console.log(original.name);         // 'Ada' — unaffected
 console.log(original.address.city); // 'Paris' — changed too!</code></pre><div class="gotcha"><b>Gotcha</b><span>This is the single most common interview trap in this topic: a shallow copy <em>looks</em> completely independent until you mutate something nested — then the illusion breaks and both "copies" change together.</span></div>
         </section>
 
-        <section class="topic" id="t10">
-          <h2><span class="num">10</span> Deep copy</h2>
-          <p><b>Simple definition:</b> A deep copy duplicates everything, all the way down — nested objects included — so the two copies never affect each other, no matter what you mutate.</p><p><b>Technical definition:</b> Deep cloning recursively copies every nested object/array, producing an entirely independent object graph with no shared references anywhere.</p><pre><code>const original = { name: 'Ada', address: { city: 'London' } };
+        <section class="topic" id="t11">
+          <h2><span class="num">11</span> Deep copy</h2>
+          <p><b>Simple definition:</b> A deep copy duplicates everything, all the way down — nested objects included — so the two copies never affect each other, no matter what you mutate.</p><p><b>Technical definition:</b> Deep cloning recursively copies every nested object/array, producing an entirely independent object graph with no shared references anywhere.</p><p><b>Why it is used:</b> It creates a safe independent snapshot when nested data will be edited freely.</p><p><b>When not to use:</b> Avoid it for a small targeted change or large data graph; copying only the changed path is usually faster and clearer.</p><pre><code>const original = { name: 'Ada', address: { city: 'London' } };
 const copy = structuredClone(original);
 
 copy.address.city = 'Paris';
 console.log(original.address.city); // 'London' — truly independent</code></pre><p><b>When to use it:</b> when you need a safe, fully independent snapshot — e.g. before letting a form freely mutate a draft of some saved data.</p><div class="gotcha"><b>Gotcha</b><span>Deep cloning costs more time and memory than a shallow copy, and is overkill if you're not actually going to mutate anything nested — reach for the smallest correct copy strategy, not automatically the deepest one.</span></div>
         </section>
 
-        <section class="topic" id="t11">
-          <h2><span class="num">11</span> Structured cloning</h2>
-          <p><b>Simple definition:</b> <code>structuredClone(value)</code> is the browser/Node built-in for making a real, deep copy of most JavaScript values.</p><p><b>Technical definition:</b> It implements the structured clone algorithm, correctly deep-copying nested objects/arrays and also handling <code>Date</code>, <code>Map</code>, <code>Set</code>, typed arrays, and even circular references — none of which the older <code>JSON.parse(JSON.stringify(x))</code> hack can do correctly.</p><pre><code>const original = { tags: ['a', 'b'], when: new Date(), self: null };
+        <section class="topic" id="t12">
+          <h2><span class="num">12</span> Structured cloning</h2>
+          <p><b>Simple definition:</b> <code>structuredClone(value)</code> is the browser/Node built-in for making a real, deep copy of most JavaScript values.</p><p><b>Why it is used:</b> It safely clones ordinary nested data, including values that JSON cloning cannot preserve correctly.</p><p><b>When not to use:</b> Do not use it for functions, DOM nodes, or a small targeted immutable update where copying only one path is cheaper.</p><p><b>Technical definition:</b> It implements the structured clone algorithm, correctly deep-copying nested objects/arrays and also handling <code>Date</code>, <code>Map</code>, <code>Set</code>, typed arrays, and even circular references — none of which the older <code>JSON.parse(JSON.stringify(x))</code> hack can do correctly.</p><pre><code>const original = { tags: ['a', 'b'], when: new Date(), self: null };
 original.self = original; // circular reference
 
 const clone = structuredClone(original); // works fine
@@ -320,9 +333,9 @@ const clone = structuredClone(original); // works fine
 JSON.parse(JSON.stringify(original)); // TypeError: Converting circular structure to JSON</code></pre><div class="gotcha"><b>Gotcha</b><span><code>structuredClone</code> cannot clone functions or DOM nodes — it throws a <code>DataCloneError</code> on them. If your object contains methods, use a manual/library deep-clone approach instead, or clone just the plain-data parts.</span></div>
         </section>
 
-        <section class="topic" id="t12">
-          <h2><span class="num">12</span> Mutation vs immutability</h2>
-          <p><b>Simple definition:</b> Mutating means changing a value in place; the immutable approach means never changing it — instead, creating a new value with the change applied.</p><p><b>Technical definition:</b> A mutation modifies the existing object/array through a reference (<code>obj.x = 1</code>, <code>arr.push(x)</code>). An immutable update leaves the original untouched and produces a brand-new object/array reflecting the change (<code>{ ...obj, x: 1 }</code>, <code>[...arr, x]</code>).</p><pre><code>// mutation
+        <section class="topic" id="t13">
+          <h2><span class="num">13</span> Mutation vs immutability</h2>
+          <p><b>Simple definition:</b> Mutating means changing a value in place; the immutable approach means never changing it — instead, creating a new value with the change applied.</p><p><b>Technical definition:</b> A mutation modifies the existing object/array through a reference (<code>obj.x = 1</code>, <code>arr.push(x)</code>). An immutable update leaves the original untouched and produces a brand-new object/array reflecting the change (<code>{ ...obj, x: 1 }</code>, <code>[...arr, x]</code>).</p><p><b>Why it is used:</b> It makes state changes predictable, preserves the previous value for debugging, and enables fast reference-based change detection.</p><p><b>When not to use:</b> Do not force immutable copying inside a short-lived local algorithm when controlled mutation is simpler and no shared state can observe it.</p><pre><code>// mutation
 const state = { count: 0 };
 state.count += 1; // same object, changed in place
 
@@ -331,9 +344,9 @@ const state2 = { count: 0 };
 const next = { ...state2, count: state2.count + 1 }; // new object</code></pre><p><b>Why it matters:</b> immutable updates are predictable and easy to debug (the old value is still there, unchanged, for comparison), and they're what makes cheap change-detection possible — see "Referential equality".</p><div class="gotcha"><b>Gotcha</b><span>Frameworks like React specifically rely on immutable state updates: if you mutate state directly instead of creating a new object, React can't tell anything changed (same reference), and your component silently fails to re-render.</span></div>
         </section>
 
-        <section class="topic" id="t13">
-          <h2><span class="num">13</span> Referential equality</h2>
-          <p><b>Simple definition:</b> Two objects are only <code>===</code> equal if they are the literal <em>same</em> object in memory — having identical contents is not enough.</p><p><b>Technical definition:</b> For objects (and arrays, functions), <code>===</code> compares references, not structure. Two separately-created objects with identical properties are never equal, no matter how deeply their contents match.</p><pre><code>{} === {};                          // false — two different objects
+        <section class="topic" id="t14">
+          <h2><span class="num">14</span> Referential equality</h2>
+          <p><b>Simple definition:</b> Two objects are only <code>===</code> equal if they are the literal <em>same</em> object in memory — having identical contents is not enough.</p><p><b>Technical definition:</b> For objects (and arrays, functions), <code>===</code> compares references, not structure. Two separately-created objects with identical properties are never equal, no matter how deeply their contents match.</p><p><b>Why it is used:</b> It provides a fast way to detect whether an object identity changed, which is central to efficient UI updates and memoization.</p><p><b>When not to use:</b> Do not use <code>===</code> when the requirement is to compare two separate objects by their contents; use a deliberate field-by-field or deep comparison instead.</p><pre><code>{} === {};                          // false — two different objects
 const a = { x: 1 };
 const b = a;
 a === b;                              // true — same reference

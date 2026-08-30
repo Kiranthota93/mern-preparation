@@ -444,7 +444,7 @@
     --nb-serif: "Newsreader", Georgia, serif;
     --nb-display: "Fraunces", Georgia, serif;
     --nb-mono: "JetBrains Mono", var(--mono);
-    width: min(1080px, 94%); height: 90%; max-width: none;
+    width: 90%; height: 90%; max-width: none;
     background: var(--nb-paper); color: var(--nb-ink);
     font-family: var(--nb-serif); padding: 0; scroll-behavior: smooth;
   }

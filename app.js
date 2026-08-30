@@ -5612,9 +5612,6 @@ function renderChecklistBody(tier) {
     html +=
       '<button class="btn primary sm" data-select-complete type="button">Mark as complete</button>';
     html += "</div></div>";
-  } else if (!selectMode) {
-    html +=
-      '<button class="btn primary" data-practice-topic type="button" style="margin-top:16px;width:100%;justify-content:center;">Practice Interview</button>';
   }
 
   html +=
@@ -5807,23 +5804,6 @@ function wireChecklistTab(root, tier) {
       ui.drawer.selectMode = false;
       ui.drawer.selected = {};
       openPracticeFromDrawer(pool, tier.name + " (selected)", {
-        mode: "topic",
-        tierKey: tierKey(tier),
-      });
-    });
-  }
-
-  const practiceBtn = root.querySelector("[data-practice-topic]");
-  if (practiceBtn) {
-    practiceBtn.addEventListener("click", function () {
-      const pool = tier.items.map(function (label, i) {
-        return {
-          itemId: itemId(tier, i),
-          label: label,
-          tierKey: tierKey(tier),
-        };
-      });
-      openPracticeFromDrawer(pool, tier.name, {
         mode: "topic",
         tierKey: tierKey(tier),
       });

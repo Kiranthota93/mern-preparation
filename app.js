@@ -5550,15 +5550,11 @@ function renderChecklistBody(tier) {
 
   html += '<div class="subtopic-grid">';
   if (!rows.length) html += '<div class="empty-note">No matches.</div>';
-  const topicExplain =
-    (window.EXPLANATIONS && window.EXPLANATIONS[tier.name]) || {};
   rows.forEach(function (o) {
     const id = itemId(tier, o.i);
     const done = !!checked[id];
     const note = subNotes[id] || "";
     const hasNote = note.trim().length > 0;
-    const explain = topicExplain[o.label] || "";
-    const hasExplain = explain.length > 0;
     const isSelected = !!selected[id];
     html +=
       '<div class="subtopic-block">' +
@@ -5583,11 +5579,6 @@ function renderChecklistBody(tier) {
       ">" +
       escapeHtml(o.label) +
       "</span>" +
-      (hasExplain
-        ? '<button class="sr-learn-btn" data-learn-toggle="' +
-          o.i +
-          '" type="button" title="Explanation">&#128214;</button>'
-        : "") +
       '<button class="sr-note-btn' +
       (hasNote ? " has-note" : "") +
       '" data-note-open="' +
@@ -5605,13 +5596,6 @@ function renderChecklistBody(tier) {
       (done ? "&#10003;" : "") +
       "</span>" +
       "</div>" +
-      (hasExplain
-        ? '<div class="sr-explain" data-explain="' +
-          o.i +
-          '" style="display:none;">' +
-          explain +
-          "</div>"
-        : "") +
       "</div>";
   });
   html += "</div>";
@@ -5708,16 +5692,6 @@ function wireChecklistTab(root, tier) {
       refreshUnderlyingPage();
     });
   });
-  root.querySelectorAll("[data-learn-toggle]").forEach(function (n) {
-    n.addEventListener("click", function () {
-      const block = n.closest(".subtopic-block");
-      const ex = block.querySelector("[data-explain]");
-      if (!ex) return;
-      const showing = ex.style.display !== "none";
-      ex.style.display = showing ? "none" : "block";
-      n.classList.toggle("open", !showing);
-    });
-  });
   root.querySelectorAll("[data-note-open]").forEach(function (n) {
     n.addEventListener("click", function () {
       const idx = parseInt(n.getAttribute("data-note-open"), 10);
@@ -5791,7 +5765,6 @@ function wireChecklistTab(root, tier) {
     n.addEventListener("click", function (e) {
       if (e.target.closest("[data-select-check]")) return;
       if (e.target.closest("[data-note-open]")) return;
-      if (e.target.closest("[data-learn-toggle]")) return;
       const idx = parseInt(n.getAttribute("data-select-row"), 10);
       const id = itemId(tier, idx);
       if (ui.drawer.selected[id]) delete ui.drawer.selected[id];

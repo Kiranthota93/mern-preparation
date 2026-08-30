@@ -1,0 +1,550 @@
+<title>JavaScript Arrays Notebook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=JetBrains+Mono:wght@400;600&display=swap">
+
+<style>
+  :root {
+    --paper: #F7F6F2;
+    --surface: #FFFFFF;
+    --ink: #1A1917;
+    --ink-soft: #55524B;
+    --ink-faint: #8A867C;
+    --accent: #C77E12;
+    --accent-soft: #F3E4C6;
+    --teal: #2A6F6B;
+    --line: #E4E0D6;
+    --code-bg: #F2EFE7;
+    --shadow: 0 1px 2px rgba(26,25,23,.04), 0 8px 24px rgba(26,25,23,.06);
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #17161A;
+      --surface: #201F24;
+      --ink: #EDEAE3;
+      --ink-soft: #B4AFA4;
+      --ink-faint: #7E7A70;
+      --accent: #E8A32C;
+      --accent-soft: #3A2E17;
+      --teal: #6FC3BC;
+      --line: #322F38;
+      --code-bg: #1B1A1F;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #17161A;
+    --surface: #201F24;
+    --ink: #EDEAE3;
+    --ink-soft: #B4AFA4;
+    --ink-faint: #7E7A70;
+    --accent: #E8A32C;
+    --accent-soft: #3A2E17;
+    --teal: #6FC3BC;
+    --line: #322F38;
+    --code-bg: #1B1A1F;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 30px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Newsreader", Georgia, serif;
+    font-size: 18px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  header {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--paper) 88%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .head-inner {
+    max-width: 1080px; margin: 0 auto;
+    padding: 18px 24px 0;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .brand { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .brand h1 {
+    font-family: "Fraunces", serif; font-weight: 600;
+    font-size: 26px; margin: 0; letter-spacing: -.01em;
+  }
+  .brand .tag {
+    font-family: "JetBrains Mono", monospace; font-size: 11px;
+    letter-spacing: .14em; text-transform: uppercase;
+    color: var(--accent); background: var(--accent-soft);
+    padding: 4px 9px; border-radius: 999px;
+  }
+  .tabs { display: flex; gap: 4px; }
+  .tab {
+    appearance: none; border: none; background: none; cursor: pointer;
+    font-family: "Fraunces", serif; font-size: 16px; font-weight: 500;
+    color: var(--ink-soft); padding: 10px 4px 14px; margin-right: 22px;
+    border-bottom: 2px solid transparent; transition: color .15s;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+  .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 32px 24px 80px; }
+  .layout { display: grid; grid-template-columns: 220px 1fr; gap: 40px; align-items: start; }
+  @media (max-width: 780px) { .layout { grid-template-columns: 1fr; } .toc { display: none; } }
+
+  .toc {
+    position: sticky; top: 130px;
+    font-family: "JetBrains Mono", monospace; font-size: 12.5px;
+    line-height: 1.4; max-height: calc(100vh - 150px); overflow-y: auto;
+  }
+  .toc a {
+    display: block; color: var(--ink-faint); text-decoration: none;
+    padding: 5px 0; border-left: 2px solid transparent; padding-left: 12px;
+    transition: color .12s, border-color .12s;
+  }
+  .toc a:hover { color: var(--ink); }
+  .toc a.active { color: var(--accent); border-left-color: var(--accent); }
+
+  .intro { color: var(--ink-soft); font-size: 17px; margin: 0 0 8px; max-width: 62ch; }
+  section.topic { scroll-margin-top: 130px; padding: 30px 0; border-top: 1px solid var(--line); }
+  section.topic:first-of-type { border-top: none; padding-top: 6px; }
+  .topic h2 {
+    font-family: "Fraunces", serif; font-weight: 600; font-size: 25px;
+    margin: 0 0 4px; letter-spacing: -.01em; text-wrap: balance;
+    display: flex; align-items: baseline; gap: 12px;
+  }
+  .topic h2 .num {
+    font-family: "JetBrains Mono", monospace; font-size: 13px;
+    color: var(--accent); font-weight: 600;
+  }
+  .topic p { max-width: 64ch; margin: 12px 0; }
+  .topic ul { max-width: 64ch; padding-left: 22px; }
+  .topic li { margin: 6px 0; }
+  code {
+    font-family: "JetBrains Mono", monospace; font-size: .82em;
+    background: var(--code-bg); padding: 2px 6px; border-radius: 6px;
+  }
+  pre {
+    background: var(--code-bg); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 16px 18px; overflow-x: auto;
+    box-shadow: var(--shadow); margin: 16px 0;
+  }
+  pre code { background: none; padding: 0; font-size: 13.5px; line-height: 1.6; color: var(--ink); }
+  .gotcha {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: var(--accent-soft); border-radius: 10px;
+    padding: 12px 15px; margin: 14px 0; max-width: 64ch;
+    font-size: 15.5px; color: var(--ink);
+  }
+  .gotcha b { color: var(--accent); font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; }
+
+  .cm { color: var(--ink-faint); font-style: italic; }
+  .kw { color: var(--teal); font-weight: 600; }
+  .st { color: var(--accent); }
+
+  .q-intro { color: var(--ink-soft); max-width: 62ch; margin-bottom: 26px; }
+  .qcard {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 20px 22px; margin: 16px 0;
+    box-shadow: var(--shadow);
+  }
+  .qhead { display: flex; align-items: baseline; gap: 12px; margin-bottom: 6px; }
+  .qhead .qn {
+    font-family: "JetBrains Mono", monospace; font-size: 12px;
+    color: var(--accent); background: var(--accent-soft);
+    padding: 3px 8px; border-radius: 6px; font-weight: 600;
+  }
+  .qhead .lvl {
+    margin-left: auto; font-family: "JetBrains Mono", monospace;
+    font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--ink-faint); border: 1px solid var(--line);
+    padding: 2px 8px; border-radius: 999px;
+  }
+  .qtext { font-size: 17px; margin: 4px 0 12px; }
+  .qtopic { font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--teal); }
+  details.answer summary {
+    cursor: pointer; font-family: "Fraunces", serif; font-weight: 500;
+    color: var(--teal); font-size: 15px; list-style: none; user-select: none;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  details.answer summary::-webkit-details-marker { display: none; }
+  details.answer summary::before { content: "▸"; transition: transform .15s; }
+  details.answer[open] summary::before { transform: rotate(90deg); }
+  details.answer summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+  .ans-body { margin-top: 12px; }
+
+  .panel[hidden] { display: none; }
+  footer { text-align: center; color: var(--ink-faint); font-size: 13px; font-family: "JetBrains Mono", monospace; padding: 20px; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<header>
+  <div class="head-inner">
+    <div class="brand">
+      <h1>JavaScript Arrays</h1>
+      <span class="tag">Notebook</span>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Notebook sections">
+      <button class="tab" role="tab" id="tab-notes" aria-controls="panel-notes" aria-selected="true">Explanations</button>
+      <button class="tab" role="tab" id="tab-code" aria-controls="panel-code" aria-selected="false">Coding Questions</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ============ EXPLANATIONS ============ -->
+  <div class="panel" id="panel-notes" role="tabpanel" aria-labelledby="tab-notes">
+    <div class="layout">
+      <nav class="toc" aria-label="Topics">
+        <a href="#t1">01 · Arrays &amp; modern data handl…</a>
+        <a href="#t2">02 · map</a>
+        <a href="#t3">03 · filter</a>
+        <a href="#t4">04 · reduce</a>
+        <a href="#t5">05 · forEach</a>
+        <a href="#t6">06 · find</a>
+        <a href="#t7">07 · findIndex</a>
+        <a href="#t8">08 · some</a>
+        <a href="#t9">09 · every</a>
+        <a href="#t10">10 · includes</a>
+        <a href="#t11">11 · sort</a>
+        <a href="#t12">12 · slice</a>
+        <a href="#t13">13 · splice</a>
+        <a href="#t14">14 · flat</a>
+        <a href="#t15">15 · flatMap</a>
+        <a href="#t16">16 · Array destructuring</a>
+        <a href="#t17">17 · Spread with arrays</a>
+        <a href="#t18">18 · Immutable array operations</a>
+        <a href="#t19">19 · Shallow copying</a>
+        <a href="#t20">20 · Deep copying</a>
+      </nav>
+
+      <main>
+        <p class="intro">Reference notes for JavaScript Arrays. Read a topic, note the <b style="color:var(--accent)">Gotcha</b>, then switch to Coding Questions.</p>
+
+        <section class="topic" id="t1">
+          <h2><span class="num">01</span> Arrays &amp; modern data handling overview</h2>
+          <p><b>Simple definition:</b> Arrays are ordered collections of values, and modern array methods let you transform, filter, and summarize data cleanly.</p><p><b>Technical definition:</b> JavaScript arrays are objects with indexed properties, a length property, and a rich set of built-in methods for collection processing.</p><p><b>Why it is used:</b> Arrays are the default structure for lists in JavaScript: API results, UI rows, form values, and data pipelines often start as arrays.</p><p><b>When to use:</b> Use arrays when order matters, when you need to iterate through related values, or when you want to transform a collection without mutating source data.</p><p><b>When not to use:</b> For lookup-heavy data, prefer objects or Maps. For relational data, use arrays only for ordered collections, not as a replacement for structured databases.</p><p><b>How it works internally:</b> Array methods usually iterate over each element, call a callback when needed, and return either a new array or a single value. Many methods are higher-order functions.</p><pre><code>const scores = [88, 92, 75];
+const doubled = scores.map(score => score * 2);
+console.log(doubled); // [176, 184, 150]</code></pre><div class="gotcha"><b>Gotcha</b><span>The array API is powerful, but not every method is immutable. Some methods like <code>sort</code> and <code>splice</code> mutate the original array, so choose carefully.</span></div>
+        </section>
+
+        <section class="topic" id="t2">
+          <h2><span class="num">02</span> map</h2>
+          <p><b>Simple definition:</b> <code>map</code> transforms every item in an array and returns a new array of the same length.</p><p><b>Technical definition:</b> It is a higher-order array method that calls a callback for each element and collects the returned values.</p><p><b>Why it is used:</b> It is used for converting each item into a new form such as formatting, enrichment, or property projection.</p><p><b>When not to use:</b> Do not use <code>map</code> for side effects like logging or mutating values; use <code>forEach</code> or a loop for those cases.</p><pre><code>const prices = [10, 20, 30];
+const taxed = prices.map(price => price * 1.18);
+console.log(taxed); // [11.8, 23.6, 35.4]</code></pre><div class="gotcha"><b>Gotcha</b><span>A common mistake is using <code>map</code> when you really mean <code>forEach</code>. If you are not returning a value, you probably need a different method.</span></div>
+        </section>
+
+        <section class="topic" id="t3">
+          <h2><span class="num">03</span> filter</h2>
+          <p><b>Simple definition:</b> <code>filter</code> keeps only the items that match a condition.</p><p><b>Technical definition:</b> It returns a new array containing every element for which the callback evaluates to <code>true</code>.</p><p><b>Why it is used:</b> Use it when you need a subset of data based on rules such as active users, valid emails, or matching IDs.</p><p><b>When not to use:</b> Do not use it to mutate the original array or to trigger business actions; it is a data selection tool, not a side-effect runner.</p><pre><code>const numbers = [1, 2, 3, 4, 5];
+const evens = numbers.filter(n => n % 2 === 0);
+console.log(evens); // [2, 4]</code></pre><div class="gotcha"><b>Gotcha</b><span>Filtering is not the same as reducing. It keeps items, while reduce combines them into one value.</span></div>
+        </section>
+
+        <section class="topic" id="t4">
+          <h2><span class="num">04</span> reduce</h2>
+          <p><b>Simple definition:</b> <code>reduce</code> combines an array into one value by repeatedly applying a function.</p><p><b>Technical definition:</b> It accepts an accumulator and a current value and returns a final result such as a number, object, string, or array.</p><p><b>Why it is used:</b> Reduce is used for totals, grouping, aggregation, and building new objects from arrays.</p><p><b>When not to use:</b> Avoid using it for very simple cases where <code>map</code> or <code>filter</code> are clearer. It is powerful but can become hard to read if overused.</p><pre><code>const total = [5, 10, 15].reduce((sum, n) => sum + n, 0);
+console.log(total); // 30</code></pre><div class="gotcha"><b>Gotcha</b><span>The accumulator is the secret weapon in reduce. Forgetting the initial value often causes the first element to be skipped or type mismatches.</span></div>
+        </section>
+
+        <section class="topic" id="t5">
+          <h2><span class="num">05</span> forEach</h2>
+          <p><b>Simple definition:</b> <code>forEach</code> loops over an array and runs a callback for each item.</p><p><b>Technical definition:</b> It is designed for side-effecting iteration, such as rendering, logging, or updating external state.</p><p><b>Why it is used:</b> Use it when you want to act on each element without creating a new array.</p><p><b>When not to use:</b> Do not use <code>forEach</code> when you need a transformed array or a boolean result; use <code>map</code>, <code>filter</code>, or <code>some</code> instead.</p><pre><code>const names = ['Ada', 'Linus'];
+names.forEach(name => console.log('Hello', name));</code></pre><div class="gotcha"><b>Gotcha</b><span>Unlike <code>map</code>, <code>forEach</code> does not return a new array. It is about action, not transformation.</span></div>
+        </section>
+
+        <section class="topic" id="t6">
+          <h2><span class="num">06</span> find</h2>
+          <p><b>Simple definition:</b> <code>find</code> returns the first item that matches a condition.</p><p><b>Technical definition:</b> It stops at the first matching element and returns it, or <code>undefined</code> if nothing matches.</p><p><b>Why it is used:</b> It is useful when searching a list for one record by a rule, such as a user ID or a matching product name.</p><p><b>When not to use:</b> Do not use it when you need all matches; use <code>filter</code> instead.</p><pre><code>const users = [{ id: 1, name: 'Ada' }, { id: 2, name: 'Grace' }];
+const user = users.find(u => u.id === 2);
+console.log(user.name); // Grace</code></pre><div class="gotcha"><b>Gotcha</b><span>If you need the index instead of the value, use <code>findIndex</code>.</span></div>
+        </section>
+
+        <section class="topic" id="t7">
+          <h2><span class="num">07</span> findIndex</h2>
+          <p><b>Simple definition:</b> <code>findIndex</code> returns the index of the first matching item.</p><p><b>Technical definition:</b> It is like <code>find</code>, except it returns the position in the array rather than the item itself.</p><p><b>Why it is used:</b> It is helpful when you need to update, delete, or reorder an item by its index.</p><p><b>When not to use:</b> Do not use it when you need the user object itself; return the item value instead.</p><pre><code>const ids = [10, 20, 30];
+console.log(ids.findIndex(id => id === 20)); // 1</code></pre><div class="gotcha"><b>Gotcha</b><span>If no item matches, <code>findIndex</code> returns <code>-1</code>, which is a common interview trap.</span></div>
+        </section>
+
+        <section class="topic" id="t8">
+          <h2><span class="num">08</span> some</h2>
+          <p><b>Simple definition:</b> <code>some</code> checks whether at least one item matches a condition.</p><p><b>Technical definition:</b> It returns <code>true</code> as soon as one callback result is truthy and then stops early.</p><p><b>Why it is used:</b> It is ideal for presence checks such as 'is any user admin?', or 'does any value exceed the limit?'.</p><p><b>When not to use:</b> Do not use it when you need all matches or a complete aggregated answer; use <code>every</code> or <code>filter</code> for that.</p><pre><code>const scores = [70, 90, 55];
+console.log(scores.some(score => score > 80)); // true</code></pre><div class="gotcha"><b>Gotcha</b><span><code>some</code> stops at the first truthy result. This early exit is a useful performance optimization in many cases.</span></div>
+        </section>
+
+        <section class="topic" id="t9">
+          <h2><span class="num">09</span> every</h2>
+          <p><b>Simple definition:</b> <code>every</code> checks whether all items satisfy a condition.</p><p><b>Technical definition:</b> It returns <code>true</code> only if every callback result is truthy. It also stops early on the first false value.</p><p><b>Why it is used:</b> Use it to validate that all values meet a rule, like 'all fields are filled in' or 'all numbers are positive'.</p><p><b>When not to use:</b> Do not use it if you only need some match; use <code>some</code> instead.</p><pre><code>const ages = [20, 25, 30];
+console.log(ages.every(age => age >= 18)); // true</code></pre><div class="gotcha"><b>Gotcha</b><span>An empty array returns <code>true</code> for <code>every</code>, because 'all items satisfy the condition' is vacuously true.</span></div>
+        </section>
+
+        <section class="topic" id="t10">
+          <h2><span class="num">10</span> includes</h2>
+          <p><b>Simple definition:</b> <code>includes</code> checks whether an array contains a given value.</p><p><b>Technical definition:</b> It compares values and returns <code>true</code> when a matching element is found, with an optional start index.</p><p><b>Why it is used:</b> It is common when checking membership, such as whether a role is allowed or whether an item is already in a cart.</p><p><b>When not to use:</b> Do not use it for deep object comparisons; it checks value equality, not structural equality.</p><pre><code>const roles = ['admin', 'editor'];
+console.log(roles.includes('editor')); // true</code></pre><div class="gotcha"><b>Gotcha</b><span>For objects, <code>includes</code> will not find a similar object unless it is the same reference. Use <code>find</code> or a custom predicate for object matching.</span></div>
+        </section>
+
+        <section class="topic" id="t11">
+          <h2><span class="num">11</span> sort</h2>
+          <p><b>Simple definition:</b> <code>sort</code> arranges array items in order.</p><p><b>Technical definition:</b> It sorts the array in place, using string conversion by default unless a compare function is supplied.</p><p><b>Why it is used:</b> It is used for ordering lists such as scores, names, dates, and product results.</p><p><b>When not to use:</b> Do not rely on default <code>sort</code> for numeric values; it sorts strings first unless you provide a comparator.</p><pre><code>const nums = [30, 10, 20];
+console.log(nums.sort((a, b) => a - b)); // [10, 20, 30]</code></pre><div class="gotcha"><b>Gotcha</b><span>The default sort order is based on strings, so <code>[10, 2, 1].sort()</code> can surprise you. A compare function fixes that.</span></div>
+        </section>
+
+        <section class="topic" id="t12">
+          <h2><span class="num">12</span> slice</h2>
+          <p><b>Simple definition:</b> <code>slice</code> copies a portion of an array without changing the original.</p><p><b>Technical definition:</b> It returns a shallow copy of the selected range and uses start/end indexes that are non-mutating.</p><p><b>Why it is used:</b> It is useful for pagination, previewing data, and copying arrays safely.</p><p><b>When not to use:</b> Do not use it when you want to remove elements from the original; use <code>splice</code> for that.</p><pre><code>const nums = [1, 2, 3, 4];
+console.log(nums.slice(1, 3)); // [2, 3]</code></pre><div class="gotcha"><b>Gotcha</b><span>Unlike <code>splice</code>, <code>slice</code> does not mutate the array. This is a key difference in interviews.</span></div>
+        </section>
+
+        <section class="topic" id="t13">
+          <h2><span class="num">13</span> splice</h2>
+          <p><b>Simple definition:</b> <code>splice</code> changes an array by adding or removing items in place.</p><p><b>Technical definition:</b> It mutates the original array and returns the removed elements as a new array.</p><p><b>Why it is used:</b> It helps manage lists dynamically, such as removing selected items or inserting new values at a position.</p><p><b>When not to use:</b> Avoid it when you want an immutable workflow; <code>slice</code>, spread, and filter are safer options in modern code.</p><pre><code>const items = ['a', 'b', 'c'];
+items.splice(1, 1, 'x');
+console.log(items); // ['a', 'x', 'c']</code></pre><div class="gotcha"><b>Gotcha</b><span>A common mistake is to treat <code>splice</code> like a copy operation. It changes the source array.</span></div>
+        </section>
+
+        <section class="topic" id="t14">
+          <h2><span class="num">14</span> flat</h2>
+          <p><b>Simple definition:</b> <code>flat</code> flattens nested arrays by one level by default.</p><p><b>Technical definition:</b> It creates a new array with sub-array elements concatenated into the parent array to the specified depth.</p><p><b>Why it is used:</b> It is useful for data that has nested arrays from parsing or API responses.</p><p><b>When not to use:</b> Do not flatten too aggressively if you need to preserve nested structure; use a custom reduction when depth is unpredictable.</p><pre><code>const nested = [1, [2, 3], [4, [5]]];
+console.log(nested.flat(2)); // [1, 2, 3, 4, 5]</code></pre><div class="gotcha"><b>Gotcha</b><span><code>flat</code> only goes as deep as you ask. With nesting beyond the depth, it preserves deeper arrays.</span></div>
+        </section>
+
+        <section class="topic" id="t15">
+          <h2><span class="num">15</span> flatMap</h2>
+          <p><b>Simple definition:</b> <code>flatMap</code> maps each element and flattens the result by one level.</p><p><b>Technical definition:</b> It combines the behavior of <code>map</code> and <code>flat</code> in a single pass.</p><p><b>Why it is used:</b> It is best when each element produces an array and you want to flatten those arrays into one list.</p><p><b>When not to use:</b> Avoid it when the transformed output is not array-shaped or when the callback is doing too much work.</p><pre><code>const words = ['Hi', 'there'];
+console.log(words.flatMap(word => word.split(''))); // ['H','i','t','h','e','r','e']</code></pre><div class="gotcha"><b>Gotcha</b><span>It is very convenient, but if you need more control over shape and depth, a manual loop or reduce can be easier to read.</span></div>
+        </section>
+
+        <section class="topic" id="t16">
+          <h2><span class="num">16</span> Array destructuring</h2>
+          <p><b>Simple definition:</b> Array destructuring lets you unpack values from an array into variables.</p><p><b>Technical definition:</b> It uses patterns like <code>[first, second]</code> or <code>[a, ...rest]</code> to bind array elements to variables.</p><p><b>Why it is used:</b> It makes code cleaner when working with tuples, return values, and argument lists.</p><p><b>When not to use:</b> It is less clear when you are extracting deeply nested or poorly structured data. Use readability-first destructuring.</p><pre><code>const [first, second, ...others] = [1, 2, 3, 4];
+console.log(first, second, others); // 1 2 [3,4]</code></pre><div class="gotcha"><b>Gotcha</b><span>Destructuring is shorthand, not magic. It only reads the pattern you define; the rest of the array can still be ignored intentionally.</span></div>
+        </section>
+
+        <section class="topic" id="t17">
+          <h2><span class="num">17</span> Spread with arrays</h2>
+          <p><b>Simple definition:</b> Array spread copies or combines array values into a new array.</p><p><b>Technical definition:</b> It expands an iterable into individual elements inside a literal, preserving the original arrays unchanged.</p><p><b>Why it is used:</b> It is common for cloning, concatenating, and creating updated lists without mutating source arrays.</p><p><b>When not to use:</b> Do not use it for deep cloning; nested objects remain shared by reference.</p><pre><code>const a = [1, 2];
+const b = [...a, 3, 4];
+console.log(b); // [1, 2, 3, 4]</code></pre><div class="gotcha"><b>Gotcha</b><span>Spread is great for immutability, but it is shallow. If an item is an object, that object is still the same reference.</span></div>
+        </section>
+
+        <section class="topic" id="t18">
+          <h2><span class="num">18</span> Immutable array operations</h2>
+          <p><b>Simple definition:</b> Immutable operations create a new array rather than changing the original.</p><p><b>Technical definition:</b> Functional programming patterns in JavaScript favor functions such as <code>map</code>, <code>filter</code>, and <code>slice</code> that keep existing state unchanged.</p><p><b>Why it is used:</b> Immutable updates make debugging easier and help React state updates stay predictable.</p><p><b>When not to use:</b> Do not force immutability where the original array is intentionally being mutated in a quick local algorithm; choose the simplest correct pattern.</p><pre><code>const original = [1, 2, 3];
+const updated = original.map(n => n + 1);
+console.log(original); // [1, 2, 3]
+console.log(updated); // [2, 3, 4]</code></pre><div class="gotcha"><b>Gotcha</b><span>Modern frameworks expect state updates to be predictable. Immutability is often the key to avoiding hard-to-debug bugs.</span></div>
+        </section>
+
+        <section class="topic" id="t19">
+          <h2><span class="num">19</span> Shallow copying</h2>
+          <p><b>Simple definition:</b> A shallow copy duplicates the top-level array, but nested objects inside it are still shared.</p><p><b>Technical definition:</b> Methods like <code>slice</code>, array spread, and <code>concat</code> create a new outer array but do not deep-clone nested references.</p><p><b>Why it is used:</b> It is enough when you only need a top-level copy for most list operations.</p><p><b>When not to use:</b> If nested objects are mutated, shallow copying is not enough. Use deep cloning or immutable nested updates instead.</p><pre><code>const people = [{ name: 'Ada' }];
+const copied = [...people];
+copied[0].name = 'Grace';
+console.log(people[0].name); // Grace</code></pre><div class="gotcha"><b>Gotcha</b><span>This is a classic interview question: the outer array is new, but the inner object is not.</span></div>
+        </section>
+
+        <section class="topic" id="t20">
+          <h2><span class="num">20</span> Deep copying</h2>
+          <p><b>Simple definition:</b> A deep copy duplicates nested data, so changes to one copy do not affect the other.</p><p><b>Technical definition:</b> Deep cloning duplicates all nested objects and arrays recursively, which avoids shared references.</p><p><b>Why it is used:</b> It is useful for safe snapshots, forms, and data transforms that must not mutate the original object graph.</p><p><b>When not to use:</b> Do not deep clone when the data is huge or when you only need a shallow copy; it costs more memory and CPU.</p><pre><code>const original = [{ id: 1, tags: ['a'] }];
+const copy = structuredClone(original);
+copy[0].tags.push('b');
+console.log(original[0].tags); // ['a']</code></pre><div class="gotcha"><b>Gotcha</b><span>Deep copy is safer but more expensive. In real code, you often want the smallest correct copy strategy, not a full recursive clone.</span></div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- ============ CODING QUESTIONS ============ -->
+  <div class="panel" id="panel-code" role="tabpanel" aria-labelledby="tab-code" hidden>
+    <p class="q-intro">10 questions, ordered easy → hard. Try each one before revealing the answer.</p>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q1</span><span class="lvl">easy</span></div>
+      <p class="qtopic">// map return</p>
+      <p class="qtext">What does this log, and why?<pre><code>const nums = [1, 2, 3];
+const doubled = nums.map(n => { n * 2; });
+console.log(doubled);</code></pre></p>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p><code>[undefined, undefined, undefined]</code>. The callback uses a <code>{}</code> block body but never <code>return</code>s, so every call implicitly returns <code>undefined</code> — and <code>map</code> collects exactly whatever the callback returns. <b>Fix:</b> <code>n => n * 2</code> (implicit return) or add <code>return</code> inside the block.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q2</span><span class="lvl">easy</span></div>
+      <p class="qtopic">// forEach vs map</p>
+      <p class="qtext">What does <code>result</code> equal?<pre><code>const result = [1, 2, 3].forEach(n => n * 2);
+console.log(result);</code></pre></p>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p><code>undefined</code>. <code>forEach</code> always returns <code>undefined</code> — it exists purely for side effects and never builds a new array. Beginners often reach for it expecting <code>map</code>'s behavior; if you need the transformed values back, you need <code>map</code> instead.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q3</span><span class="lvl">easy</span></div>
+      <p class="qtopic">// find vs findIndex</p>
+      <p class="qtext">What does each return when nothing matches?<pre><code>const users = [{ id: 1 }, { id: 2 }];
+console.log(users.find(u => u.id === 99));
+console.log(users.findIndex(u => u.id === 99));</code></pre></p>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p><code>undefined</code>, then <code>-1</code>. <code>find</code> returns the missing-value sentinel for "an item" (<code>undefined</code>); <code>findIndex</code> returns the missing-value sentinel for "a position" (<code>-1</code>, since <code>0</code> is a valid index and can't mean "not found"). Always guard before using either result directly.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q4</span><span class="lvl">medium</span></div>
+      <p class="qtopic">// sort default order</p>
+      <p class="qtext">What does this log, and why isn't it numeric order?<pre><code>const nums = [40, 1, 5, 200];
+nums.sort();
+console.log(nums);</code></pre></p>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p><code>[1, 200, 40, 5]</code>.</p><p>With no compare function, <code>sort()</code> converts every element to a <b>string</b> and compares them character by character. <code>"1"</code> sorts before <code>"200"</code> because <code>'1' &lt; '2'</code>; <code>"200"</code> sorts before <code>"40"</code> because <code>'2' &lt; '4'</code>. <b>Fix:</b> <code>nums.sort((a, b) => a - b)</code>.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q5</span><span class="lvl">medium</span></div>
+      <p class="qtopic">// slice vs splice</p>
+      <p class="qtext">What does <code>arr</code> equal after each line, and which one mutated it?<pre><code>const arr = [1, 2, 3, 4, 5];
+const a = arr.slice(1, 3);
+console.log(arr, a);
+
+const b = arr.splice(1, 2);
+console.log(arr, b);</code></pre></p>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p>After <code>slice</code>: <code>arr</code> is still <code>[1,2,3,4,5]</code> (unchanged), <code>a</code> is <code>[2,3]</code> — a copy of the range, original untouched.</p><p>After <code>splice</code>: <code>arr</code> is now <code>[1,4,5]</code> (mutated in place — 2 elements removed starting at index 1), <code>b</code> is <code>[2,3]</code> — the removed items. <code>slice</code> reads and copies; <code>splice</code> cuts and mutates.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q6</span><span class="lvl">medium</span></div>
+      <p class="qtopic">// reduce no initial value</p>
+      <p class="qtext">What happens here, and why?<pre><code>const total = [].reduce((acc, n) => acc + n);
+console.log(total);</code></pre></p>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p>Throws <code>TypeError: Reduce of empty array with no initial value</code>.</p><p>Without a starting value, <code>reduce</code> uses the array's <b>first element</b> as the initial accumulator and starts iterating from the second. On an empty array there is no first element to fall back on, so it has nothing to return and throws instead. <b>Fix:</b> always pass a starting value — <code>[].reduce((acc, n) => acc + n, 0)</code> safely returns <code>0</code>.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q7</span><span class="lvl">medium</span></div>
+      <p class="qtopic">// vacuous truth</p>
+      <p class="qtext">What does each log?<pre><code>console.log([].every(n => n > 100));
+console.log([].some(n => n > 100));</code></pre></p>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p><code>true</code>, then <code>false</code>. On an <b>empty array</b>, <code>every</code> is vacuously <code>true</code> — there's no element to fail the check, so "all elements pass" holds trivially. <code>some</code> is the mirror case: with no elements to find a match, it can never find one, so it's <code>false</code>. This is easy to get backwards under interview pressure.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q8</span><span class="lvl">medium</span></div>
+      <p class="qtopic">// shallow copy of array of objects</p>
+      <p class="qtext">What does <code>original[0].name</code> log after this?<pre><code>const original = [{ name: "Ada" }];
+const copy = [...original];
+copy[0].name = "Grace";
+console.log(original[0].name);</code></pre></p>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p><code>"Grace"</code>. Spread makes a shallow copy of the outer array — the <em>array itself</em> is new, but each element is still the same object reference as in the original. Mutating <code>copy[0]</code> mutates the one shared object, visible from both arrays. Fix with <code>original.map(o => ({ ...o }))</code> or <code>structuredClone</code>.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q9</span><span class="lvl">hard</span></div>
+      <p class="qtopic">// chaining map/filter/reduce</p>
+      <p class="qtext">Given orders, write one chain that returns the total value of all <code>"shipped"</code> orders.<pre><code>const orders = [
+  { status: "shipped", value: 100 },
+  { status: "pending", value: 50 },
+  { status: "shipped", value: 75 },
+];</code></pre></p>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <pre><code>const total = orders
+  .filter(o => o.status === "shipped")
+  .reduce((sum, o) => sum + o.value, 0);
+// 175</code></pre><p><code>filter</code> selects the matching subset first (never mutating <code>orders</code>), then <code>reduce</code> combines that subset's values into a single total. Each step returns a new value, keeping the chain readable top-to-bottom.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q10</span><span class="lvl">hard</span></div>
+      <p class="qtopic">// dedupe by key</p>
+      <p class="qtext">Given a list with duplicate <code>id</code>s, write a one-liner to keep only the first occurrence of each id.<pre><code>const items = [
+  { id: 1, name: "a" }, { id: 2, name: "b" }, { id: 1, name: "c" },
+];
+// desired: [{id:1,name:'a'}, {id:2,name:'b'}]</code></pre></p>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <pre><code>const seen = new Set();
+const unique = items.filter(item => {
+  if (seen.has(item.id)) return false;
+  seen.add(item.id);
+  return true;
+});
+// [{id:1,name:'a'}, {id:2,name:'b'}]</code></pre><p>A <code>Set</code> gives O(1) "have I seen this id before" checks — far better than scanning the results array with <code>.find()</code> inside the filter, which would be O(n²) on larger lists.</p>
+        </div>
+      </details>
+    </div>
+  </div>
+</div>
+
+<footer>JavaScript Arrays Notebook · read the Explanations, test with Coding Questions</footer>
+
+<script>
+  const tabs = document.querySelectorAll('.tab');
+  const panels = { 'tab-notes': 'panel-notes', 'tab-code': 'panel-code' };
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => selectTab(tab.id));
+    tab.addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        const ids = Object.keys(panels);
+        const i = ids.indexOf(tab.id);
+        const next = e.key === 'ArrowRight' ? (i + 1) % ids.length : (i - 1 + ids.length) % ids.length;
+        document.getElementById(ids[next]).focus();
+        selectTab(ids[next]);
+      }
+    });
+  });
+  function selectTab(id) {
+    tabs.forEach(t => {
+      const on = t.id === id;
+      t.setAttribute('aria-selected', on);
+      document.getElementById(panels[t.id]).hidden = !on;
+    });
+    window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+  }
+
+  const tocLinks = document.querySelectorAll('.toc a');
+  const sections = [...document.querySelectorAll('section.topic')];
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(en => {
+      if (en.isIntersecting) {
+        const id = en.target.id;
+        tocLinks.forEach(l => l.classList.toggle('active', l.getAttribute('href') === '#' + id));
+      }
+    });
+  }, { rootMargin: '-120px 0px -70% 0px' });
+  sections.forEach(s => obs.observe(s));
+</script>

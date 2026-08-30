@@ -360,6 +360,71 @@
     color: var(--text); margin-top: 8px;
   }
 
+  /* ---------- Checklist tab (multi-select + subtopic notes) ---------- */
+  .checklist-body { max-width: 640px; }
+  .checklist-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .checklist-toolbar .subtopic-search { margin-bottom: 0; }
+  .btn.sm { padding: 6px 12px; font-size: 12px; }
+  .select-bar {
+    display: flex; align-items: center; justify-content: space-between; flex: 1;
+    padding: 7px 10px; border-radius: 8px; border: 0.5px solid var(--border); background: var(--bg);
+  }
+  .link-btn {
+    background: none; border: none; cursor: pointer; padding: 0;
+    color: var(--accent); font-size: 12.5px; font-weight: 600;
+  }
+  .link-btn:hover { text-decoration: underline; }
+  .select-count { font-family: var(--mono); font-size: 12px; color: var(--text-muted); }
+  .sr-checkbox { width: 14px; height: 14px; flex-shrink: 0; accent-color: var(--accent); cursor: pointer; }
+  .subtopic-row[data-select-row] { cursor: pointer; }
+  .subtopic-row.sr-selected { background: var(--accent-bg); }
+  .selection-actionbar {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    margin-top: 14px; padding: 10px 14px; border-radius: 10px;
+    border: 0.5px solid var(--accent); background: var(--accent-bg);
+  }
+  .sab-info { font-size: 12.5px; color: var(--text); }
+  .sab-info b { color: var(--accent); }
+  .sab-info span { display: block; font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .sab-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+  .note-modal-overlay { z-index: 66; }
+  .note-modal {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: min(420px, 92%); z-index: 67; background: var(--card); border-radius: 14px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4); padding: 22px;
+  }
+  .note-modal h3 { margin: 0 0 12px; font-size: 15px; }
+  .note-modal-subtopic {
+    display: flex; flex-direction: column; gap: 2px; margin-bottom: 10px;
+    font-size: 11.5px; color: var(--text-muted);
+  }
+  .note-modal-subtopic b { font-size: 13px; color: var(--text); font-weight: 600; }
+  .note-modal .sr-note { min-height: 120px; margin: 0; }
+  .note-modal-actions { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; }
+  .icon-btn {
+    background: none; border: 0.5px solid var(--border); border-radius: 8px; cursor: pointer;
+    width: 34px; height: 34px; color: var(--text-muted); font-size: 14px; line-height: 1;
+  }
+  .icon-btn:hover { border-color: var(--border-strong); color: var(--text); }
+  .icon-btn.danger:hover { border-color: var(--danger); color: var(--danger); }
+
+  .confirm-modal-overlay { z-index: 68; }
+  .confirm-modal {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: min(360px, 90%); z-index: 69; background: var(--card); border-radius: 14px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4); padding: 26px; text-align: center;
+  }
+  .confirm-icon {
+    width: 44px; height: 44px; margin: 0 auto 12px; border-radius: 50%;
+    background: var(--accent-bg); color: var(--accent); font-size: 18px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .confirm-modal h3 { margin: 0 0 6px; font-size: 15px; }
+  .confirm-modal p { margin: 0 0 18px; font-size: 12.5px; color: var(--text-muted); }
+  .confirm-actions { display: flex; gap: 10px; justify-content: center; }
+  .confirm-actions .btn { flex: 1; justify-content: center; }
+
   /* ---------- Notebook: card icon + full two-tab view ---------- */
   .cc-top { display: flex; align-items: center; gap: 8px; }
   .cc-top .cc-name { flex: 1; min-width: 0; }

@@ -4630,6 +4630,13 @@ function toggleLearned(tier, idx) {
   saveChecked();
   touchTierReview(tier);
 }
+function markLearnedBulk(tier, idxs, value) {
+  idxs.forEach(function (i) {
+    checked[itemId(tier, i)] = value;
+  });
+  saveChecked();
+  touchTierReview(tier);
+}
 
 /* ---------------- aggregate metrics ---------------- */
 function stackMasteryPct(stackKey) {
@@ -5187,11 +5194,32 @@ function renderStackPage(main, stackKey) {
 
 /* ================= DRAWER: navigation state ================= */
 function openTopicDrawer(key) {
-  ui.drawer = { mode: "topic", tierKey: key, search: "", practice: null };
+  // Topic cards now open the notebook directly, landing on the Checklist tab
+  // (the old standalone checklist-only drawer). Kept as its own function so
+  // every existing [data-open-topic] call site keeps working unchanged.
+  ui.drawer = {
+    mode: "notebook",
+    tierKey: key,
+    tab: "checklist",
+    search: "",
+    selectMode: false,
+    selected: {},
+    noteEditor: null,
+    confirmBulk: null,
+  };
   renderDrawer();
 }
 function openNotebook(key) {
-  ui.drawer = { mode: "notebook", tierKey: key, tab: "notes" };
+  ui.drawer = {
+    mode: "notebook",
+    tierKey: key,
+    tab: "notes",
+    search: "",
+    selectMode: false,
+    selected: {},
+    noteEditor: null,
+    confirmBulk: null,
+  };
   renderDrawer();
 }
 // Global scratchpad — same practice.js experience as a topic's Real Practice
@@ -5287,6 +5315,10 @@ function renderDrawerNotebook(root) {
   html += '<div class="nb-tabs">';
   html +=
     '<button class="nb-tab' +
+    (tab === "checklist" ? " active" : "") +
+    '" data-nb-tab="checklist" type="button">Checklist</button>';
+  html +=
+    '<button class="nb-tab' +
     (tab === "notes" ? " active" : "") +
     '" data-nb-tab="notes" type="button">Explanations</button>';
   html +=
@@ -5299,7 +5331,9 @@ function renderDrawerNotebook(root) {
     '" data-nb-tab="practice" type="button">Real Practice</button>';
   html += "</div></div>";
 
-  if (tab === "notes") {
+  if (tab === "checklist") {
+    html += renderChecklistBody(tier);
+  } else if (tab === "notes") {
     const items = tier.items.filter(function (label) {
       return explain[label];
     });
@@ -5376,6 +5410,10 @@ function renderDrawerNotebook(root) {
   }
 
   html += "</div>";
+  if (tab === "checklist") {
+    html += renderNoteEditor(tier);
+    html += renderConfirmBulk();
+  }
   root.innerHTML = html;
 
   const drawerEl = root.querySelector(".notebook-drawer");
@@ -5386,9 +5424,19 @@ function renderDrawerNotebook(root) {
   root.querySelectorAll("[data-nb-tab]").forEach(function (n) {
     n.addEventListener("click", function () {
       ui.drawer.tab = n.getAttribute("data-nb-tab");
+      // switching tabs always leaves multi-select / editor state behind
+      ui.drawer.selectMode = false;
+      ui.drawer.selected = {};
+      ui.drawer.noteEditor = null;
+      ui.drawer.confirmBulk = null;
       renderDrawerNotebook(root);
     });
   });
+  if (tab === "checklist") {
+    wireChecklistTab(root, tier);
+    wireNoteEditor(root, tier);
+    wireConfirmBulk(root, tier);
+  }
 
   // TOC: offset sticky position + scroll-margins to the header height, wire
   // click-to-scroll and active-link tracking within the scrollable drawer.
@@ -5434,6 +5482,473 @@ function renderDrawerNotebook(root) {
   }
 
   wirePracticeFields(drawerEl, ui.drawer.tierKey);
+}
+
+/* ---- Checklist tab (inside the notebook): subtopic list with multi-select,
+   bulk mark-complete, bulk practice, and per-subtopic notes opened in a
+   lightweight modal instead of an inline textarea. ---- */
+function renderChecklistBody(tier) {
+  const meta = getMeta(tier);
+  const avg = tierMastery(tier);
+  const sub = tierSubCounts(tier);
+  const q = (ui.drawer.search || "").trim().toLowerCase();
+  const selectMode = !!ui.drawer.selectMode;
+  const selected = ui.drawer.selected || (ui.drawer.selected = {});
+  const rows = tier.items
+    .map(function (label, i) {
+      return { label: label, i: i };
+    })
+    .filter(function (o) {
+      return !q || o.label.toLowerCase().indexOf(q) !== -1;
+    });
+  const selectedCount = Object.keys(selected).filter(function (k) {
+    return selected[k];
+  }).length;
+  const allVisibleSelected =
+    rows.length > 0 &&
+    rows.every(function (o) {
+      return selected[itemId(tier, o.i)];
+    });
+
+  let html = '<div class="nb-solo checklist-body">';
+  html +=
+    '<div class="dd-mastery-line"><span>Mastery</span><span class="ddm-val">' +
+    avg.toFixed(1) +
+    " / 5</span></div>";
+  html +=
+    '<div class="dd-mastery-bar"><div style="width:' +
+    Math.round((avg / 5) * 100) +
+    '%"></div></div>';
+  html +=
+    '<div class="dd-sub" style="margin-bottom:12px;">' +
+    sub.done +
+    " / " +
+    sub.total +
+    " sub-topics ready</div>";
+
+  // toolbar: search (default) <-> select-bar (selection mode)
+  html += '<div class="checklist-toolbar">';
+  if (!selectMode) {
+    html +=
+      '<input type="text" class="subtopic-search" data-subtopic-search placeholder="Search subtopics..." value="' +
+      escapeAttr(ui.drawer.search || "") +
+      '">';
+    html +=
+      '<button class="btn ghost sm" data-select-start type="button">Select</button>';
+  } else {
+    html += '<div class="select-bar">';
+    html += '<button class="link-btn" data-select-cancel type="button">Cancel</button>';
+    html +=
+      '<span class="select-count">' + selectedCount + " selected</span>";
+    html +=
+      '<button class="link-btn" data-select-all type="button">' +
+      (allVisibleSelected ? "Clear all" : "Select all (" + rows.length + ")") +
+      "</button>";
+    html += "</div>";
+  }
+  html += "</div>";
+
+  html += '<div class="subtopic-grid">';
+  if (!rows.length) html += '<div class="empty-note">No matches.</div>';
+  const topicExplain =
+    (window.EXPLANATIONS && window.EXPLANATIONS[tier.name]) || {};
+  rows.forEach(function (o) {
+    const id = itemId(tier, o.i);
+    const done = !!checked[id];
+    const note = subNotes[id] || "";
+    const hasNote = note.trim().length > 0;
+    const explain = topicExplain[o.label] || "";
+    const hasExplain = explain.length > 0;
+    const isSelected = !!selected[id];
+    html +=
+      '<div class="subtopic-block">' +
+      '<div class="subtopic-row' +
+      (done ? " sr-done" : "") +
+      (isSelected ? " sr-selected" : "") +
+      '"' +
+      (selectMode ? ' data-select-row="' + o.i + '"' : "") +
+      ">" +
+      (selectMode
+        ? '<input type="checkbox" class="sr-checkbox" data-select-check="' +
+          o.i +
+          '"' +
+          (isSelected ? " checked" : "") +
+          ">"
+        : "") +
+      '<span class="sr-num">' +
+      String(o.i + 1).padStart(2, "0") +
+      "</span>" +
+      '<span class="sr-label"' +
+      (selectMode ? "" : ' data-toggle-sub="' + o.i + '"') +
+      ">" +
+      escapeHtml(o.label) +
+      "</span>" +
+      (hasExplain
+        ? '<button class="sr-learn-btn" data-learn-toggle="' +
+          o.i +
+          '" type="button" title="Explanation">&#128214;</button>'
+        : "") +
+      '<button class="sr-note-btn' +
+      (hasNote ? " has-note" : "") +
+      '" data-note-open="' +
+      o.i +
+      '" type="button" title="' +
+      (hasNote ? "View note" : "Add note") +
+      '">' +
+      (hasNote ? "&#9998;" : "+") +
+      "</button>" +
+      '<span class="sr-check"' +
+      (selectMode ? "" : ' data-toggle-sub="' + o.i + '"') +
+      ' title="' +
+      (done ? "Ready — I can explain this" : "Mark ready") +
+      '">' +
+      (done ? "&#10003;" : "") +
+      "</span>" +
+      "</div>" +
+      (hasExplain
+        ? '<div class="sr-explain" data-explain="' +
+          o.i +
+          '" style="display:none;">' +
+          explain +
+          "</div>"
+        : "") +
+      "</div>";
+  });
+  html += "</div>";
+
+  if (selectMode && selectedCount > 0) {
+    html += '<div class="selection-actionbar">';
+    html +=
+      '<div class="sab-info"><b>' +
+      selectedCount +
+      "</b> selected<span>You can now perform actions on the selected topics.</span></div>";
+    html += '<div class="sab-actions">';
+    html +=
+      '<button class="btn ghost sm" data-select-practice type="button">Practice</button>';
+    html +=
+      '<button class="btn primary sm" data-select-complete type="button">Mark as complete</button>';
+    html += "</div></div>";
+  } else if (!selectMode) {
+    html +=
+      '<button class="btn primary" data-practice-topic type="button" style="margin-top:16px;width:100%;justify-content:center;">Practice Interview</button>';
+  }
+
+  html +=
+    '<div class="dd-block" style="margin-top:20px;"><h3>Your Notes / Answer</h3>' +
+    '<textarea data-dd-answer placeholder="Jot down how you would answer this...">' +
+    escapeHtml(meta.answer || "") +
+    "</textarea></div>";
+  html +=
+    '<div class="dd-block"><h3>Evidence<span class="save-flag" data-dd-save-flag>Saved</span></h3>' +
+    '<textarea data-dd-evidence placeholder="Project or example where you used this...">' +
+    escapeHtml(meta.evidence || "") +
+    "</textarea></div>";
+  html +=
+    '<div class="dd-dates" style="margin-top:4px;"><span>Last reviewed: ' +
+    formatDateDisplay(meta.lastReviewed) +
+    "</span><span>Next review: " +
+    formatDateDisplay(meta.nextReview) +
+    "</span></div>";
+  html += "</div>";
+  return html;
+}
+
+function renderNoteEditor(tier) {
+  const ed = ui.drawer.noteEditor;
+  if (!ed) return "";
+  const label = tier.items[ed.idx];
+  const id = itemId(tier, ed.idx);
+  const draft = typeof ed.draft === "string" ? ed.draft : subNotes[id] || "";
+  let html = '<div class="overlay-backdrop note-modal-overlay" data-note-overlay></div>';
+  html += '<div class="note-modal">';
+  html +=
+    '<button class="dd-close" data-note-close type="button">&times;</button>';
+  html += "<h3>Your note</h3>";
+  html +=
+    '<div class="note-modal-subtopic"><span>Subtopic</span><b>' +
+    escapeHtml(label) +
+    "</b></div>";
+  html +=
+    '<textarea class="sr-note" data-note-draft placeholder="Write your note...">' +
+    escapeHtml(draft) +
+    "</textarea>";
+  html += '<div class="note-modal-actions">';
+  html +=
+    '<button class="icon-btn danger" data-note-delete type="button" title="Delete note">&#128465;</button>';
+  html +=
+    '<button class="btn primary" data-note-save type="button">Save note</button>';
+  html += "</div></div>";
+  return html;
+}
+
+function renderConfirmBulk() {
+  const c = ui.drawer.confirmBulk;
+  if (!c) return "";
+  let html =
+    '<div class="overlay-backdrop confirm-modal-overlay" data-confirm-overlay></div>';
+  html += '<div class="confirm-modal">';
+  html += '<div class="confirm-icon">&#10003;</div>';
+  html += "<h3>Mark " + c.count + " topics as complete?</h3>";
+  html += "<p>This will mark the selected topics as complete.</p>";
+  html += '<div class="confirm-actions">';
+  html +=
+    '<button class="btn ghost" data-confirm-cancel type="button">Cancel</button>';
+  html +=
+    '<button class="btn primary" data-confirm-ok type="button">Mark as complete</button>';
+  html += "</div></div>";
+  return html;
+}
+
+function wireChecklistTab(root, tier) {
+  root.querySelectorAll("[data-toggle-sub]").forEach(function (n) {
+    n.addEventListener("click", function () {
+      const idx = parseInt(n.getAttribute("data-toggle-sub"), 10);
+      toggleLearned(tier, idx);
+      renderDrawerNotebook(root);
+      refreshUnderlyingPage();
+    });
+  });
+  root.querySelectorAll("[data-learn-toggle]").forEach(function (n) {
+    n.addEventListener("click", function () {
+      const block = n.closest(".subtopic-block");
+      const ex = block.querySelector("[data-explain]");
+      if (!ex) return;
+      const showing = ex.style.display !== "none";
+      ex.style.display = showing ? "none" : "block";
+      n.classList.toggle("open", !showing);
+    });
+  });
+  root.querySelectorAll("[data-note-open]").forEach(function (n) {
+    n.addEventListener("click", function () {
+      const idx = parseInt(n.getAttribute("data-note-open"), 10);
+      ui.drawer.noteEditor = { idx: idx, draft: subNotes[itemId(tier, idx)] || "" };
+      renderDrawerNotebook(root);
+    });
+  });
+
+  const searchInput = root.querySelector("[data-subtopic-search]");
+  if (searchInput) {
+    searchInput.addEventListener("input", function () {
+      ui.drawer.search = searchInput.value;
+      renderDrawerNotebook(root);
+      const el = root.querySelector("[data-subtopic-search]");
+      if (el) {
+        el.focus();
+        el.setSelectionRange(el.value.length, el.value.length);
+      }
+    });
+  }
+
+  const selectStart = root.querySelector("[data-select-start]");
+  if (selectStart) {
+    selectStart.addEventListener("click", function () {
+      ui.drawer.selectMode = true;
+      ui.drawer.selected = {};
+      renderDrawerNotebook(root);
+    });
+  }
+  const selectCancel = root.querySelector("[data-select-cancel]");
+  if (selectCancel) {
+    selectCancel.addEventListener("click", function () {
+      // exiting selection mode never touches completion or note data
+      ui.drawer.selectMode = false;
+      ui.drawer.selected = {};
+      renderDrawerNotebook(root);
+    });
+  }
+  const selectAll = root.querySelector("[data-select-all]");
+  if (selectAll) {
+    selectAll.addEventListener("click", function () {
+      const q = (ui.drawer.search || "").trim().toLowerCase();
+      const visible = tier.items.filter(function (label) {
+        return !q || label.toLowerCase().indexOf(q) !== -1;
+      });
+      const allSelected = visible.every(function (label) {
+        const i = tier.items.indexOf(label);
+        return ui.drawer.selected[itemId(tier, i)];
+      });
+      tier.items.forEach(function (label, i) {
+        if (!q || label.toLowerCase().indexOf(q) !== -1) {
+          const id = itemId(tier, i);
+          if (allSelected) delete ui.drawer.selected[id];
+          else ui.drawer.selected[id] = true;
+        }
+      });
+      renderDrawerNotebook(root);
+    });
+  }
+  root.querySelectorAll("[data-select-check]").forEach(function (n) {
+    n.addEventListener("click", function (e) {
+      e.stopPropagation();
+      const idx = parseInt(n.getAttribute("data-select-check"), 10);
+      const id = itemId(tier, idx);
+      if (ui.drawer.selected[id]) delete ui.drawer.selected[id];
+      else ui.drawer.selected[id] = true;
+      renderDrawerNotebook(root);
+    });
+  });
+  root.querySelectorAll("[data-select-row]").forEach(function (n) {
+    n.addEventListener("click", function (e) {
+      if (e.target.closest("[data-select-check]")) return;
+      if (e.target.closest("[data-note-open]")) return;
+      if (e.target.closest("[data-learn-toggle]")) return;
+      const idx = parseInt(n.getAttribute("data-select-row"), 10);
+      const id = itemId(tier, idx);
+      if (ui.drawer.selected[id]) delete ui.drawer.selected[id];
+      else ui.drawer.selected[id] = true;
+      renderDrawerNotebook(root);
+    });
+  });
+
+  const selectComplete = root.querySelector("[data-select-complete]");
+  if (selectComplete) {
+    selectComplete.addEventListener("click", function () {
+      const idxs = tier.items
+        .map(function (_, i) {
+          return i;
+        })
+        .filter(function (i) {
+          return ui.drawer.selected[itemId(tier, i)];
+        });
+      ui.drawer.confirmBulk = { count: idxs.length, idxs: idxs };
+      renderDrawerNotebook(root);
+    });
+  }
+  const selectPractice = root.querySelector("[data-select-practice]");
+  if (selectPractice) {
+    selectPractice.addEventListener("click", function () {
+      const idxs = tier.items
+        .map(function (_, i) {
+          return i;
+        })
+        .filter(function (i) {
+          return ui.drawer.selected[itemId(tier, i)];
+        });
+      const pool = idxs.map(function (i) {
+        return {
+          itemId: itemId(tier, i),
+          label: tier.items[i],
+          tierKey: tierKey(tier),
+        };
+      });
+      ui.drawer.selectMode = false;
+      ui.drawer.selected = {};
+      openPracticeFromDrawer(pool, tier.name + " (selected)", {
+        mode: "topic",
+        tierKey: tierKey(tier),
+      });
+    });
+  }
+
+  const practiceBtn = root.querySelector("[data-practice-topic]");
+  if (practiceBtn) {
+    practiceBtn.addEventListener("click", function () {
+      const pool = tier.items.map(function (label, i) {
+        return {
+          itemId: itemId(tier, i),
+          label: label,
+          tierKey: tierKey(tier),
+        };
+      });
+      openPracticeFromDrawer(pool, tier.name, {
+        mode: "topic",
+        tierKey: tierKey(tier),
+      });
+    });
+  }
+
+  const answerEl = root.querySelector("[data-dd-answer]");
+  const evidenceEl = root.querySelector("[data-dd-evidence]");
+  let saveTimer = null;
+  function scheduleSave() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function () {
+      saveState();
+      const flag = root.querySelector("[data-dd-save-flag]");
+      if (flag) {
+        flag.classList.add("show");
+        setTimeout(function () {
+          flag.classList.remove("show");
+        }, 1200);
+      }
+    }, 500);
+  }
+  if (answerEl) {
+    answerEl.addEventListener("input", function () {
+      getMeta(tier).answer = answerEl.value;
+      scheduleSave();
+    });
+  }
+  if (evidenceEl) {
+    evidenceEl.addEventListener("input", function () {
+      getMeta(tier).evidence = evidenceEl.value;
+      scheduleSave();
+    });
+  }
+}
+
+function wireNoteEditor(root, tier) {
+  const ed = ui.drawer.noteEditor;
+  if (!ed) return;
+  const overlay = root.querySelector("[data-note-overlay]");
+  const closeBtn = root.querySelector("[data-note-close]");
+  const draftEl = root.querySelector("[data-note-draft]");
+  const saveBtn = root.querySelector("[data-note-save]");
+  const deleteBtn = root.querySelector("[data-note-delete]");
+  function close() {
+    ui.drawer.noteEditor = null;
+    renderDrawerNotebook(root);
+  }
+  if (overlay) overlay.addEventListener("click", close);
+  if (closeBtn) closeBtn.addEventListener("click", close);
+  if (draftEl) {
+    draftEl.addEventListener("input", function () {
+      ui.drawer.noteEditor.draft = draftEl.value;
+    });
+    draftEl.focus();
+  }
+  if (saveBtn) {
+    saveBtn.addEventListener("click", function () {
+      const id = itemId(tier, ed.idx);
+      const val = (draftEl ? draftEl.value : "").trim();
+      if (val) subNotes[id] = val;
+      else delete subNotes[id];
+      saveState();
+      close();
+    });
+  }
+  if (deleteBtn) {
+    deleteBtn.addEventListener("click", function () {
+      const id = itemId(tier, ed.idx);
+      delete subNotes[id];
+      saveState();
+      close();
+    });
+  }
+}
+
+function wireConfirmBulk(root, tier) {
+  const c = ui.drawer.confirmBulk;
+  if (!c) return;
+  const overlay = root.querySelector("[data-confirm-overlay]");
+  const cancelBtn = root.querySelector("[data-confirm-cancel]");
+  const okBtn = root.querySelector("[data-confirm-ok]");
+  function close() {
+    ui.drawer.confirmBulk = null;
+    renderDrawerNotebook(root);
+  }
+  if (overlay) overlay.addEventListener("click", close);
+  if (cancelBtn) cancelBtn.addEventListener("click", close);
+  if (okBtn) {
+    okBtn.addEventListener("click", function () {
+      markLearnedBulk(tier, c.idxs, true);
+      ui.drawer.selectMode = false;
+      ui.drawer.selected = {};
+      ui.drawer.confirmBulk = null;
+      renderDrawerNotebook(root);
+      refreshUnderlyingPage();
+    });
+  }
 }
 
 /* ---- Real Practice: shared markup + wiring between the per-topic tab and

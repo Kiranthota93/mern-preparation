@@ -1,0 +1,539 @@
+<title>Objects Notebook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=JetBrains+Mono:wght@400;600&display=swap">
+
+<style>
+  :root {
+    --paper: #F7F6F2;
+    --surface: #FFFFFF;
+    --ink: #1A1917;
+    --ink-soft: #55524B;
+    --ink-faint: #8A867C;
+    --accent: #C77E12;
+    --accent-soft: #F3E4C6;
+    --teal: #2A6F6B;
+    --line: #E4E0D6;
+    --code-bg: #F2EFE7;
+    --shadow: 0 1px 2px rgba(26,25,23,.04), 0 8px 24px rgba(26,25,23,.06);
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #17161A;
+      --surface: #201F24;
+      --ink: #EDEAE3;
+      --ink-soft: #B4AFA4;
+      --ink-faint: #7E7A70;
+      --accent: #E8A32C;
+      --accent-soft: #3A2E17;
+      --teal: #6FC3BC;
+      --line: #322F38;
+      --code-bg: #1B1A1F;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #17161A;
+    --surface: #201F24;
+    --ink: #EDEAE3;
+    --ink-soft: #B4AFA4;
+    --ink-faint: #7E7A70;
+    --accent: #E8A32C;
+    --accent-soft: #3A2E17;
+    --teal: #6FC3BC;
+    --line: #322F38;
+    --code-bg: #1B1A1F;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 30px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Newsreader", Georgia, serif;
+    font-size: 18px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  header {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--paper) 88%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .head-inner {
+    max-width: 1080px; margin: 0 auto;
+    padding: 18px 24px 0;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .brand { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .brand h1 {
+    font-family: "Fraunces", serif; font-weight: 600;
+    font-size: 26px; margin: 0; letter-spacing: -.01em;
+  }
+  .brand .tag {
+    font-family: "JetBrains Mono", monospace; font-size: 11px;
+    letter-spacing: .14em; text-transform: uppercase;
+    color: var(--accent); background: var(--accent-soft);
+    padding: 4px 9px; border-radius: 999px;
+  }
+  .tabs { display: flex; gap: 4px; }
+  .tab {
+    appearance: none; border: none; background: none; cursor: pointer;
+    font-family: "Fraunces", serif; font-size: 16px; font-weight: 500;
+    color: var(--ink-soft); padding: 10px 4px 14px; margin-right: 22px;
+    border-bottom: 2px solid transparent; transition: color .15s;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+  .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 32px 24px 80px; }
+  .layout { display: grid; grid-template-columns: 220px 1fr; gap: 40px; align-items: start; }
+  @media (max-width: 780px) { .layout { grid-template-columns: 1fr; } .toc { display: none; } }
+
+  .toc {
+    position: sticky; top: 130px;
+    font-family: "JetBrains Mono", monospace; font-size: 12.5px;
+    line-height: 1.4; max-height: calc(100vh - 150px); overflow-y: auto;
+  }
+  .toc a {
+    display: block; color: var(--ink-faint); text-decoration: none;
+    padding: 5px 0; border-left: 2px solid transparent; padding-left: 12px;
+    transition: color .12s, border-color .12s;
+  }
+  .toc a:hover { color: var(--ink); }
+  .toc a.active { color: var(--accent); border-left-color: var(--accent); }
+
+  .intro { color: var(--ink-soft); font-size: 17px; margin: 0 0 8px; max-width: 62ch; }
+  section.topic { scroll-margin-top: 130px; padding: 30px 0; border-top: 1px solid var(--line); }
+  section.topic:first-of-type { border-top: none; padding-top: 6px; }
+  .topic h2 {
+    font-family: "Fraunces", serif; font-weight: 600; font-size: 25px;
+    margin: 0 0 4px; letter-spacing: -.01em; text-wrap: balance;
+    display: flex; align-items: baseline; gap: 12px;
+  }
+  .topic h2 .num {
+    font-family: "JetBrains Mono", monospace; font-size: 13px;
+    color: var(--accent); font-weight: 600;
+  }
+  .topic p { max-width: 64ch; margin: 12px 0; }
+  .topic ul { max-width: 64ch; padding-left: 22px; }
+  .topic li { margin: 6px 0; }
+  code {
+    font-family: "JetBrains Mono", monospace; font-size: .82em;
+    background: var(--code-bg); padding: 2px 6px; border-radius: 6px;
+  }
+  pre {
+    background: var(--code-bg); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 16px 18px; overflow-x: auto;
+    box-shadow: var(--shadow); margin: 16px 0;
+  }
+  pre code { background: none; padding: 0; font-size: 13.5px; line-height: 1.6; color: var(--ink); }
+  .gotcha {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: var(--accent-soft); border-radius: 10px;
+    padding: 12px 15px; margin: 14px 0; max-width: 64ch;
+    font-size: 15.5px; color: var(--ink);
+  }
+  .gotcha b { color: var(--accent); font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; }
+
+  .cm { color: var(--ink-faint); font-style: italic; }
+  .kw { color: var(--teal); font-weight: 600; }
+  .st { color: var(--accent); }
+
+  .q-intro { color: var(--ink-soft); max-width: 62ch; margin-bottom: 26px; }
+  .qcard {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 20px 22px; margin: 16px 0;
+    box-shadow: var(--shadow);
+  }
+  .qhead { display: flex; align-items: baseline; gap: 12px; margin-bottom: 6px; }
+  .qhead .qn {
+    font-family: "JetBrains Mono", monospace; font-size: 12px;
+    color: var(--accent); background: var(--accent-soft);
+    padding: 3px 8px; border-radius: 6px; font-weight: 600;
+  }
+  .qhead .lvl {
+    margin-left: auto; font-family: "JetBrains Mono", monospace;
+    font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--ink-faint); border: 1px solid var(--line);
+    padding: 2px 8px; border-radius: 999px;
+  }
+  .qtext { font-size: 17px; margin: 4px 0 12px; }
+  .qtopic { font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--teal); }
+  details.answer summary {
+    cursor: pointer; font-family: "Fraunces", serif; font-weight: 500;
+    color: var(--teal); font-size: 15px; list-style: none; user-select: none;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  details.answer summary::-webkit-details-marker { display: none; }
+  details.answer summary::before { content: "▸"; transition: transform .15s; }
+  details.answer[open] summary::before { transform: rotate(90deg); }
+  details.answer summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+  .ans-body { margin-top: 12px; }
+
+  .panel[hidden] { display: none; }
+  footer { text-align: center; color: var(--ink-faint); font-size: 13px; font-family: "JetBrains Mono", monospace; padding: 20px; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<header>
+  <div class="head-inner">
+    <div class="brand">
+      <h1>Objects</h1>
+      <span class="tag">Notebook</span>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Notebook sections">
+      <button class="tab" role="tab" id="tab-notes" aria-controls="panel-notes" aria-selected="true">Explanations</button>
+      <button class="tab" role="tab" id="tab-code" aria-controls="panel-code" aria-selected="false">Coding Questions</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ============ EXPLANATIONS ============ -->
+  <div class="panel" id="panel-notes" role="tabpanel" aria-labelledby="tab-notes">
+    <div class="layout">
+      <nav class="toc" aria-label="Topics">
+        <a href="#t1">01 · Object destructuring</a>
+        <a href="#t2">02 · Object spread</a>
+        <a href="#t3">03 · Object rest</a>
+        <a href="#t4">04 · Object.keys</a>
+        <a href="#t5">05 · Object.values</a>
+        <a href="#t6">06 · Object.entries</a>
+        <a href="#t7">07 · Object.assign</a>
+        <a href="#t8">08 · Object.freeze</a>
+        <a href="#t9">09 · Shallow copy</a>
+        <a href="#t10">10 · Deep copy</a>
+        <a href="#t11">11 · Structured cloning</a>
+        <a href="#t12">12 · Mutation vs immutability</a>
+        <a href="#t13">13 · Referential equality</a>
+      </nav>
+
+      <main>
+        <p class="intro">Reference notes for Objects. Read a topic, note the <b style="color:var(--accent)">Gotcha</b>, then switch to Coding Questions.</p>
+
+        <section class="topic" id="t1">
+          <h2><span class="num">01</span> Object destructuring</h2>
+          <p><b>Simple definition:</b> Pulls named properties out of an object into their own variables, in one step.</p><p><b>Technical definition:</b> A destructuring pattern reads matching keys from the source object by name (not position), with optional renaming (<code>: newName</code>) and defaults (<code>= value</code>).</p><p><b>Why it is used:</b> Removes repetitive <code>const x = obj.x;</code> lines and documents exactly which fields a function needs, right in its signature.</p><pre><code>const user = { name: 'Ada', age: 36 };
+const { name, age = 18 } = user; // name='Ada', age=36 (already present)
+const { name: userName } = user;  // rename → userName
+
+function greet({ name }) { return 'Hi, ' + name; } // in parameters</code></pre><div class="gotcha"><b>Gotcha</b><span>Object destructuring matches by <b>key name</b>, so order doesn't matter — unlike array destructuring, which matches by position. Mixing the two mental models up is a common early bug.</span></div>
+        </section>
+
+        <section class="topic" id="t2">
+          <h2><span class="num">02</span> Object spread</h2>
+          <p><b>Simple definition:</b> <code>{ ...obj }</code> copies an object's own properties into a new object literal.</p><p><b>Technical definition:</b> Spread inside an object literal enumerates the source's own enumerable properties and copies them into the new object, in order — later keys (including ones written after the spread) override earlier ones.</p><pre><code>const user = { name: 'Ada', role: 'admin' };
+const updated = { ...user, role: 'editor' }; // { name: 'Ada', role: 'editor' }
+const copy = { ...user };                    // a shallow copy</code></pre><div class="gotcha"><b>Gotcha</b><span>Spread only makes a <b>shallow</b> copy — nested objects are still shared by reference between the original and the copy. See "Shallow copy" for the consequences.</span></div>
+        </section>
+
+        <section class="topic" id="t3">
+          <h2><span class="num">03</span> Object rest</h2>
+          <p><b>Simple definition:</b> In a destructuring pattern, <code>...rest</code> collects every property that wasn't explicitly pulled out into a new object.</p><p><b>Technical definition:</b> When used at the end of an object destructuring pattern, <code>...name</code> gathers the source's remaining own enumerable properties into a fresh object — the common pattern for "take this one field out, keep everything else together".</p><pre><code>const user = { id: 1, name: 'Ada', password: 'secret' };
+const { password, ...safeUser } = user;
+console.log(safeUser); // { id: 1, name: 'Ada' } — password removed</code></pre><div class="gotcha"><b>Gotcha</b><span>Object rest must come <b>last</b> in the pattern, just like array rest — <code>{ ...rest, name }</code> is a SyntaxError.</span></div>
+        </section>
+
+        <section class="topic" id="t4">
+          <h2><span class="num">04</span> Object.keys</h2>
+          <p><b>Simple definition:</b> Returns an array of an object's own property names.</p><p><b>Technical definition:</b> <code>Object.keys(obj)</code> returns an array of <code>obj</code>'s own <b>enumerable</b> string-keyed property names, in insertion order (with integer-like keys sorted first).</p><pre><code>const scores = { ada: 90, sam: 75 };
+Object.keys(scores); // ['ada', 'sam']</code></pre><div class="gotcha"><b>Gotcha</b><span>"Own" and "enumerable" both matter: inherited properties (from the prototype chain) are never included, and neither are properties explicitly marked non-enumerable (e.g. via <code>Object.defineProperty</code>).</span></div>
+        </section>
+
+        <section class="topic" id="t5">
+          <h2><span class="num">05</span> Object.values</h2>
+          <p><b>Simple definition:</b> Returns an array of just an object's property values.</p><p><b>Technical definition:</b> <code>Object.values(obj)</code> is the value-counterpart of <code>Object.keys</code> — same rules (own, enumerable, insertion order), but returns the values instead of the keys.</p><pre><code>const scores = { ada: 90, sam: 75 };
+Object.values(scores);              // [90, 75]
+Object.values(scores).reduce((a,b)=>a+b, 0); // 165 — sum via array methods</code></pre><div class="gotcha"><b>Gotcha</b><span>This is the usual bridge for using array methods (<code>reduce</code>, <code>map</code>, <code>filter</code>) on object data, since objects don't have those methods themselves.</span></div>
+        </section>
+
+        <section class="topic" id="t6">
+          <h2><span class="num">06</span> Object.entries</h2>
+          <p><b>Simple definition:</b> Returns an array of <code>[key, value]</code> pairs — everything <code>Object.keys</code> and <code>Object.values</code> give you, zipped together.</p><p><b>Technical definition:</b> <code>Object.entries(obj)</code> returns an array of two-element arrays, one per own enumerable property, each holding that property's key and value.</p><pre><code>const scores = { ada: 90, sam: 75 };
+Object.entries(scores);
+// [['ada', 90], ['sam', 75]]
+
+for (const [name, score] of Object.entries(scores)) {
+  console.log(name, score);
+}</code></pre><p><b>Its inverse is <code>Object.fromEntries</code></b> — turning pairs back into an object, useful for transforming an object via array methods and converting back:</p><pre><code>Object.fromEntries(
+  Object.entries(scores).map(([k, v]) => [k, v + 5])
+); // { ada: 95, sam: 80 }</code></pre><div class="gotcha"><b>Gotcha</b><span>Each entry is an array, so destructure it as <code>[key, value]</code> — accessing <code>entry.key</code> is a common but wrong assumption from developers used to other languages' map/dictionary APIs.</span></div>
+        </section>
+
+        <section class="topic" id="t7">
+          <h2><span class="num">07</span> Object.assign</h2>
+          <p><b>Simple definition:</b> Copies properties from one or more source objects into a target object.</p><p><b>Technical definition:</b> <code>Object.assign(target, ...sources)</code> copies each source's own enumerable properties onto <code>target</code>, <b>mutating and returning it</b>, with later sources overwriting earlier ones for the same key.</p><pre><code>const defaults = { theme: 'light', notifications: true };
+const userPrefs = { theme: 'dark' };
+
+// mutates defaults! usually NOT what you want:
+Object.assign(defaults, userPrefs);
+
+// the safe pattern — merge into a brand-new empty object:
+const merged = Object.assign({}, defaults, userPrefs);
+// or the modern equivalent: { ...defaults, ...userPrefs }</code></pre><div class="gotcha"><b>Gotcha</b><span>The classic mistake is calling <code>Object.assign(defaults, userPrefs)</code> and forgetting that it <b>mutates the first argument</b> — always pass a fresh <code>{}</code> as the target unless mutation is genuinely intended. Object spread (<code>{ ...a, ...b }</code>) is the modern, safer-by-default equivalent.</span></div>
+        </section>
+
+        <section class="topic" id="t8">
+          <h2><span class="num">08</span> Object.freeze</h2>
+          <p><b>Simple definition:</b> Locks an object so its existing properties can't be changed, added, or removed.</p><p><b>Technical definition:</b> <code>Object.freeze(obj)</code> makes every existing own property non-writable and non-configurable, and prevents new properties from being added. It returns the <em>same</em> object (not a copy), now frozen. Attempted mutations fail silently in sloppy mode and throw a <code>TypeError</code> in strict mode/modules.</p><pre><code>const config = Object.freeze({ apiUrl: 'https://api.example.com' });
+config.apiUrl = 'https://evil.com'; // silently ignored (or throws in strict mode)
+console.log(config.apiUrl);         // still the original URL
+Object.isFrozen(config);            // true</code></pre><div class="gotcha"><b>Gotcha</b><span><code>Object.freeze</code> is <b>shallow</b> — it only locks the object's own top-level properties. A nested object inside a frozen object is completely unprotected and can still be mutated freely: <code>frozen.nested.x = 1</code> works fine even though <code>frozen.x = 1</code> does not.</span></div>
+        </section>
+
+        <section class="topic" id="t9">
+          <h2><span class="num">09</span> Shallow copy</h2>
+          <p><b>Simple definition:</b> A shallow copy duplicates the outer object, but any nested objects inside it are still the exact same shared objects as before.</p><p><b>Technical definition:</b> Spread (<code>{ ...obj }</code>), <code>Object.assign({}, obj)</code>, and array's <code>slice</code>/<code>[...arr]</code> all copy only the top level — for any property whose value is itself an object, both the original and the copy hold a reference to that <em>same</em> object.</p><pre><code>const original = { name: 'Ada', address: { city: 'London' } };
+const copy = { ...original };
+
+copy.name = 'Sam';               // safe — top-level primitive, truly separate
+copy.address.city = 'Paris';     // NOT safe — same nested object
+
+console.log(original.name);         // 'Ada' — unaffected
+console.log(original.address.city); // 'Paris' — changed too!</code></pre><div class="gotcha"><b>Gotcha</b><span>This is the single most common interview trap in this topic: a shallow copy <em>looks</em> completely independent until you mutate something nested — then the illusion breaks and both "copies" change together.</span></div>
+        </section>
+
+        <section class="topic" id="t10">
+          <h2><span class="num">10</span> Deep copy</h2>
+          <p><b>Simple definition:</b> A deep copy duplicates everything, all the way down — nested objects included — so the two copies never affect each other, no matter what you mutate.</p><p><b>Technical definition:</b> Deep cloning recursively copies every nested object/array, producing an entirely independent object graph with no shared references anywhere.</p><pre><code>const original = { name: 'Ada', address: { city: 'London' } };
+const copy = structuredClone(original);
+
+copy.address.city = 'Paris';
+console.log(original.address.city); // 'London' — truly independent</code></pre><p><b>When to use it:</b> when you need a safe, fully independent snapshot — e.g. before letting a form freely mutate a draft of some saved data.</p><div class="gotcha"><b>Gotcha</b><span>Deep cloning costs more time and memory than a shallow copy, and is overkill if you're not actually going to mutate anything nested — reach for the smallest correct copy strategy, not automatically the deepest one.</span></div>
+        </section>
+
+        <section class="topic" id="t11">
+          <h2><span class="num">11</span> Structured cloning</h2>
+          <p><b>Simple definition:</b> <code>structuredClone(value)</code> is the browser/Node built-in for making a real, deep copy of most JavaScript values.</p><p><b>Technical definition:</b> It implements the structured clone algorithm, correctly deep-copying nested objects/arrays and also handling <code>Date</code>, <code>Map</code>, <code>Set</code>, typed arrays, and even circular references — none of which the older <code>JSON.parse(JSON.stringify(x))</code> hack can do correctly.</p><pre><code>const original = { tags: ['a', 'b'], when: new Date(), self: null };
+original.self = original; // circular reference
+
+const clone = structuredClone(original); // works fine
+
+// the old hack would throw on the circular ref, and silently mangle the Date:
+JSON.parse(JSON.stringify(original)); // TypeError: Converting circular structure to JSON</code></pre><div class="gotcha"><b>Gotcha</b><span><code>structuredClone</code> cannot clone functions or DOM nodes — it throws a <code>DataCloneError</code> on them. If your object contains methods, use a manual/library deep-clone approach instead, or clone just the plain-data parts.</span></div>
+        </section>
+
+        <section class="topic" id="t12">
+          <h2><span class="num">12</span> Mutation vs immutability</h2>
+          <p><b>Simple definition:</b> Mutating means changing a value in place; the immutable approach means never changing it — instead, creating a new value with the change applied.</p><p><b>Technical definition:</b> A mutation modifies the existing object/array through a reference (<code>obj.x = 1</code>, <code>arr.push(x)</code>). An immutable update leaves the original untouched and produces a brand-new object/array reflecting the change (<code>{ ...obj, x: 1 }</code>, <code>[...arr, x]</code>).</p><pre><code>// mutation
+const state = { count: 0 };
+state.count += 1; // same object, changed in place
+
+// immutable update
+const state2 = { count: 0 };
+const next = { ...state2, count: state2.count + 1 }; // new object</code></pre><p><b>Why it matters:</b> immutable updates are predictable and easy to debug (the old value is still there, unchanged, for comparison), and they're what makes cheap change-detection possible — see "Referential equality".</p><div class="gotcha"><b>Gotcha</b><span>Frameworks like React specifically rely on immutable state updates: if you mutate state directly instead of creating a new object, React can't tell anything changed (same reference), and your component silently fails to re-render.</span></div>
+        </section>
+
+        <section class="topic" id="t13">
+          <h2><span class="num">13</span> Referential equality</h2>
+          <p><b>Simple definition:</b> Two objects are only <code>===</code> equal if they are the literal <em>same</em> object in memory — having identical contents is not enough.</p><p><b>Technical definition:</b> For objects (and arrays, functions), <code>===</code> compares references, not structure. Two separately-created objects with identical properties are never equal, no matter how deeply their contents match.</p><pre><code>{} === {};                          // false — two different objects
+const a = { x: 1 };
+const b = a;
+a === b;                              // true — same reference
+
+[1,2,3] === [1,2,3];                // false
+const arr = [1,2,3];
+arr === arr;                          // true</code></pre><p><b>Why it matters:</b> this is exactly why React (and similar libraries) can cheaply check "did this prop/state change?" with a fast <code>===</code> comparison instead of a slow deep comparison — <em>as long as</em> you follow the immutable-update rule and always produce a new reference on change.</p><div class="gotcha"><b>Gotcha</b><span>Mutating an object in place and then comparing it to its old self with <code>===</code> will always say "unchanged" — because it's literally still the same reference — even though the contents are now different. This is the root cause of a huge class of "my component won't re-render" bugs.</span></div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- ============ CODING QUESTIONS ============ -->
+  <div class="panel" id="panel-code" role="tabpanel" aria-labelledby="tab-code" hidden>
+    <p class="q-intro">9 questions, ordered easy → hard. Try each one before revealing the answer.</p>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q1</span><span class="lvl">easy</span></div>
+      <p class="qtopic">// object spread merge</p>
+      <p class="qtext">What does <code>merged</code> equal?<pre><code>const defaults = { theme: "light", size: "md" };
+const overrides = { theme: "dark" };
+const merged = { ...defaults, ...overrides };
+console.log(merged);</code></pre></p>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p><code>{ theme: "dark", size: "md" }</code>. Later spreads override earlier ones for the same key — <code>overrides.theme</code> wins over <code>defaults.theme</code>, while <code>size</code> (only in <code>defaults</code>) passes through untouched.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q2</span><span class="lvl">easy</span></div>
+      <p class="qtopic">// referential equality</p>
+      <p class="qtext">Predict each:<pre><code>console.log({} === {});
+const a = { x: 1 };
+const b = a;
+console.log(a === b);</code></pre></p>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p><code>false</code>, then <code>true</code>. <code>===</code> on objects compares <b>references</b>, not contents — two separately created objects are never equal even with identical properties. <code>b</code> points at the exact same object as <code>a</code>, so that comparison is <code>true</code>.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q3</span><span class="lvl">medium</span></div>
+      <p class="qtopic">// shallow copy trap</p>
+      <p class="qtext">What does <code>original.address.city</code> log after this?<pre><code>const original = { name: "Ada", address: { city: "London" } };
+const copy = { ...original };
+
+copy.name = "Sam";
+copy.address.city = "Paris";
+
+console.log(original.name);
+console.log(original.address.city);</code></pre></p>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p><code>"Ada"</code>, then <code>"Paris"</code>.</p><p>Spread only copies the <b>top level</b>. <code>name</code> is a primitive, so <code>copy.name</code> is genuinely separate. But <code>address</code> is an object — both <code>original</code> and <code>copy</code> point at the <em>same</em> nested object, so mutating it through either variable is visible from both. Fix with a nested spread (<code>{ ...original, address: { ...original.address } }</code>) or <code>structuredClone</code>.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q4</span><span class="lvl">medium</span></div>
+      <p class="qtopic">// Object.assign mutation</p>
+      <p class="qtext">What's the bug here?<pre><code>const defaults = { theme: "light" };
+function applyUserPrefs(prefs) {
+  return Object.assign(defaults, prefs);
+}
+applyUserPrefs({ theme: "dark" });
+console.log(defaults.theme);</code></pre></p>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p>Logs <code>"dark"</code> — <code>defaults</code> itself got mutated, which is almost certainly not intended. <code>Object.assign(target, ...sources)</code> writes onto its <b>first argument</b> and returns that same mutated object. Every future call to <code>applyUserPrefs</code> now starts from a corrupted "defaults".</p><p><b>Fix:</b> merge into a fresh object: <code>Object.assign({}, defaults, prefs)</code> or <code>{ ...defaults, ...prefs }</code>.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q5</span><span class="lvl">medium</span></div>
+      <p class="qtopic">// Object.freeze is shallow</p>
+      <p class="qtext">Which assignment is silently ignored, and which one actually works?<pre><code>const config = Object.freeze({
+  name: "app",
+  limits: { maxUsers: 10 }
+});
+
+config.name = "changed";
+config.limits.maxUsers = 999;
+
+console.log(config.name, config.limits.maxUsers);</code></pre></p>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p>Logs <code>"app" 999</code>.</p><p><code>Object.freeze</code> only locks the object's own <b>top-level</b> properties — <code>config.name = "changed"</code> is silently ignored (or throws in strict mode). But <code>config.limits</code> is itself just a regular, unfrozen object — freezing <code>config</code> did nothing to protect <em>it</em>, so <code>config.limits.maxUsers = 999</code> succeeds normally.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q6</span><span class="lvl">medium</span></div>
+      <p class="qtopic">// Object.keys enumerable only</p>
+      <p class="qtext">What does <code>Object.keys(dog)</code> log, and why doesn't it include <code>speak</code>?<pre><code>const animal = { speak() { return "sound"; } };
+const dog = Object.create(animal);
+dog.name = "Rex";
+
+console.log(Object.keys(dog));</code></pre></p>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p><code>['name']</code>.</p><p><code>Object.keys</code> only lists an object's <b>own</b> enumerable properties. <code>speak</code> lives on <code>animal</code>, which is <code>dog</code>'s prototype, not a property <code>dog</code> owns directly — so it's invisible to <code>Object.keys</code> even though <code>dog.speak()</code> works fine via the prototype chain.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q7</span><span class="lvl">hard</span></div>
+      <p class="qtopic">// structuredClone vs JSON hack</p>
+      <p class="qtext">Why does the JSON approach throw, and what does <code>structuredClone</code> do differently?<pre><code>const original = { tags: ["a"], self: null };
+original.self = original;
+
+JSON.parse(JSON.stringify(original)); // ???
+structuredClone(original);            // ???</code></pre></p>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p><code>JSON.parse(JSON.stringify(original))</code> throws <code>TypeError: Converting circular structure to JSON</code> — JSON has no way to represent a self-reference, since serializing <code>self</code> would try to serialize <code>original</code> again, forever.</p><p><code>structuredClone(original)</code> works correctly — it implements the structured clone algorithm, which explicitly supports circular references (and also correctly clones <code>Date</code>, <code>Map</code>, and <code>Set</code>, which the JSON hack silently mangles or drops).</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q8</span><span class="lvl">hard</span></div>
+      <p class="qtopic">// referential equality &amp; re-render</p>
+      <p class="qtext">Why does this "increment" function fail to trigger a re-render in a framework like React that checks references?<pre><code>function increment(state) {
+  state.count += 1; // mutate in place
+  return state;      // SAME reference returned
+}
+
+const state = { count: 0 };
+const next = increment(state);
+console.log(next === state);</code></pre></p>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <p>Logs <code>true</code> — and that's exactly the bug. <code>increment</code> mutated <code>state</code> directly and returned the very same object. Frameworks that optimize re-renders with a fast <code>===</code> check on the previous vs. next state see <code>next === state</code> is <code>true</code> and conclude "nothing changed", so they skip re-rendering — even though <code>count</code> really did change.</p><p><b>Fix — immutable update, a genuinely new reference:</b></p><pre><code>function increment(state) {
+  return { ...state, count: state.count + 1 };
+}</code></pre>
+        </div>
+      </details>
+    </div>
+
+    <div class="qcard">
+      <div class="qhead"><span class="qn">Q9</span><span class="lvl">hard</span></div>
+      <p class="qtopic">// entries transform</p>
+      <p class="qtext">Using <code>Object.entries</code> and <code>Object.fromEntries</code>, write a one-liner that adds 10% to every value in <code>prices</code>.<pre><code>const prices = { apple: 100, banana: 50 };
+// desired: { apple: 110, banana: 55 }</code></pre></p>
+      <details class="answer"><summary>Show answer</summary>
+        <div class="ans-body">
+          <pre><code>const withTax = Object.fromEntries(
+  Object.entries(prices).map(([item, price]) => [item, price * 1.1])
+);
+// { apple: 110, banana: 55 }</code></pre><p><code>Object.entries</code> turns the object into an array of <code>[key, value]</code> pairs so array methods like <code>map</code> can transform it; <code>Object.fromEntries</code> converts the transformed pairs back into a plain object — the standard round-trip for applying array-style operations to object data.</p>
+        </div>
+      </details>
+    </div>
+  </div>
+</div>
+
+<footer>Objects Notebook · read the Explanations, test with Coding Questions</footer>
+
+<script>
+  const tabs = document.querySelectorAll('.tab');
+  const panels = { 'tab-notes': 'panel-notes', 'tab-code': 'panel-code' };
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => selectTab(tab.id));
+    tab.addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        const ids = Object.keys(panels);
+        const i = ids.indexOf(tab.id);
+        const next = e.key === 'ArrowRight' ? (i + 1) % ids.length : (i - 1 + ids.length) % ids.length;
+        document.getElementById(ids[next]).focus();
+        selectTab(ids[next]);
+      }
+    });
+  });
+  function selectTab(id) {
+    tabs.forEach(t => {
+      const on = t.id === id;
+      t.setAttribute('aria-selected', on);
+      document.getElementById(panels[t.id]).hidden = !on;
+    });
+    window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+  }
+
+  const tocLinks = document.querySelectorAll('.toc a');
+  const sections = [...document.querySelectorAll('section.topic')];
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(en => {
+      if (en.isIntersecting) {
+        const id = en.target.id;
+        tocLinks.forEach(l => l.classList.toggle('active', l.getAttribute('href') === '#' + id));
+      }
+    });
+  }, { rootMargin: '-120px 0px -70% 0px' });
+  sections.forEach(s => obs.observe(s));
+</script>

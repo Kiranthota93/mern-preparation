@@ -492,7 +492,7 @@
   .nb-toc a:hover { color: var(--nb-ink); }
   .nb-toc a.active { color: var(--nb-accent); border-left-color: var(--nb-accent); }
 
-  .nb-intro { color: var(--nb-ink-soft); font-size: 16px; max-width: 62ch; margin: 0 0 22px; }
+  .nb-intro { color: var(--nb-ink-soft); font-size: 16px; max-width: 90ch; margin: 0 0 22px; }
   .nb-topic { padding: 26px 0; border-top: 1px solid var(--nb-line); }
   .nb-main .nb-topic:first-child { border-top: none; padding-top: 2px; }
   .nb-topic h3 {
@@ -501,14 +501,14 @@
   }
   .nb-topic .nb-num { font-family: var(--nb-mono); font-size: 13px; color: var(--nb-accent); font-weight: 600; }
   .nb-explain { font-size: 17px; line-height: 1.65; color: var(--nb-ink); }
-  .nb-explain p { margin: 12px 0; max-width: 64ch; }
+  .nb-explain p { margin: 12px 0; max-width: 90ch; }
   .nb-explain b { color: var(--nb-ink); }
   .nb-explain code { font-family: var(--nb-mono); font-size: .8em; background: var(--nb-code-bg); padding: 2px 6px; border-radius: 6px; color: var(--nb-ink); }
-  .nb-explain pre { background: var(--nb-code-bg); border: 1px solid var(--nb-line); border-radius: 12px; padding: 15px 17px; overflow-x: auto; margin: 14px 0; max-width: 64ch; }
+  .nb-explain pre { background: var(--nb-code-bg); border: 1px solid var(--nb-line); border-radius: 12px; padding: 15px 17px; overflow-x: auto; margin: 14px 0; max-width: 90ch; }
   .nb-explain pre code { background: none; padding: 0; font-size: 13px; line-height: 1.6; white-space: pre; color: var(--nb-ink); }
   .nb-explain .ex-gotcha {
     background: var(--nb-accent-soft); border-radius: 10px; padding: 12px 15px;
-    color: var(--nb-ink); margin: 14px 0; max-width: 64ch; font-size: 15px; line-height: 1.55;
+    color: var(--nb-ink); margin: 14px 0; max-width: 90ch; font-size: 15px; line-height: 1.55;
   }
   .nb-explain .ex-gotcha::before {
     content: "GOTCHA"; display: block; font-family: var(--nb-mono); font-size: 10.5px;
@@ -537,7 +537,7 @@
   .nb-answer summary::before { content: "\25B8"; transition: transform .15s; }
   .nb-answer[open] summary::before { transform: rotate(90deg); }
   .nb-abody { margin-top: 12px; font-size: 16px; line-height: 1.6; color: var(--nb-ink); }
-  .nb-abody p { margin: 8px 0; max-width: 64ch; }
+  .nb-abody p { margin: 8px 0; max-width: 90ch; }
 
   @media (max-width: 780px) {
     .notebook-drawer { width: 94%; height: 92%; }

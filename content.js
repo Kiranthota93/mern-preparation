@@ -780,7 +780,7 @@ window.EXPLANATIONS = {
   "this, objects & prototypes": {
     "this":
       "<p class='ex-part'>Part 1 &middot; this</p>" +
-      "<p class='ex-rule'><b>Rule:</b> for a <b>regular function</b>, <code>this</code> is decided by the invocation pattern at the call site. An <b>arrow function</b> has no <code>this</code> of its own and inherits it lexically. A <b>bound function</b> has <code>this</code> fixed at <code>.bind()</code> time &mdash; <code>call</code>, <code>apply</code>, and a further <code>bind</code> cannot re-point it. The one exception is <code>new</code>.</p>" +
+      "<p class='ex-rule'><b>Rule:</b> <code>this</code> is decided at the <b>call site</b>, not the definition site &mdash; with two exceptions: arrow functions and bound functions. The table below is the whole rule in one place.</p>" +
       "<p><b>Core idea:</b> <code>this</code> refers to the object associated with the current function call. It is not fixed when the function is written &mdash; it is supplied when the function is invoked.</p>" +
       "<p><b>Think of it as:</b> the word \"I\". The function is the sentence; the caller is the speaker. If Alice says \"I am happy\", I means Alice; if Bob says it, I means Bob. The word never changes &mdash; the speaker does.</p>" +
       "<p><b>Example</b> &mdash; one function, two owners:</p>" +
@@ -812,21 +812,21 @@ window.EXPLANATIONS = {
       "<p><b>Example</b> &mdash; the callback problem it solves:</p>" +
       "<pre><code>const timer = {\n  label: 'tick',\n  start() {\n    setTimeout(() =&gt; {\n      console.log(this.label); // inherited from start(), not its own\n    }, 100);\n  }\n};\ntimer.start(); // 'tick'   (a plain function here would log undefined)</code></pre>" +
       "<p class='ex-gotcha'><b>an arrow as the method itself.</b> <code>const user = { name: 'Ada', greet: () =&gt; this.name };</code> never sees the object at all &mdash; object literals do not create a scope, so <code>this</code> comes from outside entirely. What you get depends on that outer scope: a <code>TypeError</code> in an ES module (<code>this</code> is <code>undefined</code>), <code>undefined</code> in CommonJS, <code>''</code> in a classic browser script. Never use an arrow as an object method or a constructor &mdash; <code>new</code> on an arrow throws.</p>" +
-      "<p class='ex-check'>what does <code>arrowFn.call({ x: 1 })</code> do to the arrow's <code>this</code>? (Answer: nothing &mdash; the <code>thisArg</code> is silently ignored.)</p>",
+      "<p class='ex-check'>a class has a field <code>handle = () =&gt; this.x</code> and a method <code>handle2() { return this.x }</code>. Both are passed to <code>addEventListener</code> &mdash; which still works, and what does the arrow version cost you? (Answer: the field works because it captured <code>this</code> at construction; the method loses it. The cost is one closure allocated <em>per instance</em>, instead of one shared function on the prototype.)</p>",
 
     "call":
       "<p class='ex-rule'><b>Rule:</b> <b>C</b>all = <b>C</b>ommas. Invokes the function <b>immediately</b> with a <code>this</code> you choose, and arguments listed individually.</p>" +
       "<p><b>Core idea:</b> lets you run a method against an object that never had that method defined on it &mdash; method borrowing, without copying code.</p>" +
       "<p><b>Syntax:</b> <code>fn.call(thisArg, arg1, arg2)</code> &mdash; returns whatever <code>fn</code> returns.</p>" +
       "<pre><code>function introduce(city, role) {\n  return this.name + ' from ' + city + ', ' + role;\n}\n\nconst person = { name: 'Ada' };\nintroduce.call(person, 'London', 'engineer');\n// 'Ada from London, engineer'</code></pre>" +
-      "<p class='ex-gotcha'><code>call</code> executes now and returns a <em>result</em>; <code>bind</code> executes nothing and returns a <em>function</em>. Mixing them up is the single most common <code>call</code>/<code>bind</code> mistake.</p>" +
+      "<p class='ex-gotcha'>the <code>thisArg</code> is not passed through untouched in sloppy mode &mdash; <code>null</code> and <code>undefined</code> are replaced by <code>globalThis</code>, and a primitive is boxed into an object (<code>fn.call('hi')</code> gives a <code>String</code> object, not a string). Strict mode passes the value exactly as given.</p>" +
       "<p class='ex-check'>rewrite <code>fn.apply(obj, args)</code> using <code>call</code>. (Answer: <code>fn.call(obj, ...args)</code>.)</p>",
 
     "apply":
       "<p class='ex-rule'><b>Rule:</b> <b>A</b>pply = <b>A</b>rray. Identical to <code>call</code> in every way except that the arguments arrive packed in one array.</p>" +
       "<p><b>Core idea:</b> it was the standard way to pass a dynamic, unknown-length argument list before spread syntax existed.</p>" +
       "<p><b>Syntax:</b> <code>fn.apply(thisArg, [arg1, arg2])</code></p>" +
-      "<pre><code>const person = { name: 'Ada' };\nfunction introduce(city, role) { return this.name + ' from ' + city; }\n\nintroduce.apply(person, ['London', 'engineer']);  // same as .call, different arg shape\n\nMath.max.apply(null, [4, 9, 2]);  // 9  &mdash; the old pre-spread trick\nMath.max(...[4, 9, 2]);           // 9  &mdash; modern equivalent</code></pre>" +
+      "<pre><code>const person = { name: 'Ada' };\nfunction introduce(city, role) { return this.name + ' from ' + city + ', ' + role; }\n\nintroduce.apply(person, ['London', 'engineer']);  // same as .call, different arg shape\n\nMath.max.apply(null, [4, 9, 2]);  // 9  &mdash; the old pre-spread trick\nMath.max(...[4, 9, 2]);           // 9  &mdash; modern equivalent</code></pre>" +
       "<p class='ex-gotcha'>the second argument must be array-like, not a bare argument list. <code>fn.apply(obj, 1, 2)</code> throws <code>TypeError: CreateListFromArrayLike called on non-object</code> &mdash; a mistake <code>call</code> cannot make.</p>" +
       "<p class='ex-check'>why did <code>Math.max.apply(null, arr)</code> exist at all, when <code>Math.max(arr)</code> looks simpler? (Answer: <code>Math.max</code> takes separate arguments, not an array.)</p>",
 
@@ -839,8 +839,8 @@ window.EXPLANATIONS = {
       "<tr><td><code>call</code></td><td>yes</td><td>the result</td><td>commas</td></tr>" +
       "<tr><td><code>apply</code></td><td>yes</td><td>the result</td><td>one array</td></tr>" +
       "<tr><td><code>bind</code></td><td>no</td><td>a new function</td><td>commas (pre-filled)</td></tr></table>" +
-      "<p class='ex-gotcha'>forgetting that <code>bind</code> returns a function &mdash; writing <code>user.greet.bind(user)</code> on its own line does nothing at all.</p>" +
-      "<p class='ex-check'>what does <code>fn.bind(a).call(b)</code> use as <code>this</code>? (Answer: <code>a</code> &mdash; the bind wins.)</p>",
+      "<p class='ex-gotcha'>every <code>.bind()</code> call returns a <b>different</b> function object. So <code>el.addEventListener('click', this.onClick.bind(this))</code> can never be undone by <code>el.removeEventListener('click', this.onClick.bind(this))</code> &mdash; the second bind is a different function. Store the bound reference once.</p>" +
+      "<p class='ex-check'>what arguments does the inner function receive from <code>fn.bind(a, 1)(2)</code>? (Answer: <code>1</code> then <code>2</code> &mdash; pre-set arguments are prepended, not replaced.)</p>",
 
     "Object creation":
       "<p class='ex-part'>Part 2 &middot; Objects</p>" +
@@ -855,7 +855,7 @@ window.EXPLANATIONS = {
       "<p><b>Core idea:</b> bracket access is what makes objects dynamic &mdash; it lets a variable decide, at runtime, which property to read.</p>" +
       "<pre><code>const user = { name: 'Ada', 'work role': 'engineer' };\n\nuser.name;          // 'Ada'       &mdash; dot, fixed key\nuser['work role'];  // 'engineer'  &mdash; brackets required (space in key)\n\nconst key = 'name';\nuser[key];          // 'Ada'       &mdash; evaluates the variable\nuser.key;           // undefined   &mdash; looks for a property literally named 'key'</code></pre>" +
       "<p><b>Also know:</b> reading a missing property returns <code>undefined</code> and never throws. Reading a property <em>of</em> <code>undefined</code> &mdash; one level further along the chain &mdash; is what throws.</p>" +
-      "<p class='ex-gotcha'><code>user.key</code> vs <code>user[key]</code>. This is one of the most frequent beginner bugs, and it fails silently with <code>undefined</code> rather than an error.</p>" +
+      "<p class='ex-gotcha'>setting a property to <code>undefined</code> is not the same as deleting it. After <code>obj.k = undefined</code> the key still appears in <code>Object.keys(obj)</code> and <code>'k' in obj</code> is still <code>true</code>; only <code>delete obj.k</code> removes it. Both read back as <code>undefined</code>, which hides the difference.</p>" +
       "<p class='ex-check'>when is <code>user['name']</code> the wrong choice even though it works? (Answer: whenever the key is a known literal &mdash; the dot is clearer.)</p>",
 
     "Property descriptors conceptually":
@@ -876,7 +876,7 @@ window.EXPLANATIONS = {
       "<p class='ex-rule'><b>Rule:</b> object destructuring matches by <b>key name</b> and ignores order. Array destructuring matches by <b>position</b>. A default fires only on <code>undefined</code> &mdash; never on <code>null</code>.</p>" +
       "<p><b>Core idea:</b> it replaces one-line-per-property extraction, and in a function signature it documents exactly which fields the function needs.</p>" +
       "<pre><code>const user = { name: 'Ada', age: 36, address: { city: 'London' } };\n\nconst { name, age } = user;           // name='Ada', age=36\nconst { name: fullName } = user;      // rename &rarr; fullName='Ada'\nconst { role = 'user' } = user;       // default when key is missing\nconst { address: { city } } = user;   // nested &rarr; city='London'\nconst { name: n, ...rest } = user;    // rest = { age, address }</code></pre>" +
-      "<p class='ex-gotcha'><code>const { role = 'user' } = { role: null }</code> gives <code>null</code>, not <code>'user'</code>. Defaults check for <code>undefined</code> only.</p>" +
+      "<p class='ex-gotcha'>destructuring <code>null</code> or <code>undefined</code> itself throws &mdash; <code>const { a } = null</code> is a <code>TypeError</code>, not <code>undefined</code>. Guard with <code>const { a } = obj ?? {}</code>. And in assignment form (no <code>const</code>) the parentheses are mandatory: <code>({ a } = obj)</code>, or the leading brace parses as a block.</p>" +
       "<p class='ex-check'>does destructuring mutate the source object? (Answer: no &mdash; it only reads.)</p>",
 
     "Computed properties":
@@ -899,7 +899,7 @@ window.EXPLANATIONS = {
       "<pre><code>const count = 0;\ncount || 10;  // 10  &larr; bug: 0 is falsy, a real value is lost\ncount ?? 10;  // 0   &larr; correct: 0 is real data\n\nconst name = '';\nname || 'Anonymous';  // 'Anonymous'\nname ?? 'Anonymous';  // ''  &mdash; deliberately empty</code></pre>" +
       "<p><b>Pairs with <code>?.</code>:</b> <code>user.profile?.city ?? 'Unknown'</code> &mdash; <code>?.</code> avoids the crash, <code>??</code> supplies the fallback. Two different jobs.</p>" +
       "<p class='ex-gotcha'>you cannot mix <code>??</code> with <code>||</code> or <code>&amp;&amp;</code> without parentheses. <code>a || b ?? c</code> is a <code>SyntaxError</code> &mdash; JavaScript forces the precedence to be explicit.</p>" +
-      "<p class='ex-check'>a config has <code>{ retries: 0 }</code>. Which operator do you use for the default, and what happens with the other?</p>",
+      "<p class='ex-check'>a feature flag is already <code>false</code>. What does <code>flags.dark ??= true</code> leave it as, and what does <code>flags.dark ||= true</code> leave it as? (Answer: <code>false</code> and <code>true</code> &mdash; the same trap as <code>??</code> vs <code>||</code>, in the assignment forms.)</p>",
 
     "Prototype":
       "<p class='ex-part'>Part 3 &middot; Prototypes &amp; OOP</p>" +
@@ -908,14 +908,14 @@ window.EXPLANATIONS = {
       "<p><b>Think of it as:</b> a fallback reference book sitting behind the object. A thousand objects can share the very same book instead of each memorising the answer &mdash; which is exactly why a thousand arrays do not each store their own <code>map</code>.</p>" +
       "<pre><code>const animal = { speak() { return 'generic sound'; } };\nconst dog = Object.create(animal);\ndog.name = 'Rex';\n\ndog.name;    // 'Rex'           &mdash; own property\ndog.speak(); // 'generic sound' &mdash; borrowed from the prototype\n\ndog.hasOwnProperty('speak');           // false &mdash; it is not really dog's\nObject.getPrototypeOf(dog) === animal; // true</code></pre>" +
       "<p class='ex-gotcha'>never add to built-in prototypes (<code>Array.prototype.myHelper = ...</code>). It affects every array in the entire program and can break unrelated code.</p>" +
-      "<p class='ex-check'>for <code>const a = new User()</code>, what is the relationship between <code>Object.getPrototypeOf(a)</code> and <code>User.prototype</code>? (Answer: they are the same object.)</p>",
+      "<p class='ex-check'>what is <code>Object.getPrototypeOf(User)</code> &mdash; the function itself, not an instance? (Answer: <code>Function.prototype</code>, <b>not</b> <code>User.prototype</code>. A function is an object too, and it has its own chain, separate from the one it hands to its instances.)</p>",
 
     "Prototype chain":
       "<p class='ex-rule'><b>Rule:</b> lookup walks the <code>[[Prototype]]</code> links one level at a time until it finds the property or hits <code>null</code>. A missing property returns <code>undefined</code> silently &mdash; only <em>calling</em> that <code>undefined</code> throws.</p>" +
       "<p><b>Core idea:</b> this chain is the mechanism behind all inheritance in JavaScript. <code>class</code> and <code>extends</code> are friendlier syntax over the same links. Every chain terminates at <code>null</code>. For ordinary objects the last link before <code>null</code> is <code>Object.prototype</code> &mdash; but an object made with <code>Object.create(null)</code> has <code>null</code> as its immediate prototype, so <code>Object.prototype</code> is never in its chain at all.</p>" +
       "<pre><code>const arr = [1, 2, 3];\n\narr.map(n =&gt; n);\n// arr (no map) &rarr; Array.prototype (found) &rarr; Object.prototype &rarr; null\n\narr.notARealMethod;    // undefined  &mdash; walked the whole chain, found nothing\narr.notARealMethod();  // TypeError  &mdash; calling undefined is what throws</code></pre>" +
       "<p class='ex-gotcha'>lookup walks the chain, but <b>assignment never does</b>. <code>dog.speak = ...</code> creates an <b>own</b> property that shadows the prototype's; the prototype itself is untouched, and <code>delete dog.speak</code> makes the inherited one reappear.</p>" +
-      "<p class='ex-check'>for <code>const arr = []</code>, name every link from <code>arr</code> to <code>null</code>. (Answer: <code>arr</code> &rarr; <code>Array.prototype</code> &rarr; <code>Object.prototype</code> &rarr; <code>null</code>.)</p>",
+      "<p class='ex-check'>for <code>class Dog extends Animal</code>, what is <code>Object.getPrototypeOf(Dog)</code>? (Answer: <code>Animal</code> itself &mdash; <code>extends</code> links the two <em>classes</em> as well as their <code>.prototype</code> objects, which is how a subclass inherits <code>static</code> members.)</p>",
 
     "Object.create":
       "<p class='ex-rule'><b>Rule:</b> <code>Object.create(animal)</code> <b>links</b> to <code>animal</code>, so later changes to <code>animal</code> stay visible. <code>{ ...animal }</code> <b>copies</b> once and then goes its own way.</p>" +
@@ -923,7 +923,7 @@ window.EXPLANATIONS = {
       "<p><b>Syntax:</b> <code>Object.create(proto)</code> or <code>Object.create(proto, descriptors)</code></p>" +
       "<pre><code>const animal = { speak() { return this.name + ' makes a sound'; } };\nconst dog = Object.create(animal);\ndog.name = 'Rex';\ndog.speak(); // 'Rex makes a sound'\n\nconst dict = Object.create(null); // NO prototype at all\n// no toString, no hasOwnProperty &mdash; safe for arbitrary untrusted keys</code></pre>" +
       "<p class='ex-gotcha'><code>Object.create(null)</code> objects have none of the usual inherited methods, so <code>dict.hasOwnProperty(k)</code> throws. Use <code>Object.hasOwn(dict, k)</code> instead.</p>" +
-      "<p class='ex-check'>you add a method to <code>animal</code> after creating <code>dog</code>. Does <code>dog</code> get it? What if <code>dog</code> had been made with spread?</p>",
+      "<p class='ex-check'>you are building a lookup table from untrusted user input. Why is <code>Object.create(null)</code> the right shape for it? (Answer: a normal <code>{}</code> inherits <code>Object.prototype</code>, so a key like <code>\"constructor\"</code> or <code>\"toString\"</code> reads back as an inherited function instead of \"missing\".)</p>",
 
     "Constructor functions":
       "<p class='ex-rule'><b>Rule:</b> <code>new Fn()</code> does five things in order &mdash; create an empty object, link it to <code>Fn.prototype</code>, bind <code>this</code> to it, run the body, and return it implicitly unless the body returns a different object.</p>" +
@@ -937,7 +937,7 @@ window.EXPLANATIONS = {
       "<p><b>Core idea:</b> the same underlying mechanism as constructor functions, plus guardrails and features they never had &mdash; <code>#private</code> fields, getters and setters, and <code>static</code> members.</p>" +
       "<pre><code>class User {\n  #secret = 'hidden';                       // truly private\n  constructor(name) { this.name = name; }\n  greet() { return 'Hi, ' + this.name; }    // &rarr; User.prototype.greet\n  get initials() { return this.name[0]; }   // getter, read as a property\n  static create(name) { return new User(name); }\n}\n\nconst u = new User('Ada');\nu.greet();    // 'Hi, Ada'\nu.initials;   // 'A'  &mdash; no parentheses, it is a getter\nUser('Sam');  // TypeError &mdash; classes require new</code></pre>" +
       "<p class='ex-gotcha'>using a class before its definition throws a <code>ReferenceError</code> &mdash; classes have their own temporal dead zone, unlike function declarations which hoist.</p>" +
-      "<p class='ex-check'>where does <code>greet</code> actually live &mdash; on <code>u</code>, or somewhere else? Prove it with one line of code.</p>",
+      "<p class='ex-check'>how does a class <b>field</b> <code>greet = () =&gt; ...</code> differ from a <b>method</b> <code>greet() { ... }</code>? (Answer: the field is an own property on every instance and captures <code>this</code> lexically, so it survives detaching; the method lives once on the prototype and loses <code>this</code> when detached. The field costs one closure per instance.)</p>",
 
     "Inheritance":
       "<p class='ex-rule'><b>Rule:</b> in a subclass constructor, <code>super()</code> must run <b>before</b> you touch <code>this</code> &mdash; the parent constructor is what creates the object <code>this</code> refers to. Touching it first throws a <code>ReferenceError</code>.</p>" +
